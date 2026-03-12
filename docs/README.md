@@ -14,6 +14,7 @@
 - [TEST_PLAN.md](./TEST_PLAN.md)
 - [RISKS.md](./RISKS.md)
 - [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md)
+- [XCODE_SETUP.md](./XCODE_SETUP.md)
 
 ## Inputs required
 - [RESOURCE_REQUESTS.md](./RESOURCE_REQUESTS.md)

@@ -33,3 +33,4 @@ Planning docs and first-pass implementation scaffold are in place:
 - [Skills](./docs/skills/README.md)
 - [Patch Tickets](./docs/patches)
 - [App Icon Handoff](./design/app-icon/README.md)
+- [Xcode Setup](./docs/XCODE_SETUP.md)
