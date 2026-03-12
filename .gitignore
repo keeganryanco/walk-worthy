@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Xcode user data
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcuserdata/
+
+# Xcode build products
+DerivedData/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Fastlane
+test_output/
+fastlane/report.xml
+fastlane/Preview.html
+
+# Coverage
+*.xccovreport
+*.xccovarchive
+
+# Logs
+*.log
