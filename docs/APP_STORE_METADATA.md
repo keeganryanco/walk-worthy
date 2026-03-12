@@ -84,6 +84,16 @@ For each subscription product:
 - `Walk Worthy helps you pray, take one concrete step, and reflect on what changes over time.`
 5. Keyword starter set (must fit 100 bytes):
 - `prayer,christian,faith,devotional,reflection,discipline`
+6. Support email contact (for support destination page):
+- `keegan.ryan@keeganryan.co`
+
+## F2. Subscription metadata draft
+1. Product strategy:
+- Annual subscription with 3-day introductory free trial (MVP default)
+2. Required text in paywall:
+- Billing period, trial duration, auto-renew language, cancel-anytime path
+3. Required controls:
+- `Restore Purchases` and link to Terms/Privacy
 
 ## G. URL requirements summary
 - **Support URL** must provide real user contact info and include full protocol.

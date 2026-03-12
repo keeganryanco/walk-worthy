@@ -18,7 +18,9 @@ Walk Worthy helps users move from intention to faithful action in under a minute
 - No backend for MVP
 
 ## Repository status
-This repository is currently in pre-implementation planning mode. Core planning docs are under `docs/`.
+Planning docs and first-pass implementation scaffold are in place:
+- `WalkWorthy.xcodeproj` + SwiftUI/SwiftData/StoreKit2 app skeleton
+- `site/` Next.js legal/support website for App Store URLs
 
 ## Key docs
 - [RFC](./docs/RFC.md)
@@ -29,3 +31,4 @@ This repository is currently in pre-implementation planning mode. Core planning 
 - [Test Plan](./docs/TEST_PLAN.md)
 - [Risks](./docs/RISKS.md)
 - [Skills](./docs/skills/README.md)
+- [Patch Tickets](./docs/patches)

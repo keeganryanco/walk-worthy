@@ -1,0 +1,60 @@
+:root {
+  --alabaster: #eae0c8;
+  --sage: #9cba8f;
+  --sapphire: #0f52ba;
+  --charcoal: #222529;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "SF Pro Text", "Inter", sans-serif;
+  color: var(--charcoal);
+  background: radial-gradient(circle at top left, #f4eddb 0%, var(--alabaster) 45%, #dbe7d7 100%);
+}
+
+.wrapper {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: min(740px, 100%);
+  padding: 28px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(15, 82, 186, 0.15);
+  box-shadow: 0 18px 40px rgba(34, 37, 41, 0.08);
+}
+
+h1,
+h2 {
+  font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: clamp(2rem, 6vw, 2.6rem);
+}
+
+h2 {
+  margin-top: 1.6rem;
+}
+
+a {
+  color: var(--sapphire);
+}
+
+ul {
+  padding-left: 1.1rem;
+}
+
+.prose p,
+.prose li {
+  line-height: 1.58;
+}

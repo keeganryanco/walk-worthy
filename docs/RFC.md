@@ -1,6 +1,6 @@
 # RFC: Walk Worthy MVP
 
-- **Status:** Draft (Pre-implementation)
+- **Status:** Active Draft (Implementation Started)
 - **Date:** March 12, 2026
 - **Platform:** iOS-first
 - **Subtitle:** Pray & Do
@@ -27,7 +27,7 @@ Many users pray consistently in moments but struggle to translate prayer into sp
 - Church management features
 - Backend sync and multi-device merge
 - Account system
-- AI-generated scripture quotations
+- Fully automated scripture quoting without source controls
 
 ## 5. User personas
 - Individual Christians who want more faithful daily discipline.
@@ -55,7 +55,7 @@ Many users pray consistently in moments but struggle to translate prayer into sp
 - Answered prayer timeline
 
 4. Monetization
-- Free tier with limited active journeys
+- Hard paywall after initial value with a 3-day free trial for annual plan
 - Premium unlocks unlimited journeys, templates, export, widgets
 - StoreKit 2 subscriptions + restore purchases
 
@@ -92,9 +92,12 @@ No backend in MVP. This keeps scope tight, reduces privacy risk, and speeds ship
   - notification settings, premium entitlement cache, content policy toggles
 
 ## 9. Monetization model
-- Free:
-  - 1-2 active journeys
-  - Base Today flow
+- MVP:
+  - Hard paywall pattern with introductory free trial (3 days)
+  - Triggered after early engagement points:
+    - After 2 completed sessions
+    - On creation of second journey
+    - On timeline access attempt
 - Premium:
   - Unlimited journeys
   - Timeline history depth
@@ -102,10 +105,9 @@ No backend in MVP. This keeps scope tight, reduces privacy risk, and speeds ship
   - Export
   - Widgets
 
-Paywall trigger candidates:
-- After 2 completed sessions
-- On creation of 2nd/3rd journey
-- On timeline access attempt
+Experimentation roadmap (post-MVP):
+- Add A/B/C testing of paywall timing, trial, and pricing through App Store offers and in-app variants.
+- Track funnel metrics for conversion, retention, trial-to-paid, and refund rate.
 
 ## 10. Privacy and compliance
 - All user-generated content stored on device
@@ -117,7 +119,8 @@ Paywall trigger candidates:
 
 Religious content safeguards:
 - Avoid fabricated quotations
-- Do not present paraphrase as direct scripture quote
+- Do not present AI paraphrase as direct scripture quote
+- Quote scripture only from approved source text (public domain or licensed translation)
 - Avoid inflammatory or denomination-combat framing
 
 ## 11. Accessibility baseline
