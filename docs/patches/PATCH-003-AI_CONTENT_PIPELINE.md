@@ -12,4 +12,4 @@ Generate contextual Today cards from onboarding and journey history while preser
 ## Acceptance
 - Today card generated on first onboarding completion
 - Generation remains deterministic/fallback-safe offline
-- No unlabeled AI scripture quote text
+- Scripture snippets always include an approved verse reference

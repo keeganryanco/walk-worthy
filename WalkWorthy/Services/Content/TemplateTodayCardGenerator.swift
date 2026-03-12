@@ -1,9 +1,9 @@
 import Foundation
 
 struct TemplateTodayCardGenerator: TodayCardGenerating {
-    private struct ScriptureSnippet {
+    private struct ScriptureReference: Equatable {
         let reference: String
-        let text: String
+        let canonicalIdea: String
     }
 
     private let prayerPromptsByGoal: [String: [String]] = [
@@ -56,26 +56,27 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
         ]
     ]
 
-    private let scriptureByGoal: [String: [ScriptureSnippet]] = [
+    // Constrained to approved references so generated snippets stay tied to actual verses.
+    private let scriptureByGoal: [String: [ScriptureReference]] = [
         "consistency": [
-            ScriptureSnippet(reference: "Galatians 6:9", text: "Let us not be weary in well doing: for in due season we shall reap, if we faint not."),
-            ScriptureSnippet(reference: "1 Corinthians 15:58", text: "Be ye stedfast, unmoveable, always abounding in the work of the Lord.")
+            ScriptureReference(reference: "Galatians 6:9", canonicalIdea: "Do not grow weary in doing good; there is fruit in faithful endurance."),
+            ScriptureReference(reference: "1 Corinthians 15:58", canonicalIdea: "Stand firm and keep giving yourself fully to the work of the Lord.")
         ],
         "courage": [
-            ScriptureSnippet(reference: "Joshua 1:9", text: "Be strong and of a good courage; be not afraid... for the Lord thy God is with thee."),
-            ScriptureSnippet(reference: "2 Timothy 1:7", text: "God hath not given us the spirit of fear; but of power, and of love, and of a sound mind.")
+            ScriptureReference(reference: "Joshua 1:9", canonicalIdea: "Be strong and courageous because God is with you wherever you go."),
+            ScriptureReference(reference: "2 Timothy 1:7", canonicalIdea: "God gives power, love, and self-control instead of fear.")
         ],
         "peace": [
-            ScriptureSnippet(reference: "Philippians 4:6", text: "Be careful for nothing; but in every thing by prayer... let your requests be made known unto God."),
-            ScriptureSnippet(reference: "Isaiah 26:3", text: "Thou wilt keep him in perfect peace, whose mind is stayed on thee.")
+            ScriptureReference(reference: "Philippians 4:6-7", canonicalIdea: "Bring every anxiety to God in prayer and receive His peace."),
+            ScriptureReference(reference: "Isaiah 26:3", canonicalIdea: "God keeps in perfect peace those whose minds are fixed on Him.")
         ],
         "discipline": [
-            ScriptureSnippet(reference: "1 Corinthians 9:27", text: "I keep under my body, and bring it into subjection."),
-            ScriptureSnippet(reference: "Colossians 3:23", text: "Whatsoever ye do, do it heartily, as to the Lord.")
+            ScriptureReference(reference: "Colossians 3:23", canonicalIdea: "Work wholeheartedly as for the Lord in every task."),
+            ScriptureReference(reference: "1 Corinthians 9:27", canonicalIdea: "Practice self-control and train your life with purpose.")
         ],
         "service": [
-            ScriptureSnippet(reference: "Galatians 5:13", text: "By love serve one another."),
-            ScriptureSnippet(reference: "Mark 10:45", text: "The Son of man came not to be ministered unto, but to minister.")
+            ScriptureReference(reference: "Galatians 5:13", canonicalIdea: "Use your freedom to serve one another in love."),
+            ScriptureReference(reference: "Mark 10:45", canonicalIdea: "Follow Christ by serving rather than seeking to be served.")
         ]
     ]
 
@@ -98,12 +99,32 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
             seed: seed(for: "\(goalKey)-scripture", date: date)
         )
 
+        let generatedSnippet = buildConstrainedScriptureSnippet(
+            reference: scripture.reference,
+            canonicalIdea: scripture.canonicalIdea,
+            profile: profile
+        )
+
+        let approvedReference = ScriptureReferenceValidator.isApproved(scripture.reference) ? scripture.reference : "Philippians 4:6-7"
+        let approvedSnippet = ScriptureReferenceValidator.sanitizedSnippet(generatedSnippet)
+
         return TodayCard(
             prayerPrompt: prayerPrompt,
             actionStep: actionStep,
-            scriptureReference: scripture.reference,
-            scriptureText: scripture.text
+            scriptureReference: approvedReference,
+            scriptureText: approvedSnippet
         )
+    }
+
+    private func buildConstrainedScriptureSnippet(
+        reference: String,
+        canonicalIdea: String,
+        profile: OnboardingProfile
+    ) -> String {
+        // This simulates constrained AI output for MVP: reference is selected from approved list,
+        // and snippet is generated from a stable canonical idea to reduce hallucination risk.
+        let emphasis = profile.growthGoal.lowercased() == "peace" ? "Rest in that promise today." : "Take one step in response today."
+        return "\(canonicalIdea) \(emphasis)"
     }
 
     private func normalize(_ value: String) -> String {

@@ -56,6 +56,7 @@ Many users pray consistently in moments but struggle to translate prayer into sp
 
 4. Monetization
 - Hard paywall after initial value with a 3-day free trial for annual plan
+- Paid plans: `$5.99/week` and `$35/year`
 - Premium unlocks unlimited journeys, templates, export, widgets
 - StoreKit 2 subscriptions + restore purchases
 
@@ -94,6 +95,8 @@ No backend in MVP. This keeps scope tight, reduces privacy risk, and speeds ship
 ## 9. Monetization model
 - MVP:
   - Hard paywall pattern with introductory free trial (3 days)
+  - Primary offer: annual plan with 3-day trial at `$35/year`
+  - Secondary offer: weekly plan at `$5.99/week`
   - Triggered after early engagement points:
     - After 2 completed sessions
     - On creation of second journey
@@ -118,9 +121,9 @@ Experimentation roadmap (post-MVP):
   - Support URL
 
 Religious content safeguards:
-- Avoid fabricated quotations
-- Do not present AI paraphrase as direct scripture quote
-- Quote scripture only from approved source text (public domain or licensed translation)
+- Avoid fabricated verse references and unsupported claims.
+- Use AI-generated scripture snippets tied to approved verse references.
+- Do not disclose translation in user-facing UI for MVP.
 - Avoid inflammatory or denomination-combat framing
 
 ## 11. Accessibility baseline

@@ -13,23 +13,26 @@ Walk Worthy will lean into AI for personalization of prayer prompts and action s
 - Action-step selection
 - Reflection summarization
 - Scripture reference selection
+- Scripture snippet generation (summarized or verbatim)
 
-2. AI is not allowed to generate text labeled as direct scripture quote unless it is sourced from approved translation text.
+2. MVP display policy:
+- Show scripture reference + snippet.
+- Do not show translation source in user-facing UI.
 
-3. Displayed scripture text must come from:
-- Public-domain source text, or
-- Translation with explicit usage rights and compliance terms
+3. Hallucination controls:
+- Generate snippets only for references selected from an approved verse reference set.
+- Reject and regenerate if output does not include a valid reference or exceeds snippet bounds.
 
-4. If source rights are unresolved, launch fallback is:
-- Scripture references only (`Book Chapter:Verse`) without excerpt text
+4. Translation direction:
+- Product direction is NIV/ESV/NLT-adjacent scripture output for MVP.
 
 ## Rationale
-This prevents doctrinal misquote risk, reduces App Review risk, and lowers copyright/legal exposure.
+This maximizes personalized UX while maintaining practical anti-hallucination constraints for launch.
 
 ## Implementation notes
 - Add `ScriptureSourcePolicy` enum in app settings.
-- Add `isVerbatim` marker on rendered verse snippets.
-- Keep AI output and source verse text separate in code.
+- Add constraint validator for reference format and approved-reference membership.
+- Keep fallback deterministic snippet generator for offline/no-AI states.
 
 ## Open items
-- Confirm translation licensing path (if using NIV/ESV/NLT).
+- Finalize production AI provider and key-management pattern.

@@ -90,9 +90,13 @@ For each subscription product:
 ## F2. Subscription metadata draft
 1. Product strategy:
 - Annual subscription with 3-day introductory free trial (MVP default)
-2. Required text in paywall:
+- Weekly subscription without trial as secondary option
+2. Initial price points:
+- `$35/year`
+- `$5.99/week`
+3. Required text in paywall:
 - Billing period, trial duration, auto-renew language, cancel-anytime path
-3. Required controls:
+4. Required controls:
 - `Restore Purchases` and link to Terms/Privacy
 
 ## G. URL requirements summary
@@ -105,7 +109,7 @@ Use this template in App Review Notes:
 1. “This app is local-first and does not require account creation.”
 2. “All core features are testable without login or external services.”
 3. “To test premium flows, use StoreKit sandbox; restore purchases is in Settings > Subscription.”
-4. “Religious prompts are original/non-doctrinal and avoid verbatim third-party scripture licensing issues.”
+4. “Scripture snippets are AI-generated with reference constraints and are intended for devotional guidance.”
 5. “No health, financial, or guaranteed outcome claims are presented in app content.”
 
 ## Sources (Apple)

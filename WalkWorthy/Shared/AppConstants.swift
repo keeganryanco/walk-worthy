@@ -6,7 +6,10 @@ enum AppConstants {
     static let supportEmail = "keegan.ryan@keeganryan.co"
 
     enum Subscription {
+        static let weeklyProductID = "co.keeganryan.walkworthy.premium.weekly"
         static let annualProductID = "co.keeganryan.walkworthy.premium.annual"
+        static let weeklyDisplayFallback = "$5.99 / week"
+        static let annualDisplayFallback = "$35.00 / year"
     }
 }
 

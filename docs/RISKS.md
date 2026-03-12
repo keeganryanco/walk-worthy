@@ -3,11 +3,11 @@
 ## App Review rejection risks
 1. Misleading religious quotations
 - Risk: Generated text appears to quote scripture inaccurately.
-- Mitigation: Restrict displayed quotes to approved source text only; never label AI paraphrase as verbatim scripture.
+- Mitigation: Constrain generation to approved verse references and reject outputs without valid references.
 
 2. Scripture licensing infringement
 - Risk: Using NIV/ESV/NLT excerpts without proper license/compliance obligations.
-- Mitigation: Launch with public-domain text or documented licensed translation terms.
+- Mitigation: Product owner accepted this launch risk for MVP; maintain fallback to summarized snippets and adjust immediately if review/legal requires.
 
 3. Subscription compliance gaps
 - Risk: Missing restore purchases or unclear subscription terms.

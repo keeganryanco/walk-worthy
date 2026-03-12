@@ -11,6 +11,9 @@ Deploy `site/` and produce final App Store URLs.
 5. Build command: `pnpm build`.
 6. Deploy.
 
+Optional:
+7. Set `NEXT_PUBLIC_GA_ID` in Vercel environment variables to enable GA4 on the legal site.
+
 ## Required final URLs
 - Privacy Policy URL: `https://<your-vercel-domain>/privacy`
 - Support URL: `https://<your-vercel-domain>/support`

@@ -7,6 +7,8 @@ struct PaywallView: View {
     let triggerReason: String?
     let isPremium: Bool
 
+    @State private var selectedProductID = AppConstants.Subscription.annualProductID
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -25,15 +27,13 @@ struct PaywallView: View {
                             .font(WWTypography.title(32))
                             .foregroundStyle(WWColor.charcoal)
 
-                        Text("Start your 3-day free trial, then continue with annual premium.")
+                        Text("Start your 3-day free trial on annual, or choose weekly access.")
                             .font(WWTypography.body())
                             .foregroundStyle(WWColor.charcoal.opacity(0.75))
 
                         benefits
 
-                        Text(planLabel)
-                            .font(WWTypography.body(18).weight(.semibold))
-                            .foregroundStyle(WWColor.sapphire)
+                        subscriptionOptions
 
                         if let triggerReason {
                             Text("Unlock reason: \(friendlyTrigger(triggerReason))")
@@ -41,8 +41,14 @@ struct PaywallView: View {
                                 .foregroundStyle(WWColor.charcoal.opacity(0.65))
                         }
 
-                        Button("Start Free Trial") {
-                            Task { await subscriptionService.purchaseAnnualSubscription() }
+                        Button(primaryActionTitle) {
+                            Task {
+                                if selectedProductID == AppConstants.Subscription.annualProductID {
+                                    await subscriptionService.purchaseAnnualSubscription()
+                                } else {
+                                    await subscriptionService.purchase(productID: selectedProductID)
+                                }
+                            }
                         }
                         .buttonStyle(WWPrimaryButtonStyle())
 
@@ -87,12 +93,62 @@ struct PaywallView: View {
         .foregroundStyle(WWColor.charcoal)
     }
 
-    private var planLabel: String {
-        if let product = subscriptionService.products.first {
+    private var subscriptionOptions: some View {
+        VStack(spacing: 10) {
+            optionRow(
+                title: "Annual (3-day trial)",
+                subtitle: annualPlanLabel,
+                productID: AppConstants.Subscription.annualProductID
+            )
+
+            optionRow(
+                title: "Weekly",
+                subtitle: weeklyPlanLabel,
+                productID: AppConstants.Subscription.weeklyProductID
+            )
+        }
+    }
+
+    private func optionRow(title: String, subtitle: String, productID: String) -> some View {
+        Button {
+            selectedProductID = productID
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(WWTypography.body(16).weight(.semibold))
+                    Text(subtitle)
+                        .font(WWTypography.detail())
+                        .foregroundStyle(WWColor.charcoal.opacity(0.72))
+                }
+                Spacer()
+                Image(systemName: selectedProductID == productID ? "largecircle.fill.circle" : "circle")
+                    .foregroundStyle(WWColor.sapphire)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.75))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var annualPlanLabel: String {
+        if let product = subscriptionService.annualProduct {
             return "\(product.displayPrice) / \(product.subscription?.subscriptionPeriod.debugLabel ?? "year")"
         }
+        return AppConstants.Subscription.annualDisplayFallback
+    }
 
-        return "Annual premium (3-day free trial)"
+    private var weeklyPlanLabel: String {
+        if let product = subscriptionService.weeklyProduct {
+            return "\(product.displayPrice) / \(product.subscription?.subscriptionPeriod.debugLabel ?? "week")"
+        }
+        return AppConstants.Subscription.weeklyDisplayFallback
+    }
+
+    private var primaryActionTitle: String {
+        selectedProductID == AppConstants.Subscription.annualProductID ? "Start 3-Day Free Trial" : "Continue Weekly"
     }
 
     private func friendlyTrigger(_ value: String) -> String {

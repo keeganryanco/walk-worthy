@@ -47,7 +47,7 @@
 - [ ] TestFlight smoke pass
 
 ## Open blockers requiring owner decision
-- [ ] Final recurring subscription prices
-- [ ] Scripture licensing/source policy final sign-off
+- [x] Final recurring subscription prices
+- [x] Scripture source policy direction
 - [ ] Final icon file export
 - [ ] Final privacy/support URLs after Vercel deploy

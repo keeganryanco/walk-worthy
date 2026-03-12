@@ -18,7 +18,7 @@ final class AppSettings {
         lastSessionDate: Date? = nil,
         preferredReminderHour: Int = 8,
         preferredReminderMinute: Int = 0,
-        scriptureSourcePolicy: String = "public-domain-or-licensed"
+        scriptureSourcePolicy: String = "ai-generated-snippets-no-source-disclosure"
     ) {
         self.id = id
         self.totalSessions = totalSessions

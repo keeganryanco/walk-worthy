@@ -20,7 +20,8 @@ MVP will launch with a hard paywall and 3-day free trial. Product owner wants on
 3. Analytics baseline for experimentation:
 - Track impressions, starts, conversions, trial-to-paid, cancellations, refunds
 - Use App Store Connect analytics plus local event logging immediately
-- Add remote analytics SDK only after privacy review and explicit sign-off
+- Optional website analytics: GA4 on Vercel-hosted legal/support pages
+- Optional iOS analytics after MVP: Firebase Analytics (GA4 for app events)
 
 ## Rationale
 This balances immediate monetization with clear path to data-driven optimization.

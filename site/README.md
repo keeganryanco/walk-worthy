@@ -12,6 +12,12 @@ pnpm install
 pnpm dev
 ```
 
+Optional analytics (Google Analytics 4):
+
+```bash
+export NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+```
+
 ## Build
 ```bash
 pnpm build

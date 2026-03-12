@@ -32,3 +32,4 @@ Planning docs and first-pass implementation scaffold are in place:
 - [Risks](./docs/RISKS.md)
 - [Skills](./docs/skills/README.md)
 - [Patch Tickets](./docs/patches)
+- [App Icon Handoff](./design/app-icon/README.md)

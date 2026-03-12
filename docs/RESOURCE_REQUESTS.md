@@ -6,19 +6,22 @@
 
 2. Subscription pricing decision
 - MVP direction: hard paywall with **3-day free trial** using Apple subscription intro offer
-- Still needed: final recurring price points and subscription product IDs
+- Final recurring prices:
+  - `$5.99/week`
+  - `$35/year`
+- Still needed: final App Store Connect product IDs if different from scaffold defaults
 
 3. Scripture policy for launch
-- Direction: include scripture excerpts in app
-- Still needed: source policy sign-off
-  - Public-domain only, or
-  - licensed translation with usage rights documentation
-  - AI may assist with selection/context, but quoted text must come from approved source text
+- Final direction: AI-generated scripture snippets (summarized or verbatim), constrained to real verse references.
+- UI direction: translation source is not shown to the user.
+- Implementation direction: enforce reference constraints and anti-hallucination validation.
 
 ## Brand and design assets needed before final polish
 1. App icon direction
 - Direction approved: simple prayer icon, single-color, brand-aligned, standout
 - Still needed: final source file (SVG/PDF/1024x1024 PNG)
+- Place final source file at:
+  - `design/app-icon/source/app-icon-1024.png`
 
 2. Color palette approval
 - Approved: `#EAE0C8`, `#9CBA8F`, `#0F52BA`, deep charcoal text
@@ -78,7 +81,5 @@
 
 ## What explicitly requires you
 - Final legal URLs (or approval to use deployed Vercel URLs)
-- Final recurring subscription price points
 - Final icon asset file handoff
-- Scripture translation licensing decision/approval
 - Any licensed font assets

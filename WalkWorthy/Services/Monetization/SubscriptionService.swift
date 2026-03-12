@@ -8,7 +8,10 @@ final class SubscriptionService: ObservableObject {
     @Published private(set) var isLoadingProducts = false
     @Published var errorMessage: String?
 
-    private let productIDs = [AppConstants.Subscription.annualProductID]
+    private let productIDs = [
+        AppConstants.Subscription.weeklyProductID,
+        AppConstants.Subscription.annualProductID
+    ]
 
     func initialize() async {
         await loadProducts()
@@ -29,11 +32,32 @@ final class SubscriptionService: ObservableObject {
         }
     }
 
+    var weeklyProduct: Product? {
+        products.first(where: { $0.id == AppConstants.Subscription.weeklyProductID })
+    }
+
+    var annualProduct: Product? {
+        products.first(where: { $0.id == AppConstants.Subscription.annualProductID })
+    }
+
     func purchaseAnnualSubscription() async {
-        guard let product = products.first(where: { $0.id == AppConstants.Subscription.annualProductID }) ?? products.first else {
+        let preferred = annualProduct ?? weeklyProduct
+        guard let product = preferred else {
             errorMessage = "No subscription product is currently available."
             return
         }
+        await purchase(product)
+    }
+
+    func purchase(productID: String) async {
+        guard let product = products.first(where: { $0.id == productID }) else {
+            errorMessage = "Selected subscription option is unavailable."
+            return
+        }
+        await purchase(product)
+    }
+
+    private func purchase(_ product: Product) async {
 
         do {
             let result = try await product.purchase()
