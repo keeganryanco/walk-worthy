@@ -10,6 +10,7 @@
 		04CE22A82C40E2CDAD1F4DAB /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D17731EE3F1E40977330C56 /* TimelineView.swift */; };
 		0E96F334434C97A575306806 /* WalkWorthyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56FA0FD64E48866B2E48AB /* WalkWorthyApp.swift */; };
 		13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */; };
+		16D814679C281C30AA2C119D /* ScriptureReferenceValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */; };
 		185A5FF8B5C2EE873B98F80B /* PrayerJourney.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C70184C4C4518128D5846F /* PrayerJourney.swift */; };
 		189BA4F4BB9134F3F6C5401C /* OnboardingProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */; };
 		1AFDE0F5A523F91987C0FB90 /* MonetizationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0832666F09D4C16B2C21B2E2 /* MonetizationPolicy.swift */; };
@@ -79,6 +80,7 @@
 		9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIContentClient.swift; sourceTree = "<group>"; };
 		9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A294A8F166F58F2C0B4DE691 /* JourneysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneysView.swift; sourceTree = "<group>"; };
+		A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptureReferenceValidator.swift; sourceTree = "<group>"; };
 		B5830B39F0DDAA2B30FD513E /* AnsweredPrayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsweredPrayer.swift; sourceTree = "<group>"; };
 		B8C4ACA99A63A5F12C93E33E /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		D27A49345B9892A16501131B /* WalkWorthyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyTests.swift; sourceTree = "<group>"; };
@@ -219,6 +221,7 @@
 			isa = PBXGroup;
 			children = (
 				9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */,
+				A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */,
 				6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */,
 				2876CDB2AFB3C4155991256F /* TodayCard.swift */,
 			);
@@ -434,6 +437,7 @@
 				DD3344D858564BC3BEB2A652 /* PrayerEntry.swift in Sources */,
 				185A5FF8B5C2EE873B98F80B /* PrayerJourney.swift in Sources */,
 				53A9F43F95524E37691716A5 /* RootView.swift in Sources */,
+				16D814679C281C30AA2C119D /* ScriptureReferenceValidator.swift in Sources */,
 				4668744C40658B826D6C2C43 /* SettingsView.swift in Sources */,
 				E0AAF49DD407AA39F1D46445 /* SubscriptionService.swift in Sources */,
 				D6DEB312670CD03D4301B1E5 /* TemplateTodayCardGenerator.swift in Sources */,
