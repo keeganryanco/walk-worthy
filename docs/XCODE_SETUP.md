@@ -9,6 +9,7 @@
 Run from repo root:
 
 ```bash
+./scripts/prepare_assets_for_ios.sh
 ./scripts/bootstrap_xcode.sh
 ```
 
@@ -55,8 +56,8 @@ Place logos/icons/fonts here:
 - `design/brand-assets/icons/`
 - `design/brand-assets/fonts/`
 
-Sync to runtime resources:
+Prepare all runtime assets:
 
 ```bash
-./scripts/sync_brand_assets.sh
+./scripts/prepare_assets_for_ios.sh
 ```

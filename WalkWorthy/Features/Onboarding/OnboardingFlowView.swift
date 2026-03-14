@@ -110,11 +110,10 @@ struct OnboardingFlowView: View {
 
     private var introScreen: some View {
         VStack(spacing: 28) {
-            Image(systemName: "leaf.fill")
+            Image("TendMark")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 130, height: 130)
-                .foregroundStyle(WWColor.growGreen)
                 .padding(.top, 20)
 
             Text("Welcome to Tend")
@@ -287,11 +286,10 @@ struct OnboardingFlowView: View {
                 }
             }
 
-            Image(systemName: "leaf.fill")
+            Image("TendMark")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 90, height: 90)
-                .foregroundStyle(WWColor.growGreen)
 
             Spacer(minLength: 220)
         }
@@ -299,11 +297,10 @@ struct OnboardingFlowView: View {
 
     private var reminderScreen: some View {
         VStack(spacing: 20) {
-            Image(systemName: "alarm")
+            Image("OnboardingReminderClock")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 170, height: 170)
-                .foregroundStyle(WWColor.nearBlack)
                 .padding(.top, 10)
 
             Text("Growth is easier when\nit stays in front of you.")
@@ -316,11 +313,16 @@ struct OnboardingFlowView: View {
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
 
-            VStack(spacing: 10) {
-                notificationCard(title: "Tend", message: "Take a moment to tend your prayer today.", time: "8:23 AM")
-                notificationCard(title: "Tend", message: "Your next small step is waiting.", time: "9:11 AM")
-            }
-            .padding(.top, 8)
+            Image("OnboardingNotificationsStack")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(.black.opacity(0.12), lineWidth: 1)
+                )
+                .padding(.top, 8)
 
             Spacer(minLength: 180)
         }
@@ -337,6 +339,12 @@ struct OnboardingFlowView: View {
                     )
                 )
                 .frame(height: 520)
+                .overlay {
+                    Image("OnboardingNotificationsPhone")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(30)
+                }
                 .overlay(alignment: .bottom) {
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
                         .fill(.white.opacity(0.78))
@@ -453,34 +461,6 @@ struct OnboardingFlowView: View {
             )
             .font(WWTypography.heading(48))
         }
-    }
-
-    private func notificationCard(title: String, message: String, time: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "leaf.fill")
-                .foregroundStyle(WWColor.growGreen)
-                .frame(width: 34, height: 34)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(WWTypography.heading(22))
-                Text(message)
-                    .font(WWTypography.body(22))
-            }
-
-            Spacer()
-
-            Text(time)
-                .font(WWTypography.caption(18))
-                .foregroundStyle(WWColor.muted)
-        }
-        .padding(12)
-        .background(WWColor.surface.opacity(0.95))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.black.opacity(0.18), lineWidth: 0.8)
-        )
     }
 
     private func advance() {

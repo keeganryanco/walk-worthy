@@ -6,6 +6,9 @@ if ! command -v xcodegen >/dev/null 2>&1; then
   brew install xcodegen
 fi
 
+echo "Preparing assets for iOS..."
+./scripts/prepare_assets_for_ios.sh
+
 echo "Generating project from project.yml..."
 xcodegen generate
 

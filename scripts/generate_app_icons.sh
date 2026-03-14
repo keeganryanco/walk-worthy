@@ -5,7 +5,29 @@ SRC="design/app-icon/source/app-icon-1024.png"
 OUT="WalkWorthy/Resources/Assets.xcassets/AppIcon.appiconset"
 
 if [[ ! -f "$SRC" ]]; then
+  for candidate in \
+    "design/app-icon/light_icon_large_tend.png" \
+    "design/app-icon/dark_icon_large_tend.png" \
+    "design/app-icon/transparent_icon_large_tend.png"
+  do
+    if [[ -f "$candidate" ]]; then
+      mkdir -p "$(dirname "$SRC")"
+      cp "$candidate" "$SRC"
+      echo "Auto-selected icon source: $candidate"
+      break
+    fi
+  done
+fi
+
+if [[ ! -f "$SRC" ]]; then
   echo "Missing source icon: $SRC"
+  exit 1
+fi
+
+WIDTH=$(sips -g pixelWidth "$SRC" | awk '/pixelWidth/ {print $2}')
+HEIGHT=$(sips -g pixelHeight "$SRC" | awk '/pixelHeight/ {print $2}')
+if [[ "$WIDTH" != "1024" || "$HEIGHT" != "1024" ]]; then
+  echo "Source icon must be 1024x1024, got ${WIDTH}x${HEIGHT}: $SRC"
   exit 1
 fi
 

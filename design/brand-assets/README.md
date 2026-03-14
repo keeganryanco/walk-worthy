@@ -16,8 +16,11 @@ Recommended files:
 - iOS runtime copy target: `WalkWorthy/Resources/BrandAssets/Icons/`
 
 Recommended files:
-- `tend-icon-1024.png` (App Store icon source)
-- Any supporting app icons/illustrations in SVG/PDF/PNG
+- `notification_card_1.png`
+- `notification_card_2.png`
+- `notifications.png`
+- `iphone_notifications.png`
+- `reminders_transparent_light_mode.png`
 
 ## Fonts
 - Source drop: `design/brand-assets/fonts/`
@@ -33,5 +36,10 @@ Accepted formats: `.ttf`, `.otf`
 Run:
 
 ```bash
-./scripts/sync_brand_assets.sh
+./scripts/prepare_assets_for_ios.sh
 ```
+
+This command will:
+1. Sync and normalize brand assets into `WalkWorthy/Resources/BrandAssets/`.
+2. Generate `AppIcon.appiconset`.
+3. Refresh onboarding image assets in `Assets.xcassets`.

@@ -7,34 +7,58 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01CBF2020F395B4028383279 /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */; };
 		04CE22A82C40E2CDAD1F4DAB /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D17731EE3F1E40977330C56 /* TimelineView.swift */; };
 		0E96F334434C97A575306806 /* WalkWorthyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56FA0FD64E48866B2E48AB /* WalkWorthyApp.swift */; };
 		13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */; };
+		16C8F6A4F09C90CC81365482 /* PlusJakartaSans-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */; };
 		16D814679C281C30AA2C119D /* ScriptureReferenceValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */; };
 		185A5FF8B5C2EE873B98F80B /* PrayerJourney.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C70184C4C4518128D5846F /* PrayerJourney.swift */; };
 		189BA4F4BB9134F3F6C5401C /* OnboardingProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */; };
+		1A1DA0DD9888567EFD508519 /* PlusJakartaSans-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F806B97A5D01C7B72D4FCDA1 /* PlusJakartaSans-Light.ttf */; };
+		1A278E1590AD116A80C99220 /* PlusJakartaSans-ExtraLightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF4DB861E074B997695B68A9 /* PlusJakartaSans-ExtraLightItalic.ttf */; };
 		1AFDE0F5A523F91987C0FB90 /* MonetizationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0832666F09D4C16B2C21B2E2 /* MonetizationPolicy.swift */; };
 		1B650A76D634085C5D64680C /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C4ACA99A63A5F12C93E33E /* NotificationService.swift */; };
+		1ECFB12054E159B11F7D2B8E /* PlusJakartaSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */; };
+		2B9DBC262DBDF9B0AE6A5232 /* reminders_transparent_light_mode.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */; };
+		2FDA485F2271C1D674765BE5 /* PlusJakartaSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BBC2416B321B36D99A5216EC /* PlusJakartaSans-ExtraBold.ttf */; };
 		3199710076C72D9AE653E90A /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067C7842AD275F8263788578 /* AppSettings.swift */; };
+		33CB4471A808255036D68AA8 /* PlusJakartaSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B2EFC8C26F46586DC9839157 /* PlusJakartaSans-Regular.ttf */; };
 		397576735BE817F56C4CF279 /* WWComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54DDACB6A90056567E5D567 /* WWComponents.swift */; };
 		3AAF3F5520EE1467BEA0B6EB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F31C623BA3D2509776849C8 /* MainTabView.swift */; };
 		40D82B10B05F83A90DB02D07 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481329C6E4C002219855F1A2 /* TodayView.swift */; };
+		44A7BA008D034E7BFD20317A /* PlusJakartaSans-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BF31E8DF66CA451D78D50358 /* PlusJakartaSans-ExtraLight.ttf */; };
 		4668744C40658B826D6C2C43 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C72E46496A1ABD75C2404A /* SettingsView.swift */; };
+		4751C09A808B9C299E6B1779 /* notification_card_2.png in Resources */ = {isa = PBXBuildFile; fileRef = 6B142C2B1B2FF4743FEC1D87 /* notification_card_2.png */; };
+		47B5A900E5F6661FEFF8856F /* reminders_transparent_light_mode.png in Resources */ = {isa = PBXBuildFile; fileRef = 32553731CDFE3AD38F36B43E /* reminders_transparent_light_mode.png */; };
 		53A9F43F95524E37691716A5 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB51F91B80B206B0A04EE75 /* RootView.swift */; };
+		5BE6A5BD13AC9BF62C9790DF /* PlusJakartaSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D44C9117DA82D3B52145C051 /* PlusJakartaSans-Bold.ttf */; };
+		5CA6070FEB39CE88880CFAE8 /* PlusJakartaSans-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8D90D17527B3E2DCA2B1CD34 /* PlusJakartaSans-ExtraBoldItalic.ttf */; };
 		64FE2BCF472740B974D56799 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */; };
 		6DA808153C772979C9BFC96E /* WalkWorthyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C18C8E45D3B58226D593CA /* WalkWorthyUITests.swift */; };
 		6E6E0502968106AED315DD36 /* WWTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9774447A31BEB96034311EB /* WWTypography.swift */; };
 		74BEE2D083823252DAEC838E /* AIContentClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */; };
+		7623E0EE0B7758143CE21CC7 /* PlusJakartaSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 709EF61D7C9C0E66F5683CC2 /* PlusJakartaSans-Italic.ttf */; };
+		7EA130D42FACD7FD2FA42FDB /* PlusJakartaSans-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3C8C2C6781D5FCE72FA779A0 /* PlusJakartaSans-Italic-VariableFont_wght.ttf */; };
+		87948FD446BAEF00A3166557 /* PlusJakartaSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5AE90E4D7EF0D60B6AD3EB45 /* PlusJakartaSans-SemiBold.ttf */; };
+		906921FF1F8246FBBE35E5CE /* notification_card_1.png in Resources */ = {isa = PBXBuildFile; fileRef = 51F84D3407F135FDCC04C988 /* notification_card_1.png */; };
+		9539B09CAD4BB0763B6E637E /* PlusJakartaSans-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 649A8F9F71F1C4121DCBC5F5 /* PlusJakartaSans-LightItalic.ttf */; };
 		9DF34333BB816EB5989CBAE1 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172AE255F96BEAD1C99935CE /* AppConstants.swift */; };
 		A2A68B764DBA39731EC34CE2 /* JourneysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A294A8F166F58F2C0B4DE691 /* JourneysView.swift */; };
 		A7CCBD453DC37BDA488815EC /* TodayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2876CDB2AFB3C4155991256F /* TodayCard.swift */; };
+		B06D8C4642A14B35226E8742 /* PlusJakartaSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EC4C2A74FEC61E8A900B2067 /* PlusJakartaSans-Medium.ttf */; };
 		B93230BDFBA70CF641D9ADC0 /* WWColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77EC2817706030DE811C7189 /* WWColor.swift */; };
 		BDF46555FD65216E1E75170B /* WalkWorthyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27A49345B9892A16501131B /* WalkWorthyTests.swift */; };
 		C37B71AE9BCE672E42CDD5B3 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79139B1B772C8438407A86D /* OnboardingFlowView.swift */; };
 		D4E5ABA5A6C53F7539D6E65E /* AnsweredPrayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5830B39F0DDAA2B30FD513E /* AnsweredPrayer.swift */; };
 		D6DEB312670CD03D4301B1E5 /* TemplateTodayCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */; };
+		DA61263596DFF2BD44567C0E /* notifications.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6C6499656B7905EBB3F8AAEF /* notifications.svg */; };
 		DD3344D858564BC3BEB2A652 /* PrayerEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4CD94872187AAA242E7115 /* PrayerEntry.swift */; };
+		E004F2DC61854E4C626BCFC8 /* iphone_notifications.png in Resources */ = {isa = PBXBuildFile; fileRef = DC3DAB04A87EE0C4FC2B75B2 /* iphone_notifications.png */; };
 		E0AAF49DD407AA39F1D46445 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8749975FC64A74D869B254EB /* SubscriptionService.swift */; };
+		E63E9832B1C2C450FF353157 /* PlusJakartaSans-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */; };
+		EE2F2488E5666B3F15FB2BF8 /* PlusJakartaSans-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1BAD6D0F5F858145877B1D02 /* PlusJakartaSans-MediumItalic.ttf */; };
+		FD58A773E561767184330C7E /* notifications.png in Resources */ = {isa = PBXBuildFile; fileRef = BBE3FF48D5DD404041C9E583 /* notifications.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,35 +85,59 @@
 		0D17731EE3F1E40977330C56 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		16E856243CDE0AD2E5949B12 /* WalkWorthyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WalkWorthyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		172AE255F96BEAD1C99935CE /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+		1BAD6D0F5F858145877B1D02 /* PlusJakartaSans-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-MediumItalic.ttf"; sourceTree = "<group>"; };
 		1E56FA0FD64E48866B2E48AB /* WalkWorthyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyApp.swift; sourceTree = "<group>"; };
 		21DB08E0092A4010FEA21A33 /* WalkWorthyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WalkWorthyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2876CDB2AFB3C4155991256F /* TodayCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayCard.swift; sourceTree = "<group>"; };
 		29C72E46496A1ABD75C2404A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		32553731CDFE3AD38F36B43E /* reminders_transparent_light_mode.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = reminders_transparent_light_mode.png; sourceTree = "<group>"; };
+		3C8C2C6781D5FCE72FA779A0 /* PlusJakartaSans-Italic-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Italic-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		45B475F4494B399013766BBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		481329C6E4C002219855F1A2 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		51F84D3407F135FDCC04C988 /* notification_card_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = notification_card_1.png; sourceTree = "<group>"; };
 		52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		5588915278F314EF030E71D6 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		5AE90E4D7EF0D60B6AD3EB45 /* PlusJakartaSans-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-SemiBold.ttf"; sourceTree = "<group>"; };
 		5B6A33F3980DEECE858DBDEA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		649A8F9F71F1C4121DCBC5F5 /* PlusJakartaSans-LightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-LightItalic.ttf"; sourceTree = "<group>"; };
 		68C70184C4C4518128D5846F /* PrayerJourney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerJourney.swift; sourceTree = "<group>"; };
 		6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateTodayCardGenerator.swift; sourceTree = "<group>"; };
+		6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */ = {isa = PBXFileReference; path = reminders_transparent_light_mode.svg; sourceTree = "<group>"; };
+		6B142C2B1B2FF4743FEC1D87 /* notification_card_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = notification_card_2.png; sourceTree = "<group>"; };
+		6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Variable.ttf"; sourceTree = "<group>"; };
+		6C6499656B7905EBB3F8AAEF /* notifications.svg */ = {isa = PBXFileReference; path = notifications.svg; sourceTree = "<group>"; };
+		709EF61D7C9C0E66F5683CC2 /* PlusJakartaSans-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Italic.ttf"; sourceTree = "<group>"; };
 		71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WalkWorthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C18C8E45D3B58226D593CA /* WalkWorthyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyUITests.swift; sourceTree = "<group>"; };
 		77EC2817706030DE811C7189 /* WWColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWColor.swift; sourceTree = "<group>"; };
 		7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProfile.swift; sourceTree = "<group>"; };
 		7F31C623BA3D2509776849C8 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		8749975FC64A74D869B254EB /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		8D90D17527B3E2DCA2B1CD34 /* PlusJakartaSans-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		8EB51F91B80B206B0A04EE75 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIContentClient.swift; sourceTree = "<group>"; };
+		9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A294A8F166F58F2C0B4DE691 /* JourneysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneysView.swift; sourceTree = "<group>"; };
 		A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptureReferenceValidator.swift; sourceTree = "<group>"; };
+		B2EFC8C26F46586DC9839157 /* PlusJakartaSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Regular.ttf"; sourceTree = "<group>"; };
 		B5830B39F0DDAA2B30FD513E /* AnsweredPrayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsweredPrayer.swift; sourceTree = "<group>"; };
 		B8C4ACA99A63A5F12C93E33E /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		BBC2416B321B36D99A5216EC /* PlusJakartaSans-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraBold.ttf"; sourceTree = "<group>"; };
+		BBE3FF48D5DD404041C9E583 /* notifications.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = notifications.png; sourceTree = "<group>"; };
+		BF31E8DF66CA451D78D50358 /* PlusJakartaSans-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraLight.ttf"; sourceTree = "<group>"; };
 		D27A49345B9892A16501131B /* WalkWorthyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyTests.swift; sourceTree = "<group>"; };
+		D44C9117DA82D3B52145C051 /* PlusJakartaSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Bold.ttf"; sourceTree = "<group>"; };
 		D4C76214751E216C030850F5 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		DC3DAB04A87EE0C4FC2B75B2 /* iphone_notifications.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iphone_notifications.png; sourceTree = "<group>"; };
+		DF4DB861E074B997695B68A9 /* PlusJakartaSans-ExtraLightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraLightItalic.ttf"; sourceTree = "<group>"; };
+		DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
 		E9774447A31BEB96034311EB /* WWTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWTypography.swift; sourceTree = "<group>"; };
+		EC4C2A74FEC61E8A900B2067 /* PlusJakartaSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Medium.ttf"; sourceTree = "<group>"; };
 		F54DDACB6A90056567E5D567 /* WWComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWComponents.swift; sourceTree = "<group>"; };
 		F79139B1B772C8438407A86D /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
+		F806B97A5D01C7B72D4FCDA1 /* PlusJakartaSans-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Light.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -296,6 +344,13 @@
 			isa = PBXGroup;
 			children = (
 				5B6A33F3980DEECE858DBDEA /* .gitkeep */,
+				DC3DAB04A87EE0C4FC2B75B2 /* iphone_notifications.png */,
+				51F84D3407F135FDCC04C988 /* notification_card_1.png */,
+				6B142C2B1B2FF4743FEC1D87 /* notification_card_2.png */,
+				BBE3FF48D5DD404041C9E583 /* notifications.png */,
+				6C6499656B7905EBB3F8AAEF /* notifications.svg */,
+				32553731CDFE3AD38F36B43E /* reminders_transparent_light_mode.png */,
+				6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */,
 			);
 			path = Icons;
 			sourceTree = "<group>";
@@ -338,6 +393,23 @@
 			isa = PBXGroup;
 			children = (
 				D4C76214751E216C030850F5 /* .gitkeep */,
+				6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */,
+				D44C9117DA82D3B52145C051 /* PlusJakartaSans-Bold.ttf */,
+				80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */,
+				BBC2416B321B36D99A5216EC /* PlusJakartaSans-ExtraBold.ttf */,
+				8D90D17527B3E2DCA2B1CD34 /* PlusJakartaSans-ExtraBoldItalic.ttf */,
+				BF31E8DF66CA451D78D50358 /* PlusJakartaSans-ExtraLight.ttf */,
+				DF4DB861E074B997695B68A9 /* PlusJakartaSans-ExtraLightItalic.ttf */,
+				3C8C2C6781D5FCE72FA779A0 /* PlusJakartaSans-Italic-VariableFont_wght.ttf */,
+				709EF61D7C9C0E66F5683CC2 /* PlusJakartaSans-Italic.ttf */,
+				F806B97A5D01C7B72D4FCDA1 /* PlusJakartaSans-Light.ttf */,
+				649A8F9F71F1C4121DCBC5F5 /* PlusJakartaSans-LightItalic.ttf */,
+				EC4C2A74FEC61E8A900B2067 /* PlusJakartaSans-Medium.ttf */,
+				1BAD6D0F5F858145877B1D02 /* PlusJakartaSans-MediumItalic.ttf */,
+				B2EFC8C26F46586DC9839157 /* PlusJakartaSans-Regular.ttf */,
+				5AE90E4D7EF0D60B6AD3EB45 /* PlusJakartaSans-SemiBold.ttf */,
+				DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */,
+				9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -443,6 +515,30 @@
 			buildActionMask = 2147483647;
 			files = (
 				64FE2BCF472740B974D56799 /* Assets.xcassets in Resources */,
+				01CBF2020F395B4028383279 /* Inter-Variable.ttf in Resources */,
+				5BE6A5BD13AC9BF62C9790DF /* PlusJakartaSans-Bold.ttf in Resources */,
+				1ECFB12054E159B11F7D2B8E /* PlusJakartaSans-BoldItalic.ttf in Resources */,
+				2FDA485F2271C1D674765BE5 /* PlusJakartaSans-ExtraBold.ttf in Resources */,
+				5CA6070FEB39CE88880CFAE8 /* PlusJakartaSans-ExtraBoldItalic.ttf in Resources */,
+				44A7BA008D034E7BFD20317A /* PlusJakartaSans-ExtraLight.ttf in Resources */,
+				1A278E1590AD116A80C99220 /* PlusJakartaSans-ExtraLightItalic.ttf in Resources */,
+				7EA130D42FACD7FD2FA42FDB /* PlusJakartaSans-Italic-VariableFont_wght.ttf in Resources */,
+				7623E0EE0B7758143CE21CC7 /* PlusJakartaSans-Italic.ttf in Resources */,
+				1A1DA0DD9888567EFD508519 /* PlusJakartaSans-Light.ttf in Resources */,
+				9539B09CAD4BB0763B6E637E /* PlusJakartaSans-LightItalic.ttf in Resources */,
+				B06D8C4642A14B35226E8742 /* PlusJakartaSans-Medium.ttf in Resources */,
+				EE2F2488E5666B3F15FB2BF8 /* PlusJakartaSans-MediumItalic.ttf in Resources */,
+				33CB4471A808255036D68AA8 /* PlusJakartaSans-Regular.ttf in Resources */,
+				87948FD446BAEF00A3166557 /* PlusJakartaSans-SemiBold.ttf in Resources */,
+				16C8F6A4F09C90CC81365482 /* PlusJakartaSans-SemiBoldItalic.ttf in Resources */,
+				E63E9832B1C2C450FF353157 /* PlusJakartaSans-VariableFont_wght.ttf in Resources */,
+				E004F2DC61854E4C626BCFC8 /* iphone_notifications.png in Resources */,
+				906921FF1F8246FBBE35E5CE /* notification_card_1.png in Resources */,
+				4751C09A808B9C299E6B1779 /* notification_card_2.png in Resources */,
+				FD58A773E561767184330C7E /* notifications.png in Resources */,
+				DA61263596DFF2BD44567C0E /* notifications.svg in Resources */,
+				47B5A900E5F6661FEFF8856F /* reminders_transparent_light_mode.png in Resources */,
+				2B9DBC262DBDF9B0AE6A5232 /* reminders_transparent_light_mode.svg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -517,6 +613,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -655,6 +752,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -708,6 +806,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -725,6 +824,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
