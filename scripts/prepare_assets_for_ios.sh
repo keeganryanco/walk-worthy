@@ -17,7 +17,11 @@ mkdir -p "$ASSET_ROOT/OnboardingReminderClock.imageset"
 mkdir -p "$ASSET_ROOT/OnboardingNotificationsStack.imageset"
 mkdir -p "$ASSET_ROOT/OnboardingNotificationsPhone.imageset"
 
-cp design/app-icon/light_icon_med_tend.png "$ASSET_ROOT/TendMark.imageset/tend-mark.png"
+if [[ -f design/app-icon/transparent_icon_large_tend.png ]]; then
+  cp design/app-icon/transparent_icon_large_tend.png "$ASSET_ROOT/TendMark.imageset/tend-mark.png"
+else
+  cp design/app-icon/light_icon_med_tend.png "$ASSET_ROOT/TendMark.imageset/tend-mark.png"
+fi
 cp design/brand-assets/icons/reminders_transparent_light_mode.png "$ASSET_ROOT/OnboardingReminderClock.imageset/reminder-clock.png"
 cp design/brand-assets/icons/notifications.png "$ASSET_ROOT/OnboardingNotificationsStack.imageset/notifications-stack.png"
 cp design/brand-assets/icons/iphone_notifications.png "$ASSET_ROOT/OnboardingNotificationsPhone.imageset/notifications-phone.png"

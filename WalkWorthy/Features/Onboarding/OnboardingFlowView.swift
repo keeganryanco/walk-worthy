@@ -41,26 +41,40 @@ struct OnboardingFlowView: View {
         "more peace in my day", "better habits", "more trust in God", "more courage to act", "more consistency", "feel less stuck", "more clarity"
     ]
     private let supportOptions = ["daily check-ins", "few times a week", "when I need guidance most"]
+    private let figmaCanvasSize = CGSize(width: 590, height: 1278)
 
     var body: some View {
-        ZStack {
-            backgroundColor
-                .ignoresSafeArea()
+        GeometryReader { proxy in
+            let scale = canvasScale(for: proxy.size)
 
-            VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    stepContent
-                        .padding(.horizontal, 24)
-                        .padding(.top, 70)
-                        .padding(.bottom, 24)
+            ZStack {
+                backgroundColor
+                    .ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    ScrollView(showsIndicators: false) {
+                        stepContent
+                            .padding(.horizontal, 24)
+                            .padding(.top, 70)
+                            .padding(.bottom, 24)
+                    }
+
+                    bottomCTA
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 26)
+                        .background(backgroundColor)
                 }
-
-                bottomCTA
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 26)
-                    .background(backgroundColor)
+                .frame(width: figmaCanvasSize.width, height: figmaCanvasSize.height, alignment: .top)
+                .scaleEffect(scale, anchor: .top)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
+    }
+
+    private func canvasScale(for size: CGSize) -> CGFloat {
+        let widthScale = size.width / figmaCanvasSize.width
+        let heightScale = size.height / figmaCanvasSize.height
+        return min(1, min(widthScale, heightScale))
     }
 
     private var backgroundColor: Color {
