@@ -10,14 +10,16 @@ Create a calm, reverent, modern spiritual experience.
 - hopeful
 
 ## Colors
-- Background: `#EAE0C8`
-- Accent: `#0F52BA`
-- Secondary: `#9CBA8F`
-- Text: deep charcoal
+- Background: `#FFFFFF`
+- Primary: `#4CAF7D`
+- Accent: `#F0C060`
+- Surface: `#F5F5F3`
+- Text: `#1A1A1A`
+- Muted: `#888884`
 
 ## Typography
-- Headers: editorial serif
-- Body: clean sans-serif
+- Display/Headings: Plus Jakarta Sans
+- Body/Caption: Inter
 
 ## Layout rules
 - generous spacing

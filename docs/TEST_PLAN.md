@@ -1,7 +1,7 @@
 # Test Plan (MVP)
 
 ## Scope
-Validate that Walk Worthy delivers a stable offline-first daily loop, accurate entitlement behavior, and App Review-safe UX/content behavior.
+Validate that Tend delivers a stable offline-first daily loop, accurate entitlement behavior, and App Review-safe UX/content behavior.
 
 ## Test layers
 1. Unit tests

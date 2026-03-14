@@ -1,7 +1,7 @@
 # App Concept (Concise)
 
 ## One-line concept
-Walk Worthy helps Christians turn prayer into one concrete daily act of faith and short reflection, then tracks outcomes over time.
+Tend helps Christians turn prayer into one concrete daily act of faith and short reflection, then tracks outcomes over time.
 
 ## Core loop
 1. Pray (prompt)

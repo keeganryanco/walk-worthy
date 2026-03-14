@@ -2,7 +2,7 @@
 
 ## Decisions resolved
 1. Final app name confirmation
-- Final: **Walk Worthy**
+- Final: **Tend**
 
 2. Subscription pricing decision
 - MVP direction: hard paywall with **3-day free trial** using Apple subscription intro offer
@@ -21,14 +21,25 @@
 - Direction approved: simple prayer icon, single-color, brand-aligned, standout
 - Still needed: final source file (SVG/PDF/1024x1024 PNG)
 - Place final source file at:
-  - `design/app-icon/source/app-icon-1024.png`
+  - `design/brand-assets/icons/tend-icon-1024.png`
 
 2. Color palette approval
-- Approved: `#EAE0C8`, `#9CBA8F`, `#0F52BA`, deep charcoal text
+- Approved:
+  - White `#FFFFFF`
+  - Grow green `#4CAF7D`
+  - Morning gold `#F0C060`
+  - Surface `#F5F5F3`
+  - Near black `#1A1A1A`
+  - Muted `#888884`
+  - Dark mode background `#0F0F0F`
 
 3. Typography confirmation
-- Direction approved: creative editorial fonts near Playfair/Instrument Serif vibe
-- Still needed: final font files/licensing if using non-system fonts
+- Direction approved:
+  - Plus Jakarta Sans (Display/Heading)
+  - Inter (Body/Caption)
+- Still needed: final font files/licensing for app bundling
+- Place fonts in:
+  - `design/brand-assets/fonts/`
 
 4. Screenshot copy direction
 - Deferred for later; story format direction acknowledged (phone + feature narrative slides)
@@ -56,7 +67,7 @@
 - Pending deploy: `site/` is ready; provide final deployed URL
 
 4. Marketing URL (optional but recommended)
-- Landing page URL for Walk Worthy
+- Landing page URL for Tend
 
 5. Copyright holder line
 - Person/company legal owner name

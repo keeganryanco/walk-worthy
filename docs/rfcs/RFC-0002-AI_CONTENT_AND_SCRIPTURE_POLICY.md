@@ -5,7 +5,7 @@
 - **Owner:** Product + Engineering
 
 ## Context
-Walk Worthy will lean into AI for personalization of prayer prompts and action steps. The product also intends to include scripture excerpts.
+Tend will lean into AI for personalization of prayer prompts and action steps. The product also intends to include scripture excerpts.
 
 ## Decision
 1. AI is allowed for:

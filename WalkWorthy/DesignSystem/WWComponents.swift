@@ -1,14 +1,18 @@
 import SwiftUI
 
 struct WWPrimaryButtonStyle: ButtonStyle {
+    var background: Color = WWColor.growGreen
+    var foreground: Color = .white
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(WWTypography.body(17).weight(.semibold))
-            .foregroundStyle(.white)
+            .font(WWTypography.heading(34))
+            .foregroundStyle(foreground)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(WWColor.sapphire)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, 18)
+            .background(background)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.16), radius: 4, y: 2)
             .opacity(configuration.isPressed ? 0.92 : 1)
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
     }
@@ -25,11 +29,34 @@ struct WWCard<Content: View>: View {
         content
             .padding(20)
             .background(WWColor.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(WWColor.sage.opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(.black.opacity(0.03), lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
+            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+    }
+}
+
+struct TendPillButton: View {
+    let title: String
+    var selected: Bool = false
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(WWTypography.heading(35))
+                .foregroundStyle(selected ? WWColor.nearBlack : WWColor.muted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(WWColor.surface)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(selected ? WWColor.growGreen : .clear, lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        }
+        .buttonStyle(.plain)
     }
 }

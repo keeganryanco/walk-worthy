@@ -26,12 +26,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [WWColor.alabaster, WWColor.alabaster.opacity(0.9), WWColor.sage.opacity(0.35)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            WWColor.white.ignoresSafeArea()
 
             if let profile {
                 MainTabView(

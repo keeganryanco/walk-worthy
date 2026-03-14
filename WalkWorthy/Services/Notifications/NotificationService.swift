@@ -30,7 +30,7 @@ final class NotificationService: ObservableObject {
         components.minute = minute
 
         let content = UNMutableNotificationContent()
-        content.title = "Walk Worthy"
+        content.title = "Tend"
         content.body = "Pray, take one step, and reflect."
         content.sound = .default
 

@@ -3,8 +3,8 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Walk Worthy",
-  description: "Support and privacy information for Walk Worthy."
+  title: "Tend",
+  description: "Support and privacy information for Tend."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

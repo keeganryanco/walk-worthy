@@ -43,18 +43,20 @@ Or in Xcode:
 
 ## StoreKit local testing
 Use the product IDs already scaffolded in app code:
-- `co.keeganryan.walkworthy.premium.weekly`
-- `co.keeganryan.walkworthy.premium.annual`
+- `co.keeganryan.tend.premium.weekly`
+- `co.keeganryan.tend.premium.annual`
 
 You can attach a StoreKit config file to the scheme in Xcode:
 - `Product > Scheme > Edit Scheme... > Run > Options > StoreKit Configuration`
 
-## App icon handoff
-Place icon source at:
-- `design/app-icon/source/app-icon-1024.png`
+## Brand asset handoff
+Place logos/icons/fonts here:
+- `design/brand-assets/logos/`
+- `design/brand-assets/icons/`
+- `design/brand-assets/fonts/`
 
-Generate icon variants:
+Sync to runtime resources:
 
 ```bash
-./scripts/generate_app_icons.sh
+./scripts/sync_brand_assets.sh
 ```

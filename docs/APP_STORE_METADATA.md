@@ -5,11 +5,11 @@ _As of March 12, 2026, based on Apple App Store Connect Help._
 ## A. Required app-level fields (App Information)
 1. **Name** (required, localized)
 - 2-30 characters
-- Proposed: `Walk Worthy`
+- Proposed: `Tend`
 
 2. **Subtitle** (localized; used on product page)
 - Up to 30 characters
-- Proposed: `Pray & Do`
+- Proposed: `pray. act. grow.`
 
 3. **Primary category** (required)
 - Proposed candidate: `Lifestyle`
@@ -75,13 +75,13 @@ For each subscription product:
 6. App Review screenshot (required)
 7. Availability + storefront pricing (required)
 
-## F. Suggested initial metadata draft for Walk Worthy
-1. App Name: `Walk Worthy`
-2. Subtitle: `Pray & Do`
+## F. Suggested initial metadata draft for Tend
+1. App Name: `Tend`
+2. Subtitle: `pray. act. grow.`
 3. Promotional Text (optional, up to 170 chars):
 - `Turn prayer into one faithful next step each day.`
 4. Description (draft opening):
-- `Walk Worthy helps you pray, take one concrete step, and reflect on what changes over time.`
+- `Tend helps you pray, take one concrete step, and reflect on what changes over time.`
 5. Keyword starter set (must fit 100 bytes):
 - `prayer,christian,faith,devotional,reflection,discipline`
 6. Support email contact (for support destination page):

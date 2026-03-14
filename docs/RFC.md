@@ -1,12 +1,12 @@
-# RFC: Walk Worthy MVP
+# RFC: Tend MVP
 
 - **Status:** Active Draft (Implementation Started)
 - **Date:** March 12, 2026
 - **Platform:** iOS-first
-- **Subtitle:** Pray & Do
+- **Subtitle:** pray. act. grow.
 
 ## 1. Overview
-Walk Worthy is a private, local-first Christian prayer app that creates a repeatable daily practice:
+Tend is a private, local-first Christian prayer app that creates a repeatable daily practice:
 
 **Pray -> Do one concrete step -> Reflect -> See what changed over time.**
 

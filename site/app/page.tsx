@@ -2,7 +2,7 @@ export default function HomePage() {
   return (
     <main className="wrapper">
       <section className="card">
-        <h1>Walk Worthy</h1>
+        <h1>Tend</h1>
         <p>Official support and privacy resources.</p>
         <ul>
           <li>

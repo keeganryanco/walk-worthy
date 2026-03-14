@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct WalkWorthyApp: App {
+struct TendApp: App {
     @StateObject private var subscriptionService = SubscriptionService()
     @StateObject private var notificationService = NotificationService()
     private let modelContainer: ModelContainer

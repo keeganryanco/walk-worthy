@@ -1,13 +1,13 @@
-# Walk Worthy
+# Tend
 
-**Subtitle:** Pray & Do
+**Subtitle:** pray. act. grow.
 
-Walk Worthy is an iOS-first, private, offline-first Christian prayer app built around one daily rhythm:
+Tend is an iOS-first, private, offline-first Christian prayer app built around one daily rhythm:
 
 **Pray -> Take one concrete step -> Reflect -> Track what changed over time.**
 
 ## Product concept (concise)
-Walk Worthy helps users move from intention to faithful action in under a minute a day. It is not a social network or content library. It is a personal spiritual discipline tool focused on practical follow-through.
+Tend helps users move from intention to faithful action in under a minute a day. It is not a social network or content library. It is a personal spiritual discipline tool focused on practical follow-through.
 
 ## MVP defaults
 - SwiftUI app architecture
@@ -32,5 +32,6 @@ Planning docs and first-pass implementation scaffold are in place:
 - [Risks](./docs/RISKS.md)
 - [Skills](./docs/skills/README.md)
 - [Patch Tickets](./docs/patches)
-- [App Icon Handoff](./design/app-icon/README.md)
+- [Brand Guidelines](./docs/BRAND_GUIDELINES.md)
+- [Brand Asset Drop Zone](./design/brand-assets/README.md)
 - [Xcode Setup](./docs/XCODE_SETUP.md)

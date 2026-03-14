@@ -1,4 +1,4 @@
-# Walk Worthy Legal Site
+# Tend Legal Site
 
 Minimal Next.js site for App Store-required URLs.
 

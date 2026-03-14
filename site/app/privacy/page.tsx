@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Walk Worthy Privacy Policy"
+  title: "Tend Privacy Policy"
 };
 
 export default function PrivacyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
 
         <h2>Overview</h2>
         <p>
-          Walk Worthy is designed as a local-first prayer app. For MVP, your prayer content is stored on your device.
+          Tend is designed as a local-first prayer app. For MVP, your prayer content is stored on your device.
         </p>
 
         <h2>Data We Collect</h2>

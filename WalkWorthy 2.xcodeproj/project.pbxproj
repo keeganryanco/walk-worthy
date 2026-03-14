@@ -68,11 +68,9 @@
 		45B475F4494B399013766BBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		481329C6E4C002219855F1A2 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
-		5588915278F314EF030E71D6 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
-		5B6A33F3980DEECE858DBDEA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		68C70184C4C4518128D5846F /* PrayerJourney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerJourney.swift; sourceTree = "<group>"; };
 		6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateTodayCardGenerator.swift; sourceTree = "<group>"; };
-		71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WalkWorthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WalkWorthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C18C8E45D3B58226D593CA /* WalkWorthyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyUITests.swift; sourceTree = "<group>"; };
 		77EC2817706030DE811C7189 /* WWColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWColor.swift; sourceTree = "<group>"; };
 		7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProfile.swift; sourceTree = "<group>"; };
@@ -86,7 +84,6 @@
 		B5830B39F0DDAA2B30FD513E /* AnsweredPrayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsweredPrayer.swift; sourceTree = "<group>"; };
 		B8C4ACA99A63A5F12C93E33E /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		D27A49345B9892A16501131B /* WalkWorthyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyTests.swift; sourceTree = "<group>"; };
-		D4C76214751E216C030850F5 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		E9774447A31BEB96034311EB /* WWTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWTypography.swift; sourceTree = "<group>"; };
 		F54DDACB6A90056567E5D567 /* WWComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWComponents.swift; sourceTree = "<group>"; };
 		F79139B1B772C8438407A86D /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
@@ -138,16 +135,6 @@
 				0832666F09D4C16B2C21B2E2 /* MonetizationPolicy.swift */,
 			);
 			path = Policies;
-			sourceTree = "<group>";
-		};
-		368A926175A43136E1EE9B68 /* BrandAssets */ = {
-			isa = PBXGroup;
-			children = (
-				FBFA97478F15484BF47DA628 /* Fonts */,
-				D13EAD956A1858D9A121EB24 /* Icons */,
-				C687CC117DD4D10F3AB33061 /* Logos */,
-			);
-			path = BrandAssets;
 			sourceTree = "<group>";
 		};
 		4750F3C830B43CA714678F10 /* WalkWorthyTests */ = {
@@ -208,7 +195,6 @@
 			children = (
 				9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */,
 				45B475F4494B399013766BBD /* Info.plist */,
-				368A926175A43136E1EE9B68 /* BrandAssets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -274,14 +260,6 @@
 			path = WalkWorthy;
 			sourceTree = "<group>";
 		};
-		C687CC117DD4D10F3AB33061 /* Logos */ = {
-			isa = PBXGroup;
-			children = (
-				5588915278F314EF030E71D6 /* .gitkeep */,
-			);
-			path = Logos;
-			sourceTree = "<group>";
-		};
 		CD5D97978A6B00D5BA866EF0 = {
 			isa = PBXGroup;
 			children = (
@@ -290,14 +268,6 @@
 				5DB9BA9E5FAB953725E0139E /* WalkWorthyUITests */,
 				27EA7A2B062FCFE7DA8C084E /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		D13EAD956A1858D9A121EB24 /* Icons */ = {
-			isa = PBXGroup;
-			children = (
-				5B6A33F3980DEECE858DBDEA /* .gitkeep */,
-			);
-			path = Icons;
 			sourceTree = "<group>";
 		};
 		DD308E99B607DC6718A40DFC /* Notifications */ = {
@@ -332,14 +302,6 @@
 				172AE255F96BEAD1C99935CE /* AppConstants.swift */,
 			);
 			path = Shared;
-			sourceTree = "<group>";
-		};
-		FBFA97478F15484BF47DA628 /* Fonts */ = {
-			isa = PBXGroup;
-			children = (
-				D4C76214751E216C030850F5 /* .gitkeep */,
-			);
-			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -674,6 +636,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 963UAMD46W;
 				INFOPLIST_FILE = WalkWorthy/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -692,6 +655,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 963UAMD46W;
 				INFOPLIST_FILE = WalkWorthy/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

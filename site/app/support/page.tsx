@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Walk Worthy Support"
+  title: "Tend Support"
 };
 
 export default function SupportPage() {
@@ -7,7 +7,7 @@ export default function SupportPage() {
     <main className="wrapper">
       <article className="card prose">
         <h1>Support</h1>
-        <p>If you need help with Walk Worthy, email:</p>
+        <p>If you need help with Tend, email:</p>
         <p>
           <a href="mailto:keegan.ryan@keeganryan.co">keegan.ryan@keeganryan.co</a>
         </p>
