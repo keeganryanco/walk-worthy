@@ -46,6 +46,8 @@ struct OnboardingFlowView: View {
     var body: some View {
         GeometryReader { proxy in
             let scale = canvasScale(for: proxy.size)
+            let scaledWidth = figmaCanvasSize.width * scale
+            let scaledHeight = figmaCanvasSize.height * scale
 
             ZStack {
                 backgroundColor
@@ -66,6 +68,7 @@ struct OnboardingFlowView: View {
                 }
                 .frame(width: figmaCanvasSize.width, height: figmaCanvasSize.height, alignment: .top)
                 .scaleEffect(scale, anchor: .top)
+                .frame(width: scaledWidth, height: scaledHeight, alignment: .top)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }

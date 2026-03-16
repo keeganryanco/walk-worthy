@@ -39,7 +39,6 @@ struct RootView: View {
                 OnboardingFlowView { completedProfile in
                     seedInitialExperience(with: completedProfile)
                 }
-                .padding(.horizontal, 20)
             }
         }
         .task {
