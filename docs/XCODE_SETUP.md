@@ -42,6 +42,19 @@ Or in Xcode:
 3. Destination: iPhone simulator (e.g., latest iPhone runtime).
 4. Press Run (`Cmd+R`).
 
+## Fresh Onboarding Retest (recommended)
+Use this when you want onboarding from a clean slate and no duplicate test-runner app icon:
+
+```bash
+./scripts/sim_fresh_start.sh
+```
+
+Optional simulator override:
+
+```bash
+./scripts/sim_fresh_start.sh "iPhone 17 Pro"
+```
+
 ## StoreKit local testing
 Use the product IDs already scaffolded in app code:
 - `co.keeganryan.tend.premium.weekly`
