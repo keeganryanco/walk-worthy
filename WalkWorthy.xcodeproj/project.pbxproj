@@ -620,7 +620,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WalkWorthy.app/WalkWorthy";
@@ -759,7 +759,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = WalkWorthy;
@@ -778,7 +778,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend;
+				PRODUCT_NAME = Tend;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -796,7 +797,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend;
+				PRODUCT_NAME = Tend;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -813,7 +815,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = WalkWorthy;
@@ -831,7 +833,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.walkworthy.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.keeganryan.tend.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WalkWorthy.app/WalkWorthy";
