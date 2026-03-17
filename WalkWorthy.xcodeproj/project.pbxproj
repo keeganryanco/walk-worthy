@@ -42,6 +42,7 @@
 		6E6E0502968106AED315DD36 /* WWTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9774447A31BEB96034311EB /* WWTypography.swift */; };
 		74BEE2D083823252DAEC838E /* AIContentClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */; };
 		7623E0EE0B7758143CE21CC7 /* PlusJakartaSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 709EF61D7C9C0E66F5683CC2 /* PlusJakartaSans-Italic.ttf */; };
+		7822E4FF77F20F5213F1E19F /* OnboardingIntroLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13FD313E3C771FC635DE56B /* OnboardingIntroLoopView.swift */; };
 		79A3357C815397FC26E9E94B /* JourneyContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC407782E281A614393C914 /* JourneyContentService.swift */; };
 		7EA130D42FACD7FD2FA42FDB /* PlusJakartaSans-Italic-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3C8C2C6781D5FCE72FA779A0 /* PlusJakartaSans-Italic-VariableFont_wght.ttf */; };
 		87948FD446BAEF00A3166557 /* PlusJakartaSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5AE90E4D7EF0D60B6AD3EB45 /* PlusJakartaSans-SemiBold.ttf */; };
@@ -137,6 +138,7 @@
 		9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIContentClient.swift; sourceTree = "<group>"; };
 		9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A13FD313E3C771FC635DE56B /* OnboardingIntroLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingIntroLoopView.swift; sourceTree = "<group>"; };
 		A7A4B130ACEBCB4AB4BC4E74 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptureReferenceValidator.swift; sourceTree = "<group>"; };
 		B1A2A9E1E169A3CEC209A553 /* JourneyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMemoryService.swift; sourceTree = "<group>"; };
@@ -334,6 +336,7 @@
 			isa = PBXGroup;
 			children = (
 				F79139B1B772C8438407A86D /* OnboardingFlowView.swift */,
+				A13FD313E3C771FC635DE56B /* OnboardingIntroLoopView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -620,6 +623,7 @@
 				1AFDE0F5A523F91987C0FB90 /* MonetizationPolicy.swift in Sources */,
 				1B650A76D634085C5D64680C /* NotificationService.swift in Sources */,
 				C37B71AE9BCE672E42CDD5B3 /* OnboardingFlowView.swift in Sources */,
+				7822E4FF77F20F5213F1E19F /* OnboardingIntroLoopView.swift in Sources */,
 				189BA4F4BB9134F3F6C5401C /* OnboardingProfile.swift in Sources */,
 				13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */,
 				DD3344D858564BC3BEB2A652 /* PrayerEntry.swift in Sources */,

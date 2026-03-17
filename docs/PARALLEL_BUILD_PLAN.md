@@ -30,6 +30,7 @@ Run two simultaneous tracks with minimal merge conflict:
 - `WalkWorthy/App/MainTabView.swift`
 - `project.yml`
 - `WalkWorthy/Resources/Info.plist`
+- `WalkWorthy/Features/Onboarding/OnboardingFlowView.swift` (Gemini owns flow, Codex added intro-loop media hook)
 
 Rule: when shared files change, integrate via small, frequent merges and keep one owner at a time.
 

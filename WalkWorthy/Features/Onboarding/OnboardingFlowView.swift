@@ -110,10 +110,8 @@ struct OnboardingFlowView: View {
 
     private var introScreen: some View {
         VStack(spacing: 20) {
-            Image("TendMark")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
+            OnboardingIntroLoopView()
+                .frame(maxWidth: .infinity)
                 .padding(.top, 20)
 
             Text("Welcome to Tend")

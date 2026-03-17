@@ -145,6 +145,19 @@ Run before UI implementation/testing:
 xcodegen generate
 ```
 
+## 5.4 Onboarding intro loop contract (Codex-implemented)
+- Intro screen now supports a transparent logo loop via:
+  - `WalkWorthy/Features/Onboarding/OnboardingIntroLoopView.swift`
+  - used in `WalkWorthy/Features/Onboarding/OnboardingFlowView.swift` on step `.intro`
+- Do not remove this hook while iterating onboarding visuals; style/layout around it is fine.
+- Asset source drop folder:
+  - `design/brand-assets/video/` (see `README.md` in that folder)
+- Runtime filename expected in app bundle:
+  - `OnboardingIntroLoop.mov` (or `.mp4` / `.m4v`)
+- Sync/update commands:
+  - `./scripts/prepare_assets_for_ios.sh`
+  - `xcodegen generate`
+
 ## 6. Repo-Safe Implementation Workflow
 
 ## 6.1 Branching and commits
