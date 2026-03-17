@@ -7,14 +7,13 @@ Ship a stable, polished MVP quickly with low operational complexity.
 - Single iOS app target
 - Feature-first foldering
 - Local-first domain layer
-- Thin service adapters for StoreKit and Notifications
+- Thin service adapters for StoreKit/RevenueCat, Notifications, Analytics, and AI generation
 
 ## Proposed project structure
 ```text
 WalkWorthy/
   App/
     WalkWorthyApp.swift
-    AppContainer.swift
     RootView.swift
   DesignSystem/
     ColorTokens.swift
@@ -30,19 +29,14 @@ WalkWorthy/
     Settings/
   Domain/
     Models/
-    UseCases/
     Policies/
-  Data/
-    SwiftData/
-      Schemas/
-      Repositories/
   Services/
     Notifications/
     Monetization/
+    Analytics/
     Content/
   Shared/
-    Extensions/
-    Utilities/
+    ConnectivityService.swift
   Resources/
     Assets.xcassets
     Localizable.strings
@@ -51,26 +45,30 @@ WalkWorthyUITests/
 ```
 
 ## Domain layer contracts
-- `TodayCardGenerator`
-  - Produces daily prompt + action step from onboarding profile + recent journey context
-- `JourneyLimitPolicy`
-  - Enforces free-tier active journey cap
-- `EntitlementService`
-  - Provides premium status from StoreKit transactions
-- `ReminderScheduler`
-  - Schedules/cancels local notifications
+- `JourneyContentService`
+  - Orchestrates daily package generation and cache resolution (`remote` vs `template` vs `cache`)
+- `JourneyCreationPolicy`
+  - Enforces offline/paywall/free-tier creation rules
+- `JourneyMemoryService`
+  - Maintains per-journey memory snapshots for personalization continuity
+- `JourneyProgressService`
+  - Persists package-generated/completion progress events
+- `SubscriptionService`
+  - Provides premium status and purchase/restore flows
+- `NotificationService`
+  - Schedules/cancels local reminders
+- `AnalyticsTracking`
+  - Event taxonomy and dispatch boundary (PostHog implementation pending)
 
 ## Persistence strategy
 - SwiftData models as source of truth
-- Repository wrappers for testability
+- Model-backed service helpers for query/update logic
 - Lightweight migration handling for schema evolution
 
 ## UI navigation
-- `NavigationStack` with tab or segmented root:
-  - Today
-  - Journeys
-  - Timeline
-  - Settings
+- `NavigationStack` inside tab root
+- Current to target transition:
+  - Today/Journeys/Timeline/Settings -> Home/Journal/Settings (UI track in progress)
 
 ## Asynchrony and performance
 - Use `Task` only at feature boundaries (StoreKit sync, notifications, startup hydration)
@@ -78,14 +76,15 @@ WalkWorthyUITests/
 - Target app launch under 1 second on modern devices
 
 ## Monetization architecture
-- `StoreKitManager` handles products, purchase flow, restore purchases
+- `SubscriptionService` handles products, purchase flow, restore purchases
 - Entitlements cached locally for offline startup resilience
-- Paywall gate checks centralized in `JourneyLimitPolicy` + feature flags
+- Paywall gate checks centralized in `MonetizationPolicy` + `JourneyCreationPolicy`
+- First-launch 3-day no-paywall window enforced in policy layer
 
 ## Security and privacy
 - No user accounts
-- No external analytics SDK required for MVP
-- Optional local event log for debugging only (non-identifying)
+- Local-first storage with minimal telemetry payloads
+- External analytics permitted via PostHog, excluding raw prayer text
 
 ## Why this is optimized for rapid production
 - Minimal abstraction count

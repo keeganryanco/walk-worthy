@@ -5,16 +5,20 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var subscriptionService: SubscriptionService
     @EnvironmentObject private var notificationService: NotificationService
+    @EnvironmentObject private var connectivityService: ConnectivityService
 
     @Query(sort: \OnboardingProfile.createdAt) private var profiles: [OnboardingProfile]
     @Query(sort: \AppSettings.lastSessionDate, order: .reverse) private var settingsRows: [AppSettings]
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
+    @Query(sort: \PrayerEntry.createdAt, order: .reverse) private var allEntries: [PrayerEntry]
+    @Query(sort: \JourneyMemorySnapshot.updatedAt, order: .reverse) private var memorySnapshots: [JourneyMemorySnapshot]
 
     @State private var selectedTab: RootTab = .today
     @State private var showPaywall = false
 
     private let cardGenerator = TemplateTodayCardGenerator()
+    private let journeyContentService = JourneyContentService()
 
     private var profile: OnboardingProfile? {
         profiles.first
@@ -47,6 +51,7 @@ struct RootView: View {
             bootstrapSettingsIfNeeded()
             registerSessionIfNeeded()
             showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: subscriptionService.isPremium, settings: settings)
+            await prefetchDailyPackagesIfPossible()
         }
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
             if isPremium {
@@ -55,6 +60,13 @@ struct RootView: View {
             } else {
                 showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: false, settings: settings)
             }
+        }
+        .onChange(of: connectivityService.isOnline) { _, isOnline in
+            guard isOnline else { return }
+            Task { await prefetchDailyPackagesIfPossible() }
+        }
+        .onChange(of: activeJourneys.count) { _, _ in
+            Task { await prefetchDailyPackagesIfPossible() }
         }
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallView(
@@ -112,6 +124,18 @@ struct RootView: View {
             journey: firstJourney
         )
         modelContext.insert(entry)
+        JourneyProgressService.logEvent(
+            journeyID: firstJourney.id,
+            type: .packageGenerated,
+            notes: "Initial onboarding package seeded.",
+            modelContext: modelContext
+        )
+        JourneyMemoryService.refreshSnapshot(
+            for: firstJourney,
+            entries: [entry],
+            profile: completedProfile,
+            modelContext: modelContext
+        )
 
         if settings == nil {
             modelContext.insert(AppSettings())
@@ -124,6 +148,28 @@ struct RootView: View {
             guard granted else { return }
             await notificationService.scheduleDailyReminder(hour: 8, minute: 0)
         }
+    }
+
+    private func prefetchDailyPackagesIfPossible() async {
+        guard connectivityService.isOnline, let profile else { return }
+        guard !activeJourneys.isEmpty else { return }
+
+        var entriesByJourneyID: [UUID: [PrayerEntry]] = [:]
+        for entry in allEntries {
+            guard let journeyID = entry.journey?.id else { continue }
+            entriesByJourneyID[journeyID, default: []].append(entry)
+        }
+
+        let memoryByJourneyID = Dictionary(uniqueKeysWithValues: memorySnapshots.map { ($0.journeyID, $0) })
+
+        await journeyContentService.prefetchForTodayAndTomorrow(
+            profile: profile,
+            journeys: activeJourneys,
+            entriesByJourneyID: entriesByJourneyID,
+            memoryByJourneyID: memoryByJourneyID,
+            isOnline: true,
+            modelContext: modelContext
+        )
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftData
 
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var connectivityService: ConnectivityService
 
     let profile: OnboardingProfile
 
@@ -10,10 +11,12 @@ struct TodayView: View {
     private var activeJourneys: [PrayerJourney]
     @Query(sort: \PrayerEntry.createdAt, order: .reverse)
     private var allEntries: [PrayerEntry]
+    @Query(sort: \JourneyMemorySnapshot.updatedAt, order: .reverse)
+    private var memorySnapshots: [JourneyMemorySnapshot]
 
     @State private var reflectionDraft = ""
 
-    private let generator = TemplateTodayCardGenerator()
+    private let contentService = JourneyContentService()
 
     private var todaysEntry: PrayerEntry? {
         let calendar = Calendar.current
@@ -90,8 +93,7 @@ struct TodayView: View {
 
                 HStack(spacing: 12) {
                     Button(entry.completedAt == nil ? "Complete" : "Completed") {
-                        entry.completedAt = entry.completedAt == nil ? .now : entry.completedAt
-                        try? modelContext.save()
+                        complete(entry: entry)
                     }
                     .buttonStyle(WWPrimaryButtonStyle())
                     .disabled(entry.completedAt != nil)
@@ -124,7 +126,7 @@ struct TodayView: View {
                     .foregroundStyle(WWColor.charcoal.opacity(0.75))
 
                 Button("Generate Today Card") {
-                    generateTodayCard()
+                    Task { await generateTodayCard() }
                 }
                 .buttonStyle(WWPrimaryButtonStyle())
             }
@@ -144,27 +146,77 @@ struct TodayView: View {
         }
     }
 
-    private func generateTodayCard() {
+    private func complete(entry: PrayerEntry) {
+        entry.completedAt = entry.completedAt == nil ? .now : entry.completedAt
+        try? modelContext.save()
+
+        guard let journey = entry.journey else { return }
+        JourneyProgressService.logEvent(
+            journeyID: journey.id,
+            type: .stepCompleted,
+            notes: "Completed step: \(entry.actionStep)",
+            modelContext: modelContext
+        )
+        let journeyEntries = allEntries.filter { $0.journey?.id == journey.id }
+        JourneyMemoryService.refreshSnapshot(
+            for: journey,
+            entries: journeyEntries,
+            profile: profile,
+            modelContext: modelContext
+        )
+    }
+
+    private func memory(for journeyID: UUID) -> JourneyMemorySnapshot? {
+        memorySnapshots.first(where: { $0.journeyID == journeyID })
+    }
+
+    private func entries(for journeyID: UUID) -> [PrayerEntry] {
+        allEntries.filter { $0.journey?.id == journeyID }
+    }
+
+    private func generateTodayCard() async {
         guard let journey = activeJourneys.first else {
             let seededJourney = PrayerJourney(title: "Prayer Journey", category: profile.prayerFocus)
             modelContext.insert(seededJourney)
-            createEntry(in: seededJourney)
+            try? modelContext.save()
+            await createEntry(in: seededJourney)
             return
         }
 
-        createEntry(in: journey)
+        await createEntry(in: journey)
     }
 
-    private func createEntry(in journey: PrayerJourney) {
-        let card = generator.generateTodayCard(profile: profile, journeys: activeJourneys, date: .now)
+    private func createEntry(in journey: PrayerJourney) async {
+        let result = await contentService.packageForDate(
+            profile: profile,
+            journey: journey,
+            recentEntries: entries(for: journey.id),
+            memory: memory(for: journey.id),
+            date: .now,
+            isOnline: connectivityService.isOnline,
+            modelContext: modelContext
+        )
+
         let entry = PrayerEntry(
-            prompt: card.prayerPrompt,
-            scriptureReference: card.scriptureReference,
-            scriptureText: card.scriptureText,
-            actionStep: card.actionStep,
+            prompt: result.package.prayer,
+            scriptureReference: result.package.scriptureReference,
+            scriptureText: result.package.scriptureParaphrase,
+            actionStep: result.package.suggestedSteps.first ?? "Take one faithful next step today.",
             journey: journey
         )
         modelContext.insert(entry)
+        JourneyProgressService.logEvent(
+            journeyID: journey.id,
+            type: .packageGenerated,
+            notes: "Daily package source: \(result.source.rawValue)",
+            modelContext: modelContext
+        )
+        JourneyMemoryService.refreshSnapshot(
+            for: journey,
+            entries: entries(for: journey.id) + [entry],
+            profile: profile,
+            modelContext: modelContext
+        )
         try? modelContext.save()
     }
 }

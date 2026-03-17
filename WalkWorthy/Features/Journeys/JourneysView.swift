@@ -3,15 +3,19 @@ import SwiftData
 
 struct JourneysView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var connectivityService: ConnectivityService
 
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var journeys: [PrayerJourney]
+    @Query(sort: \AppSettings.lastSessionDate, order: .reverse)
+    private var settingsRows: [AppSettings]
 
     @State private var draftTitle = ""
     @State private var draftCategory = ""
+    @State private var alertMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -53,12 +57,36 @@ struct JourneysView: View {
             .navigationTitle("Journeys")
             .scrollContentBackground(.hidden)
         }
+        .alert("Unable to Create Journey", isPresented: Binding(
+            get: { alertMessage != nil },
+            set: { if !$0 { alertMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(alertMessage ?? "")
+        }
     }
 
     private func createJourney() {
         let activeCount = journeys.count
-        guard MonetizationPolicy.canCreateJourney(hasPremium: isPremium, activeJourneyCount: activeCount) else {
-            onRequirePaywall(.secondJourney)
+        let settings = settingsRows.first
+        let decision = JourneyCreationPolicy.evaluate(
+            isOnline: connectivityService.isOnline,
+            hasPremium: isPremium,
+            activeJourneyCount: activeCount,
+            settings: settings
+        )
+
+        switch decision {
+        case .allowed:
+            break
+        case .blocked(let reason):
+            switch reason {
+            case .noInternet:
+                alertMessage = "You need an internet connection to start a new journey. You can still continue your existing journeys offline."
+            case .paywallRequired, .freeTierLimitReached:
+                onRequirePaywall(.secondJourney)
+            }
             return
         }
 

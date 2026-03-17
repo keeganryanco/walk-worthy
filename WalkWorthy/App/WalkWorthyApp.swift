@@ -5,6 +5,7 @@ import SwiftData
 struct TendApp: App {
     @StateObject private var subscriptionService = SubscriptionService()
     @StateObject private var notificationService = NotificationService()
+    @StateObject private var connectivityService = ConnectivityService()
     private let modelContainer: ModelContainer
 
     init() {
@@ -14,7 +15,10 @@ struct TendApp: App {
                 PrayerEntry.self,
                 AnsweredPrayer.self,
                 OnboardingProfile.self,
-                AppSettings.self
+                AppSettings.self,
+                JourneyMemorySnapshot.self,
+                JourneyProgressEvent.self,
+                DailyJourneyPackageRecord.self
             ])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [configuration])
@@ -28,6 +32,7 @@ struct TendApp: App {
             RootView()
                 .environmentObject(subscriptionService)
                 .environmentObject(notificationService)
+                .environmentObject(connectivityService)
         }
         .modelContainer(modelContainer)
     }

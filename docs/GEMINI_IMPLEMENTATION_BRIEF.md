@@ -8,6 +8,29 @@ Implement the next production pass of Tend focused on:
 
 This brief captures current brainstorming decisions and constraints.
 
+## 1.1 Scope ownership (Gemini vs Codex)
+- Gemini owns: UI/UX implementation and interaction polish.
+- Codex owns: AI/content engine, memory logic, journey progression logic, analytics plumbing, monetization plumbing.
+- Gemini should consume Codex interfaces/contracts and avoid changing core AI/memory business logic files.
+
+### 1.1.1 Core interfaces now available from Codex
+Gemini should integrate against these existing services/contracts:
+- `JourneyContentService` for daily package retrieval/prefetch behavior.
+- `JourneyMemoryService` for journey memory snapshot updates.
+- `JourneyProgressService` for package-generated / step-completed / journey-completed event logging.
+- `JourneyCreationPolicy` for offline/paywall/free-tier creation gating.
+- `ConnectivityService` for online/offline state-aware UI behavior.
+
+## 1.2 Mandatory startup checklist for Gemini
+Before coding, review:
+1. `README.md`
+2. `docs/README.md`
+3. `docs/skills/*` (relevant product/design skills)
+4. `docs/BRAND_GUIDELINES.md`
+5. `docs/PARALLEL_BUILD_PLAN.md`
+
+Gemini should summarize understanding in docs before implementation starts.
+
 ## 2. Product Direction (Current)
 - App name: `Tend`
 - Core promise: prayer -> small action -> reflection -> visible growth over time.
@@ -23,6 +46,11 @@ This brief captures current brainstorming decisions and constraints.
 - Visually rewarding moment: first journey starts as a sprout.
 - Add tasteful animation (sprout emergence, subtle glow, or progress pulse).
 - Keep latency low: fast render, no long blank states.
+- Add an onboarding review/rating request page near onboarding completion.
+
+### 3.1.1 Onboarding layout guardrail
+- Do not heavily alter the existing onboarding core layout that is already in place.
+- New onboarding pages (e.g., first-journey reveal/review page) can be more experimental.
 
 ### 3.2 Journey reward loop
 - Each journey is represented by a plant state (seed -> sprout -> young plant -> mature plant).
@@ -35,6 +63,15 @@ This brief captures current brainstorming decisions and constraints.
 1. `Home`: vertically scrollable active journeys with plant state, name, and small daily check indicators (few past + few upcoming).
 2. `Journal`: active + past journeys in log/list format (tap into details/history).
 3. `Settings`.
+
+### 3.4 Motion/animation expectations
+- Creative freedom is encouraged for animation and transitions on new surfaces.
+- Good candidates:
+  - staggered fade-ins
+  - slide-ins for tab transitions/home modules
+  - loading animations that feel warm and alive
+  - subtle state transitions for plant growth
+- Avoid overwhelming motion; preserve readability and responsiveness.
 
 ## 4. AI Content Mechanism (Brainstorming Baseline)
 
@@ -143,6 +180,13 @@ xcodebuild -project WalkWorthy.xcodeproj -scheme WalkWorthy -destination 'generi
 xcodebuild -project WalkWorthy.xcodeproj -scheme WalkWorthy -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
+## 6.5 Documentation requirement
+- Gemini must document every material change.
+- At minimum:
+  - update relevant docs in `docs/`
+  - add/update patch note(s) in `docs/patches/`
+  - include rationale for animation and UX experiments
+
 ## 7. Implementation Phases for Gemini
 
 ## Phase A: Onboarding wow polish
@@ -150,6 +194,7 @@ xcodebuild -project WalkWorthy.xcodeproj -scheme WalkWorthy -destination 'platfo
 - Refine scale/layout consistency across iPhone sizes.
 - Add sprout animation on first journey creation.
 - Ensure dark mode compatibility in onboarding.
+- Add onboarding review page flow.
 
 ## Phase B: Home journey growth view
 - Replace current Today-first emphasis with plant-centric active journeys surface.
@@ -162,10 +207,7 @@ xcodebuild -project WalkWorthy.xcodeproj -scheme WalkWorthy -destination 'platfo
 - Confirm exactly 3 tabs.
 
 ## Phase D: AI daily package + memory
-- Implement structured generation output contract.
-- Add per-journey memory summarization/store.
-- Add light global memory context.
-- Add offline/template fallback when generation unavailable.
+- Out of scope for Gemini (Codex-owned). Gemini may integrate against provided interfaces only.
 
 ## 8. Minimum Acceptance Criteria
 1. App displays as `Tend` on device/simulator.

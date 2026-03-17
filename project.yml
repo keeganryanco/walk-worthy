@@ -20,6 +20,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.keeganryan.tend
         PRODUCT_NAME: Tend
+        PRODUCT_MODULE_NAME: WalkWorthy
         INFOPLIST_FILE: WalkWorthy/Resources/Info.plist
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: 1
@@ -37,6 +38,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.keeganryan.tend.tests
         GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Tend.app/Tend
+        BUNDLE_LOADER: $(TEST_HOST)
   WalkWorthyUITests:
     type: bundle.ui-testing
     platform: iOS
