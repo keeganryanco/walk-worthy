@@ -35,7 +35,16 @@ Optional model overrides:
 Run locally from terminal:
 
 ```bash
-curl -X POST \"https://<your-vercel-domain>/api/v1/journey-package\" \\\n+  -H \"Content-Type: application/json\" \\\n+  -H \"x-tend-app-key: <TEND_APP_SHARED_SECRET>\" \\\n+  -d '{\n+    \"profile\": {\"prayerFocus\": \"purpose\", \"growthGoal\": \"consistency\"},\n+    \"journey\": {\"id\": \"j1\", \"title\": \"Launch Tend\", \"category\": \"purpose\"},\n+    \"memory\": {\"summary\": \"User is building steadily\"},\n+    \"recentEntries\": []\n+  }'\n+```
+curl -X POST "https://<your-vercel-domain>/api/v1/journey-package" \
+  -H "Content-Type: application/json" \
+  -H "x-tend-app-key: <TEND_APP_SHARED_SECRET>" \
+  -d '{
+    "profile": {"prayerFocus": "purpose", "growthGoal": "consistency"},
+    "journey": {"id": "j1", "title": "Launch Tend", "category": "purpose"},
+    "memory": {"summary": "User is building steadily"},
+    "recentEntries": []
+  }'
+```
 
 Expected:
 - JSON response with `package` and `meta`.
