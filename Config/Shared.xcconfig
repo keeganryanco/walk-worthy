@@ -1,0 +1,5 @@
+// Shared non-secret app config defaults.
+// Values can be overridden in LocalSecrets.xcconfig.
+
+TENDAI_BASE_URL =
+TENDAI_APP_KEY =
