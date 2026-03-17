@@ -15,12 +15,12 @@ Tend helps users move from intention to faithful action in under a minute a day.
 - StoreKit 2 subscriptions
 - Local notifications only
 - No auth
-- No backend for MVP
+- Minimal AI gateway backend on Vercel (`site/`) for model key security and orchestration
 
 ## Repository status
 Planning docs and first-pass implementation scaffold are in place:
 - `WalkWorthy.xcodeproj` + SwiftUI/SwiftData/StoreKit2 app skeleton
-- `site/` Next.js legal/support website for App Store URLs
+- `site/` Next.js legal/support website + AI gateway API routes for journey package generation
 
 ## Key docs
 - [RFC](./docs/RFC.md)
@@ -30,6 +30,7 @@ Planning docs and first-pass implementation scaffold are in place:
 - [App Store Metadata Requirements](./docs/APP_STORE_METADATA.md)
 - [Test Plan](./docs/TEST_PLAN.md)
 - [Risks](./docs/RISKS.md)
+- [Vercel AI Gateway Deploy](./docs/VERCEL_AI_GATEWAY_DEPLOY.md)
 - [Skills](./docs/skills/README.md)
 - [Patch Tickets](./docs/patches)
 - [Brand Guidelines](./docs/BRAND_GUIDELINES.md)

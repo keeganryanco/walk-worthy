@@ -3,6 +3,9 @@
 ## Goal
 Deploy `site/` and produce final App Store URLs.
 
+For AI gateway deployment details, see:
+- [VERCEL_AI_GATEWAY_DEPLOY.md](./VERCEL_AI_GATEWAY_DEPLOY.md)
+
 ## Steps
 1. Push this repository to a Git remote connected to Vercel.
 2. In Vercel, import project.

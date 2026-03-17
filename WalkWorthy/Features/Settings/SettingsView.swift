@@ -23,7 +23,7 @@ struct SettingsView: View {
                         Text("Status")
                         Spacer()
                         Text(subscriptionService.isPremium ? "Premium" : "Free")
-                            .foregroundStyle(subscriptionService.isPremium ? .green : .secondary)
+                            .foregroundStyle(subscriptionService.isPremium ? WWColor.growGreen : .secondary)
                     }
 
                     Button("Restore Purchases") {

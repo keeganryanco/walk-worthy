@@ -82,6 +82,25 @@
 3. Export format scope for MVP
 - TXT/Markdown/PDF choice
 
+## AI gateway + runtime config needed (new)
+1. Vercel environment variables
+- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
+- `TEND_APP_SHARED_SECRET` (recommended)
+
+2. iOS runtime config values
+- `TENDAI_BASE_URL` = deployed Vercel domain
+- `TENDAI_APP_KEY` = same value as `TEND_APP_SHARED_SECRET`
+
+3. Model overrides (optional)
+- `OPENAI_PRIMARY_MODEL` (default `gpt-5-mini`)
+- `OPENAI_ESCALATION_MODEL` (default `gpt-5.1`)
+- `GEMINI_PRIMARY_MODEL` (default `gemini-2.5-flash`)
+
+4. Pending integrations (you said soon)
+- PostHog project key + host
+- RevenueCat public SDK key + offering setup confirmation
+
 ## What I can complete without further input
 - Full SwiftUI/SwiftData/StoreKit 2 scaffold
 - Core onboarding + Today flow

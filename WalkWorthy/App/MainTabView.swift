@@ -9,23 +9,17 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TodayView(profile: profile)
+            HomeView(profile: profile)
                 .tabItem {
-                    Label("Today", systemImage: "sun.max")
+                    Label("Home", systemImage: "leaf")
                 }
-                .tag(RootTab.today)
+                .tag(RootTab.home)
 
-            JourneysView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+            JournalView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
                 .tabItem {
-                    Label("Journeys", systemImage: "list.bullet.rectangle")
+                    Label("Journal", systemImage: "book")
                 }
-                .tag(RootTab.journeys)
-
-            TimelineView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
-                .tabItem {
-                    Label("Timeline", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                }
-                .tag(RootTab.timeline)
+                .tag(RootTab.journal)
 
             SettingsView()
                 .tabItem {
@@ -33,6 +27,6 @@ struct MainTabView: View {
                 }
                 .tag(RootTab.settings)
         }
-        .tint(WWColor.sapphire)
+        .tint(WWColor.growGreen)
     }
 }

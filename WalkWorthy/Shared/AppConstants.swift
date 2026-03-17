@@ -11,6 +11,16 @@ enum AppConstants {
         static let weeklyDisplayFallback = "$5.99 / week"
         static let annualDisplayFallback = "$35.00 / year"
     }
+
+    enum AI {
+        static var gatewayBaseURLString: String {
+            Bundle.main.object(forInfoDictionaryKey: "TENDAIBaseURL") as? String ?? ""
+        }
+
+        static var gatewayAppKey: String {
+            Bundle.main.object(forInfoDictionaryKey: "TENDAIAppKey") as? String ?? ""
+        }
+    }
 }
 
 enum PaywallTriggerReason: String {

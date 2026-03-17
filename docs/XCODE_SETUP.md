@@ -42,6 +42,16 @@ Or in Xcode:
 3. Destination: iPhone simulator (e.g., latest iPhone runtime).
 4. Press Run (`Cmd+R`).
 
+## Configure AI gateway (once Vercel is deployed)
+Set these values in Xcode:
+1. Open target `WalkWorthy` -> Build Settings.
+2. Set `TENDAI_BASE_URL` to your Vercel domain, e.g. `https://<your-vercel-domain>`.
+3. Set `TENDAI_APP_KEY` to the same value as Vercel env var `TEND_APP_SHARED_SECRET`.
+
+Notes:
+- If `TENDAI_BASE_URL` is blank, app falls back to local template generation automatically.
+- Do not commit secrets in source; set them per local/CI environment.
+
 ## Fresh Onboarding Retest (recommended)
 Use this when you want onboarding from a clean slate and no duplicate test-runner app icon:
 

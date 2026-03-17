@@ -33,7 +33,7 @@ final class JourneyContentService {
 
     init(
         templateGenerator: DailyJourneyPackageGenerating = TemplateDailyJourneyPackageGenerator(),
-        remoteProvider: RemoteDailyJourneyPackageProviding = NoRemoteDailyJourneyPackageProvider()
+        remoteProvider: RemoteDailyJourneyPackageProviding = BackendDailyJourneyPackageProvider()
     ) {
         self.templateGenerator = templateGenerator
         self.remoteProvider = remoteProvider

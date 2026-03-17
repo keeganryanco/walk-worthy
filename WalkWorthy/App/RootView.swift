@@ -14,7 +14,7 @@ struct RootView: View {
     @Query(sort: \PrayerEntry.createdAt, order: .reverse) private var allEntries: [PrayerEntry]
     @Query(sort: \JourneyMemorySnapshot.updatedAt, order: .reverse) private var memorySnapshots: [JourneyMemorySnapshot]
 
-    @State private var selectedTab: RootTab = .today
+    @State private var selectedTab: RootTab = .home
     @State private var showPaywall = false
 
     private let cardGenerator = TemplateTodayCardGenerator()
@@ -174,8 +174,7 @@ struct RootView: View {
 }
 
 enum RootTab: Hashable {
-    case today
-    case journeys
-    case timeline
+    case home
+    case journal
     case settings
 }

@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		01CBF2020F395B4028383279 /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */; };
-		04CE22A82C40E2CDAD1F4DAB /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D17731EE3F1E40977330C56 /* TimelineView.swift */; };
 		0E96F334434C97A575306806 /* WalkWorthyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56FA0FD64E48866B2E48AB /* WalkWorthyApp.swift */; };
 		13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */; };
+		16BF2B30791EFC9C34CBD405 /* BackendDailyJourneyPackageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */; };
 		16C8F6A4F09C90CC81365482 /* PlusJakartaSans-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */; };
 		16D814679C281C30AA2C119D /* ScriptureReferenceValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */; };
 		185A5FF8B5C2EE873B98F80B /* PrayerJourney.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C70184C4C4518128D5846F /* PrayerJourney.swift */; };
@@ -28,11 +28,11 @@
 		383F7E1B05C71C2E7CCD29B5 /* JourneyCreationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D5C2E1302B2A8288334BB5 /* JourneyCreationPolicy.swift */; };
 		397576735BE817F56C4CF279 /* WWComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54DDACB6A90056567E5D567 /* WWComponents.swift */; };
 		3AAF3F5520EE1467BEA0B6EB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F31C623BA3D2509776849C8 /* MainTabView.swift */; };
-		40D82B10B05F83A90DB02D07 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481329C6E4C002219855F1A2 /* TodayView.swift */; };
 		44A7BA008D034E7BFD20317A /* PlusJakartaSans-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BF31E8DF66CA451D78D50358 /* PlusJakartaSans-ExtraLight.ttf */; };
 		4668744C40658B826D6C2C43 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C72E46496A1ABD75C2404A /* SettingsView.swift */; };
 		4751C09A808B9C299E6B1779 /* notification_card_2.png in Resources */ = {isa = PBXBuildFile; fileRef = 6B142C2B1B2FF4743FEC1D87 /* notification_card_2.png */; };
 		47B5A900E5F6661FEFF8856F /* reminders_transparent_light_mode.png in Resources */ = {isa = PBXBuildFile; fileRef = 32553731CDFE3AD38F36B43E /* reminders_transparent_light_mode.png */; };
+		5387EFE0FD2E8C75433EAA7C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB37E26A0705A98D2F4CBD96 /* HomeView.swift */; };
 		53A9F43F95524E37691716A5 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB51F91B80B206B0A04EE75 /* RootView.swift */; };
 		5BE6A5BD13AC9BF62C9790DF /* PlusJakartaSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D44C9117DA82D3B52145C051 /* PlusJakartaSans-Bold.ttf */; };
 		5CA6070FEB39CE88880CFAE8 /* PlusJakartaSans-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8D90D17527B3E2DCA2B1CD34 /* PlusJakartaSans-ExtraBoldItalic.ttf */; };
@@ -49,7 +49,6 @@
 		911F081CDC31FE8B266C59F8 /* DailyJourneyPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD8EB66D447FC5512ED3AA9 /* DailyJourneyPackage.swift */; };
 		9539B09CAD4BB0763B6E637E /* PlusJakartaSans-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 649A8F9F71F1C4121DCBC5F5 /* PlusJakartaSans-LightItalic.ttf */; };
 		9DF34333BB816EB5989CBAE1 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172AE255F96BEAD1C99935CE /* AppConstants.swift */; };
-		A2A68B764DBA39731EC34CE2 /* JourneysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A294A8F166F58F2C0B4DE691 /* JourneysView.swift */; };
 		A7CCBD453DC37BDA488815EC /* TodayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2876CDB2AFB3C4155991256F /* TodayCard.swift */; };
 		B06D8C4642A14B35226E8742 /* PlusJakartaSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EC4C2A74FEC61E8A900B2067 /* PlusJakartaSans-Medium.ttf */; };
 		B2300037A90BBC365CE88158 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A4B130ACEBCB4AB4BC4E74 /* AnalyticsService.swift */; };
@@ -67,6 +66,7 @@
 		E0AAF49DD407AA39F1D46445 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8749975FC64A74D869B254EB /* SubscriptionService.swift */; };
 		E24503D858F0834E942FBCC9 /* DailyJourneyPackageRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45CC96598F9FBD3113FD15E4 /* DailyJourneyPackageRecord.swift */; };
 		E63E9832B1C2C450FF353157 /* PlusJakartaSans-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */; };
+		ECF7BC7A72E8B3A915F59B7A /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6619712AC943B05F298276 /* JournalView.swift */; };
 		EE2F2488E5666B3F15FB2BF8 /* PlusJakartaSans-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1BAD6D0F5F858145877B1D02 /* PlusJakartaSans-MediumItalic.ttf */; };
 		FD58A773E561767184330C7E /* notifications.png in Resources */ = {isa = PBXBuildFile; fileRef = BBE3FF48D5DD404041C9E583 /* notifications.png */; };
 /* End PBXBuildFile section */
@@ -92,7 +92,6 @@
 		067C7842AD275F8263788578 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		0832666F09D4C16B2C21B2E2 /* MonetizationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonetizationPolicy.swift; sourceTree = "<group>"; };
 		0A4CD94872187AAA242E7115 /* PrayerEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerEntry.swift; sourceTree = "<group>"; };
-		0D17731EE3F1E40977330C56 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		16E856243CDE0AD2E5949B12 /* WalkWorthyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WalkWorthyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		172AE255F96BEAD1C99935CE /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		1BAD6D0F5F858145877B1D02 /* PlusJakartaSans-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-MediumItalic.ttf"; sourceTree = "<group>"; };
@@ -106,26 +105,26 @@
 		407AE85D47F5E96675BBDF1F /* ConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectivityService.swift; sourceTree = "<group>"; };
 		45B475F4494B399013766BBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		45CC96598F9FBD3113FD15E4 /* DailyJourneyPackageRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyPackageRecord.swift; sourceTree = "<group>"; };
-		481329C6E4C002219855F1A2 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		51F84D3407F135FDCC04C988 /* notification_card_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = notification_card_1.png; sourceTree = "<group>"; };
 		5222DE8FB9CBEAC9CB97F58F /* JourneyProgressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyProgressService.swift; sourceTree = "<group>"; };
 		52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
-		5588915278F314EF030E71D6 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		5588915278F314EF030E71D6 /* .gitkeep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitkeep; sourceTree = "<group>"; };
 		5AE90E4D7EF0D60B6AD3EB45 /* PlusJakartaSans-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-SemiBold.ttf"; sourceTree = "<group>"; };
-		5B6A33F3980DEECE858DBDEA /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		5B6A33F3980DEECE858DBDEA /* .gitkeep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitkeep; sourceTree = "<group>"; };
 		5BD8EB66D447FC5512ED3AA9 /* DailyJourneyPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyPackage.swift; sourceTree = "<group>"; };
 		6255A6EBC3857B96426C60EC /* JourneyMemorySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMemorySnapshot.swift; sourceTree = "<group>"; };
 		649A8F9F71F1C4121DCBC5F5 /* PlusJakartaSans-LightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-LightItalic.ttf"; sourceTree = "<group>"; };
 		68C70184C4C4518128D5846F /* PrayerJourney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerJourney.swift; sourceTree = "<group>"; };
 		6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateTodayCardGenerator.swift; sourceTree = "<group>"; };
-		6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */ = {isa = PBXFileReference; path = reminders_transparent_light_mode.svg; sourceTree = "<group>"; };
+		6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = reminders_transparent_light_mode.svg; sourceTree = "<group>"; };
 		6B142C2B1B2FF4743FEC1D87 /* notification_card_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = notification_card_2.png; sourceTree = "<group>"; };
 		6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Variable.ttf"; sourceTree = "<group>"; };
-		6C6499656B7905EBB3F8AAEF /* notifications.svg */ = {isa = PBXFileReference; path = notifications.svg; sourceTree = "<group>"; };
+		6C6499656B7905EBB3F8AAEF /* notifications.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = notifications.svg; sourceTree = "<group>"; };
 		709EF61D7C9C0E66F5683CC2 /* PlusJakartaSans-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Italic.ttf"; sourceTree = "<group>"; };
-		71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WalkWorthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		71A7780527BA0ABC44FF3F34 /* Tend.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tend.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C18C8E45D3B58226D593CA /* WalkWorthyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyUITests.swift; sourceTree = "<group>"; };
 		77EC2817706030DE811C7189 /* WWColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWColor.swift; sourceTree = "<group>"; };
+		79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendDailyJourneyPackageProvider.swift; sourceTree = "<group>"; };
 		7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProfile.swift; sourceTree = "<group>"; };
 		7F31C623BA3D2509776849C8 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-BoldItalic.ttf"; sourceTree = "<group>"; };
@@ -137,7 +136,6 @@
 		9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIContentClient.swift; sourceTree = "<group>"; };
 		9E560EDBC080FF490EE1845A /* PlusJakartaSans-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		9EC52B5B7CFE50833A3B6D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A294A8F166F58F2C0B4DE691 /* JourneysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneysView.swift; sourceTree = "<group>"; };
 		A7A4B130ACEBCB4AB4BC4E74 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptureReferenceValidator.swift; sourceTree = "<group>"; };
 		B1A2A9E1E169A3CEC209A553 /* JourneyMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMemoryService.swift; sourceTree = "<group>"; };
@@ -149,7 +147,8 @@
 		BF31E8DF66CA451D78D50358 /* PlusJakartaSans-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraLight.ttf"; sourceTree = "<group>"; };
 		D27A49345B9892A16501131B /* WalkWorthyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyTests.swift; sourceTree = "<group>"; };
 		D44C9117DA82D3B52145C051 /* PlusJakartaSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Bold.ttf"; sourceTree = "<group>"; };
-		D4C76214751E216C030850F5 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		D4C76214751E216C030850F5 /* .gitkeep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitkeep; sourceTree = "<group>"; };
+		DB37E26A0705A98D2F4CBD96 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		DC3DAB04A87EE0C4FC2B75B2 /* iphone_notifications.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iphone_notifications.png; sourceTree = "<group>"; };
 		DF4DB861E074B997695B68A9 /* PlusJakartaSans-ExtraLightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraLightItalic.ttf"; sourceTree = "<group>"; };
 		DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
@@ -158,6 +157,7 @@
 		F54DDACB6A90056567E5D567 /* WWComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWComponents.swift; sourceTree = "<group>"; };
 		F79139B1B772C8438407A86D /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		F806B97A5D01C7B72D4FCDA1 /* PlusJakartaSans-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Light.ttf"; sourceTree = "<group>"; };
+		FB6619712AC943B05F298276 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -172,28 +172,19 @@
 		1CBECFDFD59BEDA4BDF4F87C /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				22636DCB187819B696C5B0FF /* Journeys */,
+				570665BB89E9F1F200CFA354 /* Home */,
+				DE1CAF8C670B44600ED44932 /* Journal */,
 				9DA3B66EB6C19EAD26D36350 /* Onboarding */,
 				0EFB6244D13472966BAD4E52 /* Paywall */,
 				57A576C688E2A716F48C9A8B /* Settings */,
-				732E6CF78F40396422A7BD2D /* Timeline */,
-				E494F25D3B17A37B55FF470F /* Today */,
 			);
 			path = Features;
-			sourceTree = "<group>";
-		};
-		22636DCB187819B696C5B0FF /* Journeys */ = {
-			isa = PBXGroup;
-			children = (
-				A294A8F166F58F2C0B4DE691 /* JourneysView.swift */,
-			);
-			path = Journeys;
 			sourceTree = "<group>";
 		};
 		27EA7A2B062FCFE7DA8C084E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */,
+				71A7780527BA0ABC44FF3F34 /* Tend.app */,
 				16E856243CDE0AD2E5949B12 /* WalkWorthyTests.xctest */,
 				21DB08E0092A4010FEA21A33 /* WalkWorthyUITests.xctest */,
 			);
@@ -250,6 +241,14 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		570665BB89E9F1F200CFA354 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				DB37E26A0705A98D2F4CBD96 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
 		57A576C688E2A716F48C9A8B /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -303,18 +302,11 @@
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
-		732E6CF78F40396422A7BD2D /* Timeline */ = {
-			isa = PBXGroup;
-			children = (
-				0D17731EE3F1E40977330C56 /* TimelineView.swift */,
-			);
-			path = Timeline;
-			sourceTree = "<group>";
-		};
 		740DACA97BC1477AC31C97C8 /* Content */ = {
 			isa = PBXGroup;
 			children = (
 				9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */,
+				79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */,
 				5BD8EB66D447FC5512ED3AA9 /* DailyJourneyPackage.swift */,
 				3CC407782E281A614393C914 /* JourneyContentService.swift */,
 				B1A2A9E1E169A3CEC209A553 /* JourneyMemoryService.swift */,
@@ -399,6 +391,14 @@
 			path = Notifications;
 			sourceTree = "<group>";
 		};
+		DE1CAF8C670B44600ED44932 /* Journal */ = {
+			isa = PBXGroup;
+			children = (
+				FB6619712AC943B05F298276 /* JournalView.swift */,
+			);
+			path = Journal;
+			sourceTree = "<group>";
+		};
 		E348231B7D1B60EAFB48412C /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -408,14 +408,6 @@
 				DD308E99B607DC6718A40DFC /* Notifications */,
 			);
 			path = Services;
-			sourceTree = "<group>";
-		};
-		E494F25D3B17A37B55FF470F /* Today */ = {
-			isa = PBXGroup;
-			children = (
-				481329C6E4C002219855F1A2 /* TodayView.swift */,
-			);
-			path = Today;
 			sourceTree = "<group>";
 		};
 		EA65D5DC54979C960C926ACB /* Shared */ = {
@@ -506,7 +498,7 @@
 			packageProductDependencies = (
 			);
 			productName = WalkWorthy;
-			productReference = 71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */;
+			productReference = 71A7780527BA0ABC44FF3F34 /* Tend.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -600,16 +592,18 @@
 				D4E5ABA5A6C53F7539D6E65E /* AnsweredPrayer.swift in Sources */,
 				9DF34333BB816EB5989CBAE1 /* AppConstants.swift in Sources */,
 				3199710076C72D9AE653E90A /* AppSettings.swift in Sources */,
+				16BF2B30791EFC9C34CBD405 /* BackendDailyJourneyPackageProvider.swift in Sources */,
 				B866044E4E3BA553614C3A0C /* ConnectivityService.swift in Sources */,
 				911F081CDC31FE8B266C59F8 /* DailyJourneyPackage.swift in Sources */,
 				E24503D858F0834E942FBCC9 /* DailyJourneyPackageRecord.swift in Sources */,
+				5387EFE0FD2E8C75433EAA7C /* HomeView.swift in Sources */,
+				ECF7BC7A72E8B3A915F59B7A /* JournalView.swift in Sources */,
 				79A3357C815397FC26E9E94B /* JourneyContentService.swift in Sources */,
 				383F7E1B05C71C2E7CCD29B5 /* JourneyCreationPolicy.swift in Sources */,
 				6628BAC2E67194F4A4C70F6F /* JourneyMemoryService.swift in Sources */,
 				375C0753F5A86193369F7AA6 /* JourneyMemorySnapshot.swift in Sources */,
 				DA6305B6B75E5CA401F6A649 /* JourneyProgressEvent.swift in Sources */,
 				C7EC052CA8D9DA46E0E083D3 /* JourneyProgressService.swift in Sources */,
-				A2A68B764DBA39731EC34CE2 /* JourneysView.swift in Sources */,
 				3AAF3F5520EE1467BEA0B6EB /* MainTabView.swift in Sources */,
 				1AFDE0F5A523F91987C0FB90 /* MonetizationPolicy.swift in Sources */,
 				1B650A76D634085C5D64680C /* NotificationService.swift in Sources */,
@@ -623,9 +617,7 @@
 				4668744C40658B826D6C2C43 /* SettingsView.swift in Sources */,
 				E0AAF49DD407AA39F1D46445 /* SubscriptionService.swift in Sources */,
 				D6DEB312670CD03D4301B1E5 /* TemplateTodayCardGenerator.swift in Sources */,
-				04CE22A82C40E2CDAD1F4DAB /* TimelineView.swift in Sources */,
 				A7CCBD453DC37BDA488815EC /* TodayCard.swift in Sources */,
-				40D82B10B05F83A90DB02D07 /* TodayView.swift in Sources */,
 				B93230BDFBA70CF641D9ADC0 /* WWColor.swift in Sources */,
 				397576735BE817F56C4CF279 /* WWComponents.swift in Sources */,
 				6E6E0502968106AED315DD36 /* WWTypography.swift in Sources */,
@@ -820,6 +812,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 963UAMD46W;
 				INFOPLIST_FILE = WalkWorthy/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -831,6 +824,8 @@
 				PRODUCT_NAME = Tend;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
+				TENDAI_APP_KEY = "";
+				TENDAI_BASE_URL = "";
 			};
 			name = Release;
 		};
@@ -840,6 +835,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 963UAMD46W;
 				INFOPLIST_FILE = WalkWorthy/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -851,6 +847,8 @@
 				PRODUCT_NAME = Tend;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
+				TENDAI_APP_KEY = "";
+				TENDAI_BASE_URL = "";
 			};
 			name = Debug;
 		};
