@@ -2,6 +2,7 @@
 
 ## Summary
 Refactored onboarding to be no-scroll across iPhone viewports via adaptive layout metrics and replaced onboarding sentiment-style review UX with an App Store review prompt pattern.
+Active flow target: `ExperimentalOnboardingFlowView`.
 
 ## Changes
 - Reworked onboarding layout container:

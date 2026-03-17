@@ -30,7 +30,7 @@ Run two simultaneous tracks with minimal merge conflict:
 - `WalkWorthy/App/MainTabView.swift`
 - `project.yml`
 - `WalkWorthy/Resources/Info.plist`
-- `WalkWorthy/Features/Onboarding/OnboardingFlowView.swift` (Gemini owns flow, Codex added intro-loop media hook)
+- `WalkWorthy/Features/Onboarding/ExperimentalOnboardingFlowView.swift` (active onboarding flow; Gemini-owned with Codex media/review/no-scroll constraints)
 - Onboarding UX constraint: no vertical scrolling on supported iPhones; use adaptive layout.
 - Review-page intent: App Store rating prompt flow, not onboarding sentiment survey.
 

@@ -12,6 +12,7 @@ This brief captures current brainstorming decisions and constraints.
 - Gemini owns: UI/UX implementation and interaction polish.
 - Codex owns: AI/content engine, memory logic, journey progression logic, analytics plumbing, monetization plumbing.
 - Gemini should consume Codex interfaces/contracts and avoid changing core AI/memory business logic files.
+- Active onboarding surface currently in use: `WalkWorthy/Features/Onboarding/ExperimentalOnboardingFlowView.swift`.
 
 ### 1.1.1 Core interfaces now available from Codex
 Gemini should integrate against these existing services/contracts:
@@ -165,7 +166,7 @@ xcodegen generate
 ## 5.4 Onboarding intro loop contract (Codex-implemented)
 - Intro screen now supports a transparent logo loop via:
   - `WalkWorthy/Features/Onboarding/OnboardingIntroLoopView.swift`
-  - used in `WalkWorthy/Features/Onboarding/OnboardingFlowView.swift` on step `.intro`
+  - used in `WalkWorthy/Features/Onboarding/ExperimentalOnboardingFlowView.swift` on step `.intro`
 - Do not remove this hook while iterating onboarding visuals; style/layout around it is fine.
 - Asset source drop folder:
   - `design/brand-assets/video/` (see `README.md` in that folder)

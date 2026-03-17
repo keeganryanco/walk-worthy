@@ -40,7 +40,7 @@ struct RootView: View {
                     onRequirePaywall: triggerPaywall
                 )
             } else {
-                OnboardingFlowView { completedProfile in
+                ExperimentalOnboardingFlowView { completedProfile in
                     seedInitialExperience(with: completedProfile)
                 }
             }
