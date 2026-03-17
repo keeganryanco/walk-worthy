@@ -38,6 +38,9 @@ for candidate in \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop_alpha.mov" \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop_alpha.mp4" \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop_alpha.m4v" \
+  "$VIDEO_SOURCE_DIR/tend_logo_loop_alpha.mov" \
+  "$VIDEO_SOURCE_DIR/tend_logo_loop_alpha.mp4" \
+  "$VIDEO_SOURCE_DIR/tend_logo_loop_alpha.m4v" \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop.mov" \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop.mp4" \
   "$VIDEO_SOURCE_DIR/onboarding_intro_loop.m4v"

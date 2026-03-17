@@ -9,3 +9,4 @@ Implementation tracking tickets for incremental delivery.
 - PATCH-005: Gemini UI refinement
 - PATCH-006: Vercel AI gateway + iOS wiring
 - PATCH-007: onboarding intro loop hook
+- PATCH-008: onboarding no-scroll + App Store review prompt intent

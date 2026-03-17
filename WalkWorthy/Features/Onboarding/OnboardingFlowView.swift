@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 struct OnboardingFlowView: View {
@@ -20,7 +21,36 @@ struct OnboardingFlowView: View {
         case review
     }
 
+    private struct LayoutMetrics {
+        let scale: CGFloat
+        let isCompact: Bool
+        let isVeryCompact: Bool
+        let horizontalPadding: CGFloat
+        let topPadding: CGFloat
+        let ctaHorizontalPadding: CGFloat
+        let ctaBottomPadding: CGFloat
+        let introMediaSize: CGFloat
+        let widgetHeight: CGFloat
+
+        init(size: CGSize, safeAreaInsets: EdgeInsets) {
+            let usableHeight = size.height - safeAreaInsets.top - safeAreaInsets.bottom
+            let rawScale = usableHeight / 852
+
+            scale = min(max(rawScale, 0.76), 1.0)
+            isCompact = usableHeight < 760
+            isVeryCompact = usableHeight < 690
+            horizontalPadding = isVeryCompact ? 16 : 24
+            topPadding = isVeryCompact ? 14 : 28
+            ctaHorizontalPadding = isVeryCompact ? 20 : 28
+            ctaBottomPadding = max(12, safeAreaInsets.bottom > 0 ? 12 : 16)
+            introMediaSize = isVeryCompact ? 170 : (isCompact ? 194 : 220)
+            widgetHeight = isVeryCompact ? 240 : (isCompact ? 292 : 350)
+        }
+    }
+
     let onComplete: (OnboardingProfile) -> Void
+
+    @Environment(\.requestReview) private var requestReview
 
     @State private var step: Step = .intro
 
@@ -30,8 +60,8 @@ struct OnboardingFlowView: View {
     @State private var blocker = ""
     @State private var growthVision = ""
     @State private var supportMode = ""
-    
-    @State private var reviewRating: Int? = nil
+
+    @State private var reviewActionTaken = false
 
     private let ages = ["18-24", "25-34", "35-44", "45-54", "55+"]
     private let growInOptions = [
@@ -47,26 +77,30 @@ struct OnboardingFlowView: View {
     private let supportOptions = ["daily check-ins", "few times a week", "when I need guidance most"]
 
     var body: some View {
-        ZStack {
-            backgroundColor
-                .ignoresSafeArea()
+        GeometryReader { proxy in
+            let metrics = LayoutMetrics(size: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
 
-            VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    stepContent
-                        .padding(.horizontal, 24)
-                        .padding(.top, 40)
-                        .padding(.bottom, 24)
-                }
+            ZStack {
+                backgroundColor
+                    .ignoresSafeArea()
 
-                if step != .creationSprout {
-                    bottomCTA
-                        .padding(.horizontal, 28)
-                        .padding(.bottom, 16)
-                        .background(backgroundColor)
+                VStack(spacing: 0) {
+                    stepContent(metrics: metrics)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.horizontal, metrics.horizontalPadding)
+                        .padding(.top, metrics.topPadding)
+                        .padding(.bottom, 12)
+
+                    if step != .creationSprout {
+                        bottomCTA
+                            .padding(.horizontal, metrics.ctaHorizontalPadding)
+                            .padding(.bottom, metrics.ctaBottomPadding)
+                            .background(backgroundColor)
+                    }
                 }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+                .animation(.easeInOut(duration: 0.35), value: step)
             }
-            .animation(.easeInOut(duration: 0.4), value: step)
         }
     }
 
@@ -84,198 +118,273 @@ struct OnboardingFlowView: View {
     }
 
     @ViewBuilder
-    private var stepContent: some View {
+    private func stepContent(metrics: LayoutMetrics) -> some View {
         switch step {
-        case .intro: introScreen
-        case .name: nameScreen
-        case .age: ageScreen
-        case .bannerName: bannerNameScreen
-        case .bannerTruth: bannerTruthScreen
-        case .bannerChange: bannerChangeScreen
-        case .growIn: optionsScreen(title: "what are you hoping\nto grow in?", options: growInOptions, selection: $growIn)
-        case .blockers: optionsScreen(title: "What tends to\nget in the way?", options: blockerOptions, selection: $blocker)
-        case .growthVision: optionsScreen(title: "What would growth\nlook like for you?", options: growthVisionOptions, selection: $growthVision)
-        case .supportMode: optionsScreen(title: "how would you like\nTend to support you?", options: supportOptions, selection: $supportMode)
-        case .method: methodScreen
-        case .grounding: groundingScreen
-        case .reminder: reminderScreen
-        case .widget: widgetScreen
-        case .creationSprout: creationSproutScreen
-        case .review: reviewScreen
+        case .intro:
+            introScreen(metrics: metrics)
+        case .name:
+            nameScreen(metrics: metrics)
+        case .age:
+            ageScreen(metrics: metrics)
+        case .bannerName:
+            bannerNameScreen(metrics: metrics)
+        case .bannerTruth:
+            bannerTruthScreen(metrics: metrics)
+        case .bannerChange:
+            bannerChangeScreen(metrics: metrics)
+        case .growIn:
+            optionsScreen(
+                title: "what are you hoping\nto grow in?",
+                options: growInOptions,
+                selection: $growIn,
+                metrics: metrics
+            )
+        case .blockers:
+            optionsScreen(
+                title: "What tends to\nget in the way?",
+                options: blockerOptions,
+                selection: $blocker,
+                metrics: metrics
+            )
+        case .growthVision:
+            optionsScreen(
+                title: "What would growth\nlook like for you?",
+                options: growthVisionOptions,
+                selection: $growthVision,
+                metrics: metrics
+            )
+        case .supportMode:
+            optionsScreen(
+                title: "how would you like\nTend to support you?",
+                options: supportOptions,
+                selection: $supportMode,
+                metrics: metrics
+            )
+        case .method:
+            methodScreen(metrics: metrics)
+        case .grounding:
+            groundingScreen(metrics: metrics)
+        case .reminder:
+            reminderScreen(metrics: metrics)
+        case .widget:
+            widgetScreen(metrics: metrics)
+        case .creationSprout:
+            creationSproutScreen(metrics: metrics)
+        case .review:
+            reviewScreen(metrics: metrics)
         }
     }
 
-    // SCALED LAYOUTS: using standard font sizing, relative spacings, and responsive alignment
-    // Old 60->40, 50->34, 44->28
+    private func introScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 16 * metrics.scale) {
+            Spacer(minLength: metrics.isVeryCompact ? 4 : 12)
 
-    private var introScreen: some View {
-        VStack(spacing: 20) {
-            OnboardingIntroLoopView()
+            OnboardingIntroLoopView(size: metrics.introMediaSize)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 20)
 
             Text("Welcome to Tend")
-                .font(WWTypography.display(40))
+                .font(WWTypography.display(displaySize(40, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 10)
+                .minimumScaleFactor(0.72)
 
             Text("pray. act. grow.")
-                .font(WWTypography.heading(28))
+                .font(WWTypography.heading(headingSize(28, metrics: metrics)))
                 .foregroundStyle(WWColor.growGreen)
+                .minimumScaleFactor(0.75)
 
-            Spacer()
-                .frame(minHeight: 120)
+            Spacer(minLength: metrics.isVeryCompact ? 10 : 56)
 
             Text("turn your prayers into small\nsteps of real growth")
-                .font(WWTypography.heading(26).italic())
+                .font(WWTypography.heading(headingSize(26, metrics: metrics)).italic())
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .lineLimit(3)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var nameScreen: some View {
-        VStack(spacing: 24) {
-            Spacer().frame(height: 120)
+    private func nameScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 18 * metrics.scale) {
+            Spacer(minLength: metrics.isVeryCompact ? 8 : 48)
+
             Text("what’s your name?")
-                .font(WWTypography.display(34))
+                .font(WWTypography.display(displaySize(34, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.72)
 
             TextField("Enter your name", text: $name)
-                .font(WWTypography.heading(24))
+                .font(WWTypography.heading(headingSize(24, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
+                .padding(.vertical, metrics.isVeryCompact ? 12 : 16)
                 .background(WWColor.surface)
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(WWColor.growGreen, lineWidth: 1))
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var ageScreen: some View {
-        VStack(spacing: 16) {
+    private func ageScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 12 * metrics.scale) {
             Text("how old are you?")
-                .font(WWTypography.display(34))
+                .font(WWTypography.display(displaySize(34, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, 10)
+                .minimumScaleFactor(0.72)
 
             ForEach(ages, id: \.self) { item in
-                TendPillButton(title: item, selected: ageRange == item) {
+                optionPill(
+                    title: item,
+                    selected: ageRange == item,
+                    metrics: metrics
+                ) {
                     ageRange = item
                 }
             }
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var bannerNameScreen: some View {
-        VStack(spacing: 12) {
-            Spacer()
+    private func bannerNameScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 10 * metrics.scale) {
+            Spacer(minLength: 0)
+
             Text("\(firstNameDisplay), your prayers matter.")
-                .font(WWTypography.display(32))
+                .font(WWTypography.display(displaySize(32, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.72)
+
             (
                 Text("so does your ")
-                    .font(WWTypography.display(32))
+                    .font(WWTypography.display(displaySize(32, metrics: metrics)))
                     .foregroundStyle(WWColor.nearBlack)
                 + Text("next step.")
-                    .font(WWTypography.display(32))
+                    .font(WWTypography.display(displaySize(32, metrics: metrics)))
                     .foregroundStyle(WWColor.growGreen)
             )
             .multilineTextAlignment(.center)
-            Spacer()
+            .minimumScaleFactor(0.72)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75)
     }
 
-    private var bannerTruthScreen: some View {
-        VStack(spacing: 30) {
-            Spacer()
+    private func bannerTruthScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 18 * metrics.scale) {
+            Spacer(minLength: 0)
+
             Text("What you pray can shape\nhow you live.")
-                .font(WWTypography.display(34))
+                .font(WWTypography.display(displaySize(34, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.72)
 
             Text("Tend helps you turn\nyour prayers into your habits,\ndecisions, and daily life.")
-                .font(WWTypography.heading(24))
+                .font(WWTypography.heading(headingSize(24, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-            Spacer()
+                .minimumScaleFactor(0.75)
+                .lineLimit(4)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75)
     }
 
-    private var bannerChangeScreen: some View {
-        VStack(spacing: 24) {
-            Spacer()
+    private func bannerChangeScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 20 * metrics.scale) {
+            Spacer(minLength: 0)
+
             Text("What if prayer became\nthe start of real change?")
-                .font(WWTypography.display(36))
+                .font(WWTypography.display(displaySize(36, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-            Spacer()
+                .minimumScaleFactor(0.72)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75)
     }
 
-    private func optionsScreen(title: String, options: [String], selection: Binding<String>) -> some View {
-        VStack(spacing: 16) {
+    private func optionsScreen(
+        title: String,
+        options: [String],
+        selection: Binding<String>,
+        metrics: LayoutMetrics
+    ) -> some View {
+        let twoColumnLayout = options.count > 5
+        let columns: [GridItem] = twoColumnLayout
+            ? [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+            : [GridItem(.flexible(), spacing: 10)]
+
+        return VStack(spacing: 10 * metrics.scale) {
             Text(title)
-                .font(WWTypography.display(34))
+                .font(WWTypography.display(displaySize(34, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, 10)
+                .minimumScaleFactor(0.7)
+                .lineLimit(3)
+                .padding(.bottom, 4)
 
-            ForEach(options, id: \.self) { option in
-                TendPillButton(title: option, selected: selection.wrappedValue == option) {
-                    selection.wrappedValue = option
+            LazyVGrid(columns: columns, spacing: metrics.isVeryCompact ? 8 : 10) {
+                ForEach(options, id: \.self) { option in
+                    optionPill(
+                        title: option,
+                        selected: selection.wrappedValue == option,
+                        metrics: metrics
+                    ) {
+                        selection.wrappedValue = option
+                    }
                 }
             }
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var methodScreen: some View {
-        VStack(spacing: 24) {
-            Spacer()
+    private func methodScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 16 * metrics.scale) {
+            Spacer(minLength: 0)
+
             Text("Here’s how Tend works")
-                .font(WWTypography.display(36))
+                .font(WWTypography.display(displaySize(36, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, 10)
+                .minimumScaleFactor(0.72)
 
-            VStack(alignment: .leading, spacing: 16) {
-                featureBullet(lead: "Pray", text: "about what matters")
-                featureBullet(lead: "Reflect", text: "with Scripture")
-                featureBullet(lead: "Choose", text: "one small step")
-                featureBullet(lead: "Grow", text: "through daily faithfulness")
+            VStack(alignment: .leading, spacing: 12 * metrics.scale) {
+                featureBullet(lead: "Pray", text: "about what matters", metrics: metrics)
+                featureBullet(lead: "Reflect", text: "with Scripture", metrics: metrics)
+                featureBullet(lead: "Choose", text: "one small step", metrics: metrics)
+                featureBullet(lead: "Grow", text: "through daily faithfulness", metrics: metrics)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75)
     }
 
-    private var groundingScreen: some View {
-        VStack(spacing: 28) {
+    private func groundingScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 16 * metrics.scale) {
             Text("Faith grows when it’s lived.")
-                .font(WWTypography.heading(32).italic())
+                .font(WWTypography.heading(headingSize(32, metrics: metrics)).italic())
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.top, 20)
+                .minimumScaleFactor(0.75)
+                .padding(.top, 4)
 
             WWCard {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10 * metrics.scale) {
                     Text("Tend is built around a simple truth:")
-                        .font(WWTypography.heading(28))
+                        .font(WWTypography.heading(headingSize(22, metrics: metrics)))
                         .foregroundStyle(WWColor.nearBlack)
+                        .minimumScaleFactor(0.75)
+
                     (
                         Text("what ").foregroundStyle(WWColor.growGreen)
                         + Text("you pray can shape ")
@@ -286,40 +395,41 @@ struct OnboardingFlowView: View {
                         + Text("real fruit").foregroundStyle(WWColor.growGreen)
                         + Text(" over time.")
                     )
-                    .font(WWTypography.heading(26))
+                    .font(WWTypography.heading(headingSize(20, metrics: metrics)))
                     .foregroundStyle(WWColor.nearBlack)
+                    .minimumScaleFactor(0.75)
+                    .lineLimit(7)
                 }
             }
 
             Image("TendMark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 60, height: 60)
-                .padding(.top, 10)
-            
-            Spacer()
+                .frame(width: metrics.isVeryCompact ? 44 : 60, height: metrics.isVeryCompact ? 44 : 60)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var reminderScreen: some View {
-        VStack(spacing: 20) {
+    private func reminderScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 14 * metrics.scale) {
             Image("OnboardingReminderClock")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 100, height: 100)
-                .padding(.top, 10)
+                .frame(width: metrics.isVeryCompact ? 74 : 96, height: metrics.isVeryCompact ? 74 : 96)
 
             Text("Growth is easier when\nit stays in front of you.")
-                .font(WWTypography.display(34))
+                .font(WWTypography.display(displaySize(34, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.72)
 
             Text("Set a reminder to\nreturn to your prayer journey\nand take your next small step.")
-                .font(WWTypography.heading(24).italic())
+                .font(WWTypography.heading(headingSize(22, metrics: metrics)).italic())
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-                .padding(.vertical, 8)
+                .minimumScaleFactor(0.75)
+                .lineLimit(4)
 
             Image("OnboardingNotificationsStack")
                 .resizable()
@@ -331,14 +441,13 @@ struct OnboardingFlowView: View {
                         .stroke(.black.opacity(0.12), lineWidth: 1)
                 )
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
-    private var widgetScreen: some View {
-        VStack(spacing: 24) {
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
+    private func widgetScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 14 * metrics.scale) {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [Color.pink.opacity(0.55), Color.blue.opacity(0.65)],
@@ -346,80 +455,82 @@ struct OnboardingFlowView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(height: 380)
+                .frame(height: metrics.widgetHeight)
                 .overlay {
                     Image("OnboardingNotificationsPhone")
                         .resizable()
                         .scaledToFit()
-                        .padding(20)
+                        .padding(metrics.isVeryCompact ? 12 : 20)
                 }
                 .overlay(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(.white.opacity(0.78))
-                        .frame(height: 90)
+                        .frame(height: metrics.isVeryCompact ? 72 : 90)
                         .overlay(alignment: .leading) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\"Cast your cares on Him.\"\n1 Peter 5:7")
-                                Text("Today’s step:\nTake 5 minutes to breathe and pray.")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\"Cast your cares on Him.\" 1 Peter 5:7")
+                                Text("Today’s step: Take 5 minutes to breathe and pray.")
                             }
-                            .font(WWTypography.caption(14))
+                            .font(WWTypography.caption(captionSize(13, metrics: metrics)))
                             .foregroundStyle(Color.black)
-                            .padding(.horizontal, 14)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
+                            .padding(.horizontal, 12)
                         }
-                        .padding(14)
+                        .padding(10)
                 }
-                .padding(.top, 10)
 
             Text("Keep your journey\nclose.")
-                .font(WWTypography.display(42))
+                .font(WWTypography.display(displaySize(40, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.72)
 
             Text("See your current prayer, verse,\nand next step right\nfrom your home screen.")
-                .font(WWTypography.heading(24).italic())
+                .font(WWTypography.heading(headingSize(22, metrics: metrics)).italic())
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .lineLimit(4)
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
-    
-    // MARK: - New Screens (Creation Sprout Wow Moment + Review)
+
+    // MARK: - New Screens (Creation Sprout Wow Moment + App Store Review Prompt)
 
     @State private var sproutOpacity: Double = 0.0
     @State private var sproutScale: Double = 0.4
     @State private var sproutGlow: Double = 0.0
 
-    private var creationSproutScreen: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            
+    private func creationSproutScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 24 * metrics.scale) {
+            Spacer(minLength: 0)
+
             ZStack {
                 Circle()
                     .fill(WWColor.growGreen.opacity(0.15))
-                    .frame(width: 180, height: 180)
+                    .frame(width: metrics.isVeryCompact ? 140 : 180, height: metrics.isVeryCompact ? 140 : 180)
                     .scaleEffect(1.0 + sproutGlow)
                     .opacity(sproutOpacity)
                     .blur(radius: 20)
-                
+
                 Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 100, height: 100)
+                    .frame(width: metrics.isVeryCompact ? 80 : 100, height: metrics.isVeryCompact ? 80 : 100)
                     .scaleEffect(sproutScale)
                     .opacity(sproutOpacity)
-                    .foregroundStyle(WWColor.growGreen) // Assuming icon can be styled or naturally green
             }
-            
+
             Text("Creating your first journey...")
-                .font(WWTypography.heading(24))
+                .font(WWTypography.heading(headingSize(24, metrics: metrics)))
                 .foregroundStyle(WWColor.white)
                 .opacity(sproutOpacity)
-            
-            Spacer()
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.8)
         .onAppear {
             withAnimation(.easeOut(duration: 1.2)) {
                 sproutOpacity = 1.0
@@ -428,57 +539,73 @@ struct OnboardingFlowView: View {
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                 sproutGlow = 0.3
             }
-            
-            // Auto advance
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                withAnimation { step = .review }
+                withAnimation {
+                    step = .review
+                }
             }
         }
     }
 
-    private var reviewScreen: some View {
-        VStack(spacing: 30) {
-            Spacer()
-            Text("How was this setup\nexperience?")
-                .font(WWTypography.display(36))
+    private func reviewScreen(metrics: LayoutMetrics) -> some View {
+        VStack(spacing: 18 * metrics.scale) {
+            Spacer(minLength: 0)
+
+            Text("Enjoying Tend so far?")
+                .font(WWTypography.display(displaySize(36, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-            
-            HStack(spacing: 40) {
+                .minimumScaleFactor(0.72)
+
+            Text("A quick App Store review helps more people discover Tend.")
+                .font(WWTypography.heading(headingSize(21, metrics: metrics)))
+                .foregroundStyle(WWColor.muted)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.75)
+
+            HStack(spacing: 14) {
                 Button {
-                    reviewRating = 1
+                    requestReview()
+                    reviewActionTaken = true
                 } label: {
-                    Image(systemName: "hand.thumbsdown.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(reviewRating == 1 ? .red : WWColor.muted.opacity(0.3))
-                        .padding()
-                        .background(WWColor.surface)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(reviewRating == 1 ? .red : .clear, lineWidth: 2))
+                    Label("Rate Tend", systemImage: "star.fill")
+                        .font(WWTypography.heading(headingSize(18, metrics: metrics)))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, metrics.isVeryCompact ? 10 : 12)
+                        .background(WWColor.growGreen)
+                        .clipShape(Capsule())
                 }
-                
+                .buttonStyle(.plain)
+
                 Button {
-                    reviewRating = 5
+                    reviewActionTaken = true
                 } label: {
-                    Image(systemName: "hand.thumbsup.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(reviewRating == 5 ? WWColor.growGreen : WWColor.muted.opacity(0.3))
-                        .padding()
+                    Text("Not now")
+                        .font(WWTypography.heading(headingSize(18, metrics: metrics)))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, metrics.isVeryCompact ? 10 : 12)
                         .background(WWColor.surface)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(reviewRating == 5 ? WWColor.growGreen : .clear, lineWidth: 2))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
+                        )
                 }
+                .buttonStyle(.plain)
             }
-            
-            if reviewRating != nil {
-                Text("Thank you for your feedback.")
-                    .font(WWTypography.caption(16))
+
+            if reviewActionTaken {
+                Text("Thanks for helping Tend grow.")
+                    .font(WWTypography.caption(captionSize(15, metrics: metrics)))
                     .foregroundStyle(WWColor.muted)
             }
-            
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: UIScreen.main.bounds.height * 0.75, alignment: .top)
     }
 
     // MARK: - Navigation & CTA
@@ -503,7 +630,7 @@ struct OnboardingFlowView: View {
         case .intro: return "Get started"
         case .reminder: return "Enable reminders"
         case .widget: return "Create my journey"
-        case .review: return "Finish"
+        case .review: return "Enter Tend"
         default: return "Next"
         }
     }
@@ -530,7 +657,6 @@ struct OnboardingFlowView: View {
         case .blockers: return !blocker.isEmpty
         case .growthVision: return !growthVision.isEmpty
         case .supportMode: return !supportMode.isEmpty
-        case .review: return reviewRating != nil
         default: return true
         }
     }
@@ -541,18 +667,58 @@ struct OnboardingFlowView: View {
         return trimmed
     }
 
-    private func featureBullet(lead: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+    private func optionPill(
+        title: String,
+        selected: Bool,
+        metrics: LayoutMetrics,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(WWTypography.heading(headingSize(metrics.isVeryCompact ? 18 : 22, metrics: metrics)))
+                .foregroundStyle(selected ? WWColor.nearBlack : WWColor.muted)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12)
+                .padding(.vertical, metrics.isVeryCompact ? 9 : 12)
+                .background(WWColor.surface)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(selected ? WWColor.growGreen : .clear, lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func featureBullet(lead: String, text: String, metrics: LayoutMetrics) -> some View {
+        HStack(alignment: .top, spacing: 8) {
             Circle()
                 .fill(WWColor.growGreen)
-                .frame(width: 10, height: 10)
-                .padding(.top, 10)
+                .frame(width: metrics.isVeryCompact ? 8 : 10, height: metrics.isVeryCompact ? 8 : 10)
+                .padding(.top, 7)
             (
                 Text(lead).foregroundStyle(WWColor.growGreen) +
                 Text(" \(text)").foregroundStyle(WWColor.nearBlack)
             )
-            .font(WWTypography.heading(28))
+            .font(WWTypography.heading(headingSize(24, metrics: metrics)))
+            .minimumScaleFactor(0.8)
+            .lineLimit(2)
         }
+    }
+
+    private func displaySize(_ base: CGFloat, metrics: LayoutMetrics) -> CGFloat {
+        max(22, base * metrics.scale)
+    }
+
+    private func headingSize(_ base: CGFloat, metrics: LayoutMetrics) -> CGFloat {
+        max(15, base * metrics.scale)
+    }
+
+    private func captionSize(_ base: CGFloat, metrics: LayoutMetrics) -> CGFloat {
+        max(12, base * metrics.scale)
     }
 
     private func advance() {

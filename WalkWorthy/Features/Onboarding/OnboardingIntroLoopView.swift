@@ -2,7 +2,7 @@ import AVFoundation
 import SwiftUI
 
 struct OnboardingIntroLoopView: View {
-    private let size: CGFloat = 220
+    var size: CGFloat = 220
 
     private var videoURL: URL? {
         let resolver = Bundle.main
@@ -17,29 +17,19 @@ struct OnboardingIntroLoopView: View {
     }
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(WWColor.surface)
-
+        Group {
             if let videoURL {
                 LoopingVideoPlayerView(url: videoURL)
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .accessibilityHidden(true)
             } else {
                 Image("TendMark")
+                    .renderingMode(.original)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 92, height: 92)
-                    .foregroundStyle(WWColor.growGreen)
                     .accessibilityHidden(true)
             }
         }
         .frame(width: size, height: size)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(WWColor.nearBlack.opacity(0.06), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.06), radius: 14, x: 0, y: 8)
         .accessibilityLabel(Text("Tend logo animation"))
     }
 }
