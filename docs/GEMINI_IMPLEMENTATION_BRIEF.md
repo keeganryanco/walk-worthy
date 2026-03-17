@@ -53,6 +53,22 @@ Gemini should summarize understanding in docs before implementation starts.
 - New onboarding pages (e.g., first-journey reveal/review page) can be more experimental.
 - Onboarding must remain no-scroll on supported iPhones; adapt typography/layout/components per viewport instead of introducing vertical scroll.
 
+### 3.1.2 Review step intent (important clarification)
+- The onboarding review step is intended to drive an App Store rating/review prompt.
+- It is **not** intended to collect onboarding thumbs-up/thumbs-down sentiment.
+- Creative freedom is encouraged for this page's visual treatment, but the outcome should be:
+  - clear prompt to rate Tend,
+  - option to skip,
+  - no UX that implies product-survey collection is the primary goal.
+
+### 3.1.3 Do-not-break guardrails
+- You can continue refining UI/UX aggressively, motion included.
+- Preserve existing Codex integration hooks and contracts unless coordinated:
+  - onboarding intro loop media hook,
+  - AI/content/memory service contracts,
+  - current build/test commands and repo hygiene.
+- If a refinement risks breaking existing flow, choose additive changes first and document rationale in patch notes.
+
 ### 3.2 Journey reward loop
 - Each journey is represented by a plant state (seed -> sprout -> young plant -> mature plant).
 - Daily participation (prayer + chosen step completion) can "water" the plant.
@@ -209,22 +225,6 @@ xcodebuild -project WalkWorthy.xcodeproj -scheme WalkWorthy -destination 'platfo
 - Add sprout animation on first journey creation.
 - Ensure dark mode compatibility in onboarding.
 - Add onboarding review page flow.
-
-### 3.1.2 Review step intent (important clarification)
-- The onboarding review step is intended to drive an App Store rating/review prompt.
-- It is **not** intended to collect onboarding thumbs-up/thumbs-down sentiment.
-- Creative freedom is encouraged for this page's visual treatment, but the outcome should be:
-  - clear prompt to rate Tend,
-  - option to skip,
-  - no UX that implies product-survey collection is the primary goal.
-
-### 3.1.3 Do-not-break guardrails
-- You can continue refining UI/UX aggressively, motion included.
-- Preserve existing Codex integration hooks and contracts unless coordinated:
-  - onboarding intro loop media hook,
-  - AI/content/memory service contracts,
-  - current build/test commands and repo hygiene.
-- If a refinement risks breaking existing flow, choose additive changes first and document rationale in patch notes.
 
 ## Phase B: Home journey growth view
 - Replace current Today-first emphasis with plant-centric active journeys surface.
