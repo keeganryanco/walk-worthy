@@ -26,6 +26,10 @@ struct SettingsView: View {
                             .foregroundStyle(subscriptionService.isPremium ? WWColor.growGreen : .secondary)
                     }
 
+                    Button("Reload Products") {
+                        Task { await subscriptionService.loadProducts() }
+                    }
+
                     Button("Restore Purchases") {
                         Task { await subscriptionService.restorePurchases() }
                     }
@@ -34,6 +38,14 @@ struct SettingsView: View {
                         Text(error)
                             .font(WWTypography.detail())
                             .foregroundStyle(.red)
+                    }
+
+                    if !subscriptionService.diagnostics.isEmpty {
+                        ForEach(subscriptionService.diagnostics, id: \.self) { line in
+                            Text(line)
+                                .font(WWTypography.detail(12))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
