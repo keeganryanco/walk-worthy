@@ -48,6 +48,10 @@ Use the local xcconfig (recommended, one-time):
 2. Fill in:
    - `TENDAI_BASE_URL` = your Vercel domain, e.g. `https://<your-vercel-domain>`.
    - `TENDAI_APP_KEY` = same value as Vercel `TEND_APP_SHARED_SECRET`.
+   - `POSTHOG_API_KEY` = PostHog project key (`phc_...`).
+   - `POSTHOG_HOST` = `https://us.i.posthog.com` (US cloud).
+   - `REVENUECAT_IOS_PUBLIC_SDK_KEY` = RevenueCat iOS public SDK key (`appl_...`).
+   - `REVENUECAT_ENTITLEMENT_ID` = `premium`.
 3. Regenerate project:
 
 ```bash

@@ -110,6 +110,6 @@ Privacy: no raw prayer text in analytics events by default.
 ## Inputs needed from user before final lock
 1. Preferred AI provider(s) shortlist for benchmark
 2. Hard budget target per DAU or per generated package
-3. PostHog project key + host
-4. RevenueCat API key + product setup timing
+3. RevenueCat App Store Connect key configuration completion timing
+4. RevenueCat offering/paywall experiment setup timing
 5. Any prohibited content themes beyond current scripture policy

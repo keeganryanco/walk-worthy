@@ -8,8 +8,15 @@ enum AppConstants {
     enum Subscription {
         static let weeklyProductID = "co.keeganryan.tend.premium.weekly"
         static let annualProductID = "co.keeganryan.tend.premium.annual"
-        static let weeklyDisplayFallback = "$5.99 / week"
-        static let annualDisplayFallback = "$35.00 / year"
+        static let weeklyDisplayFallback = "$7.99 / week"
+        static let annualDisplayFallback = "$34.99 / year"
+        static var revenueCatPublicSDKKey: String {
+            Bundle.main.object(forInfoDictionaryKey: "RevenueCatPublicSDKKey") as? String ?? ""
+        }
+
+        static var revenueCatEntitlementID: String {
+            Bundle.main.object(forInfoDictionaryKey: "RevenueCatEntitlementID") as? String ?? "premium"
+        }
     }
 
     enum AI {
@@ -19,6 +26,16 @@ enum AppConstants {
 
         static var gatewayAppKey: String {
             Bundle.main.object(forInfoDictionaryKey: "TENDAIAppKey") as? String ?? ""
+        }
+    }
+
+    enum Analytics {
+        static var posthogProjectKey: String {
+            Bundle.main.object(forInfoDictionaryKey: "POSTHOGAPIKey") as? String ?? ""
+        }
+
+        static var posthogHost: String {
+            Bundle.main.object(forInfoDictionaryKey: "POSTHOGHost") as? String ?? ""
         }
     }
 }

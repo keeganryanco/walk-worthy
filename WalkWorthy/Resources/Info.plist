@@ -22,6 +22,14 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>POSTHOGAPIKey</key>
+	<string>$(POSTHOG_API_KEY)</string>
+	<key>POSTHOGHost</key>
+	<string>$(POSTHOG_HOST)</string>
+	<key>RevenueCatEntitlementID</key>
+	<string>$(REVENUECAT_ENTITLEMENT_ID)</string>
+	<key>RevenueCatPublicSDKKey</key>
+	<string>$(REVENUECAT_IOS_PUBLIC_SDK_KEY)</string>
 	<key>TENDAIAppKey</key>
 	<string>$(TENDAI_APP_KEY)</string>
 	<key>TENDAIBaseURL</key>

@@ -38,6 +38,8 @@ struct ExperimentalOnboardingFlowView: View {
 
     @State private var reviewActionTaken = false
 
+    private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
+
     private let ages = ["18-24", "25-34", "35-44", "45-54", "55+"]
     private let growInOptions = [
         "🕊️ peace", "⏱️ discipline", "🌟 confidence", "🌱 patience", "✝️ faith",
@@ -103,6 +105,14 @@ struct ExperimentalOnboardingFlowView: View {
                 }
             } else {
                 isNameFocused = false
+            }
+
+            if newStep == .creationSprout {
+                analytics.track(.onboardingWowSeen, properties: [:])
+            }
+
+            if newStep == .review {
+                analytics.track(.reviewPromptShown, properties: ["source": "onboarding_step"])
             }
         }
     }
@@ -451,6 +461,7 @@ struct ExperimentalOnboardingFlowView: View {
                 Button {
                     requestReview()
                     reviewActionTaken = true
+                    analytics.track(.reviewPromptShown, properties: ["action": "request_review"])
                 } label: {
                     Label("Rate Tend", systemImage: "star.fill")
                         .font(WWTypography.heading(18))
@@ -464,6 +475,7 @@ struct ExperimentalOnboardingFlowView: View {
 
                 Button {
                     reviewActionTaken = true
+                    analytics.track(.reviewPromptShown, properties: ["action": "dismiss"])
                 } label: {
                     Text("Not now")
                         .font(WWTypography.heading(18))

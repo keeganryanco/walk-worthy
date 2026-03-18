@@ -97,9 +97,9 @@
 - `OPENAI_ESCALATION_MODEL` (default `gpt-5.1`)
 - `GEMINI_PRIMARY_MODEL` (default `gemini-2.5-flash`)
 
-4. Pending integrations (you said soon)
-- PostHog project key + host
-- RevenueCat public SDK key + offering setup confirmation
+4. Remaining integrations
+- RevenueCat App Store Connect key configuration + offering activation in dashboard
+- PostHog event verification in production build (after first TestFlight session)
 
 ## What I can complete without further input
 - Full SwiftUI/SwiftData/StoreKit 2 scaffold

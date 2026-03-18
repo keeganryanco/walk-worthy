@@ -16,9 +16,11 @@ struct RootView: View {
 
     @State private var selectedTab: RootTab = .home
     @State private var showPaywall = false
+    @State private var trackedOnboardingStart = false
 
     private let cardGenerator = TemplateTodayCardGenerator()
     private let journeyContentService = JourneyContentService()
+    private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
     private var profile: OnboardingProfile? {
         profiles.first
@@ -67,6 +69,19 @@ struct RootView: View {
         }
         .onChange(of: activeJourneys.count) { _, _ in
             Task { await prefetchDailyPackagesIfPossible() }
+        }
+        .onAppear {
+            trackOnboardingStartedIfNeeded()
+        }
+        .onChange(of: showPaywall) { _, isShown in
+            guard isShown else { return }
+            analytics.track(
+                .paywallShown,
+                properties: [
+                    "trigger_reason": settings?.pendingPaywallReason ?? "unspecified",
+                    "has_premium": subscriptionService.isPremium ? "true" : "false"
+                ]
+            )
         }
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallView(
@@ -142,12 +157,20 @@ struct RootView: View {
         }
 
         try? modelContext.save()
+        analytics.track(.onboardingCompleted, properties: ["first_journey_category": firstJourney.category])
+        analytics.track(.journeyCreated, properties: ["source": "onboarding_seed"])
 
         Task {
             let granted = await notificationService.requestAuthorization()
             guard granted else { return }
             await notificationService.scheduleDailyReminder(hour: 8, minute: 0)
         }
+    }
+
+    private func trackOnboardingStartedIfNeeded() {
+        guard profile == nil, !trackedOnboardingStart else { return }
+        trackedOnboardingStart = true
+        analytics.track(.onboardingStarted, properties: [:])
     }
 
     private func prefetchDailyPackagesIfPossible() async {
