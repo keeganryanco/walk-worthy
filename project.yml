@@ -9,6 +9,10 @@ settings:
 configs:
   Debug: debug
   Release: release
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios.git
+    from: 5.0.0
 targets:
   WalkWorthy:
     type: application
@@ -29,6 +33,9 @@ targets:
         TARGETED_DEVICE_FAMILY: 1
     preBuildScripts: []
     postBuildScripts: []
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
   WalkWorthyTests:
     type: bundle.unit-test
     platform: iOS

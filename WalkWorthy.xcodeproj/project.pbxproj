@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		005BA037BF7638B7ECBF212A /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 81D082D7DC3EECFB45809889 /* RevenueCat */; };
 		01CBF2020F395B4028383279 /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BD6B32111863921BFC4C9ED /* Inter-Variable.ttf */; };
 		0E96F334434C97A575306806 /* WalkWorthyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56FA0FD64E48866B2E48AB /* WalkWorthyApp.swift */; };
 		13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */; };
@@ -20,6 +21,7 @@
 		1AFDE0F5A523F91987C0FB90 /* MonetizationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0832666F09D4C16B2C21B2E2 /* MonetizationPolicy.swift */; };
 		1B650A76D634085C5D64680C /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C4ACA99A63A5F12C93E33E /* NotificationService.swift */; };
 		1ECFB12054E159B11F7D2B8E /* PlusJakartaSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */; };
+		1FC05C2B62BFB292D25C7167 /* ExperimentalOnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABB7957D6198E019310BD03 /* ExperimentalOnboardingFlowView.swift */; };
 		2B9DBC262DBDF9B0AE6A5232 /* reminders_transparent_light_mode.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6A0821535CE0A5451BB3857D /* reminders_transparent_light_mode.svg */; };
 		2FDA485F2271C1D674765BE5 /* PlusJakartaSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BBC2416B321B36D99A5216EC /* PlusJakartaSans-ExtraBold.ttf */; };
 		3199710076C72D9AE653E90A /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067C7842AD275F8263788578 /* AppSettings.swift */; };
@@ -58,6 +60,7 @@
 		BDF46555FD65216E1E75170B /* WalkWorthyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27A49345B9892A16501131B /* WalkWorthyTests.swift */; };
 		C37B71AE9BCE672E42CDD5B3 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79139B1B772C8438407A86D /* OnboardingFlowView.swift */; };
 		C7EC052CA8D9DA46E0E083D3 /* JourneyProgressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5222DE8FB9CBEAC9CB97F58F /* JourneyProgressService.swift */; };
+		D2DB76ABD73D2942A56033FC /* OnboardingIntroLoop.mov in Resources */ = {isa = PBXBuildFile; fileRef = FA7B6A0683729FE4EC039BE9 /* OnboardingIntroLoop.mov */; };
 		D4E5ABA5A6C53F7539D6E65E /* AnsweredPrayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5830B39F0DDAA2B30FD513E /* AnsweredPrayer.swift */; };
 		D6DEB312670CD03D4301B1E5 /* TemplateTodayCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */; };
 		DA61263596DFF2BD44567C0E /* notifications.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6C6499656B7905EBB3F8AAEF /* notifications.svg */; };
@@ -131,6 +134,7 @@
 		7F31C623BA3D2509776849C8 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		8749975FC64A74D869B254EB /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		8ABB7957D6198E019310BD03 /* ExperimentalOnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperimentalOnboardingFlowView.swift; sourceTree = "<group>"; };
 		8D90D17527B3E2DCA2B1CD34 /* PlusJakartaSans-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		8EB51F91B80B206B0A04EE75 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		95EFD7CBA662617AA7C61694 /* JourneyProgressEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyProgressEvent.swift; sourceTree = "<group>"; };
@@ -161,8 +165,20 @@
 		F54DDACB6A90056567E5D567 /* WWComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWComponents.swift; sourceTree = "<group>"; };
 		F79139B1B772C8438407A86D /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		F806B97A5D01C7B72D4FCDA1 /* PlusJakartaSans-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-Light.ttf"; sourceTree = "<group>"; };
+		FA7B6A0683729FE4EC039BE9 /* OnboardingIntroLoop.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = OnboardingIntroLoop.mov; sourceTree = "<group>"; };
 		FB6619712AC943B05F298276 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D7439073782D6B9F6C20CA4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				005BA037BF7638B7ECBF212A /* RevenueCat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		0EFB6244D13472966BAD4E52 /* Paywall */ = {
@@ -218,6 +234,7 @@
 				FBFA97478F15484BF47DA628 /* Fonts */,
 				D13EAD956A1858D9A121EB24 /* Icons */,
 				C687CC117DD4D10F3AB33061 /* Logos */,
+				F6ECDCC050AA0F150C71EA9A /* Videos */,
 			);
 			path = BrandAssets;
 			sourceTree = "<group>";
@@ -335,6 +352,7 @@
 		9DA3B66EB6C19EAD26D36350 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				8ABB7957D6198E019310BD03 /* ExperimentalOnboardingFlowView.swift */,
 				F79139B1B772C8438407A86D /* OnboardingFlowView.swift */,
 				A13FD313E3C771FC635DE56B /* OnboardingIntroLoopView.swift */,
 			);
@@ -434,6 +452,14 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
+		F6ECDCC050AA0F150C71EA9A /* Videos */ = {
+			isa = PBXGroup;
+			children = (
+				FA7B6A0683729FE4EC039BE9 /* OnboardingIntroLoop.mov */,
+			);
+			path = Videos;
+			sourceTree = "<group>";
+		};
 		FBFA97478F15484BF47DA628 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
@@ -504,6 +530,7 @@
 			buildPhases = (
 				9B3DDB6BFAF53338BA31C5FE /* Sources */,
 				DD99A42A65D7094780131643 /* Resources */,
+				8D7439073782D6B9F6C20CA4 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -511,6 +538,7 @@
 			);
 			name = WalkWorthy;
 			packageProductDependencies = (
+				81D082D7DC3EECFB45809889 /* RevenueCat */,
 			);
 			productName = WalkWorthy;
 			productReference = 71A7780527BA0ABC44FF3F34 /* WalkWorthy.app */;
@@ -542,6 +570,9 @@
 			);
 			mainGroup = CD5D97978A6B00D5BA866EF0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F669AA0D710A506C6976B480 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 27EA7A2B062FCFE7DA8C084E /* Products */;
 			projectDirPath = "";
@@ -561,6 +592,7 @@
 			files = (
 				64FE2BCF472740B974D56799 /* Assets.xcassets in Resources */,
 				01CBF2020F395B4028383279 /* Inter-Variable.ttf in Resources */,
+				D2DB76ABD73D2942A56033FC /* OnboardingIntroLoop.mov in Resources */,
 				5BE6A5BD13AC9BF62C9790DF /* PlusJakartaSans-Bold.ttf in Resources */,
 				1ECFB12054E159B11F7D2B8E /* PlusJakartaSans-BoldItalic.ttf in Resources */,
 				2FDA485F2271C1D674765BE5 /* PlusJakartaSans-ExtraBold.ttf in Resources */,
@@ -611,6 +643,7 @@
 				B866044E4E3BA553614C3A0C /* ConnectivityService.swift in Sources */,
 				911F081CDC31FE8B266C59F8 /* DailyJourneyPackage.swift in Sources */,
 				E24503D858F0834E942FBCC9 /* DailyJourneyPackageRecord.swift in Sources */,
+				1FC05C2B62BFB292D25C7167 /* ExperimentalOnboardingFlowView.swift in Sources */,
 				5387EFE0FD2E8C75433EAA7C /* HomeView.swift in Sources */,
 				ECF7BC7A72E8B3A915F59B7A /* JournalView.swift in Sources */,
 				79A3357C815397FC26E9E94B /* JourneyContentService.swift in Sources */,
@@ -940,6 +973,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F669AA0D710A506C6976B480 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		81D082D7DC3EECFB45809889 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F669AA0D710A506C6976B480 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 92C4E3B6387D78F94278068A /* Project object */;
 }

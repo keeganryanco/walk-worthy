@@ -86,7 +86,7 @@ Run a small benchmark set (20-50 prompts) before final model lock.
 Privacy: no raw prayer text in analytics events by default.
 
 ## Monetization plan (RevenueCat)
-- Integrate SDK early for entitlement plumbing.
+- SDK integrated for entitlement plumbing.
 - Initial launch policy:
   - no paywall for first 3 days from install/profile creation.
   - keep entitlement checks/policy ready for later paywall activation.

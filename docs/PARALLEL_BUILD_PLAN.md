@@ -72,5 +72,5 @@ Gemini can start UI immediately using mock/sample data if contracts are not yet 
 - M1: Complete
 - M2: In progress (Gemini-owned)
 - M3: In progress (Codex-owned)
-- M4: In progress (StoreKit in place, PostHog wired, RevenueCat SDK wiring pending)
+- M4: In progress (PostHog + RevenueCat SDK wired; paywall experiment rollout logic pending)
 - M5: Pending

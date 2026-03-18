@@ -1,5 +1,4 @@
 import SwiftUI
-import StoreKit
 
 struct PaywallView: View {
     @EnvironmentObject private var subscriptionService: SubscriptionService
@@ -135,14 +134,14 @@ struct PaywallView: View {
 
     private var annualPlanLabel: String {
         if let product = subscriptionService.annualProduct {
-            return "\(product.displayPrice) / \(product.subscription?.subscriptionPeriod.debugLabel ?? "year")"
+            return "\(product.displayPrice) / \(product.periodLabel)"
         }
         return AppConstants.Subscription.annualDisplayFallback
     }
 
     private var weeklyPlanLabel: String {
         if let product = subscriptionService.weeklyProduct {
-            return "\(product.displayPrice) / \(product.subscription?.subscriptionPeriod.debugLabel ?? "week")"
+            return "\(product.displayPrice) / \(product.periodLabel)"
         }
         return AppConstants.Subscription.weeklyDisplayFallback
     }
@@ -161,23 +160,6 @@ struct PaywallView: View {
             return "Timeline is premium"
         default:
             return value
-        }
-    }
-}
-
-private extension Product.SubscriptionPeriod {
-    var debugLabel: String {
-        switch unit {
-        case .day:
-            return value == 1 ? "day" : "\(value) days"
-        case .week:
-            return value == 1 ? "week" : "\(value) weeks"
-        case .month:
-            return value == 1 ? "month" : "\(value) months"
-        case .year:
-            return value == 1 ? "year" : "\(value) years"
-        @unknown default:
-            return "term"
         }
     }
 }
