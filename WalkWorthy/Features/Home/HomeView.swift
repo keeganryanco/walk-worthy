@@ -121,9 +121,18 @@ struct JourneyGrowthPage: View {
             return "patience"
         case _ where cat.contains("faith") || cat.contains("trust") || cat.contains("doubt") || cat.contains("belief"):
             return "faith"
+        case _ where cat.contains("joy") || cat.contains("celebrat") || cat.contains("happi") || cat.contains("praise") || cat.contains("gratitude"):
+            return "joy"
+        case _ where cat.contains("wisdom") || cat.contains("clarity") || cat.contains("decision") || cat.contains("guidance") || cat.contains("direction"):
+            return "wisdom"
+        case _ where cat.contains("heal") || cat.contains("health") || cat.contains("sick") || cat.contains("recover") || cat.contains("grief"):
+            return "healing"
+        case _ where cat.contains("disciplin") || cat.contains("focus") || cat.contains("habit") || cat.contains("sin") || cat.contains("tempt"):
+            return "discipline"
+        case _ where cat.contains("communit") || cat.contains("fellowship") || cat.contains("marriage") || cat.contains("relationship") || cat.contains("family") || cat.contains("friend"):
+            return "community"
         default:
-            // Keep suffixes aligned to available asset variants in the catalog.
-            return "basic"
+            return "base"
         }
     }
     
@@ -131,9 +140,25 @@ struct JourneyGrowthPage: View {
         "growth_stage_\(plantStage)_\(themeSuffix)"
     }
 
-    private var resolvedPlantAssetName: String? {
-        let candidates = [plantImageName, "Plants/\(plantImageName)"]
-        return candidates.first(where: { UIImage(named: $0) != nil })
+    private var fallbackPlantImageName: String {
+        "growth_stage_\(plantStage)_basic"
+    }
+
+    private var resolvedPlantImageName: String? {
+        let candidates = [
+            plantImageName,
+            "Plants/\(plantImageName)",
+            fallbackPlantImageName,
+            "Plants/\(fallbackPlantImageName)"
+        ]
+
+        for candidate in candidates {
+            if UIImage(named: candidate) != nil {
+                return candidate
+            }
+        }
+
+        return nil
     }
     
     var body: some View {
@@ -146,8 +171,8 @@ struct JourneyGrowthPage: View {
                     
                     VStack {
                         Spacer()
-                        if let resolvedPlantAssetName {
-                            Image(resolvedPlantAssetName)
+                        if let resolvedPlantImageName {
+                            Image(resolvedPlantImageName)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
