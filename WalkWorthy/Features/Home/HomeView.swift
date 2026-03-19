@@ -144,6 +144,59 @@ struct JourneyGrowthPage: View {
         "growth_stage_\(plantStage)_basic"
     }
 
+    private var availableThemeSuffix: String {
+        switch themeSuffix {
+        case "basic", "faith", "patience", "peace", "resilience":
+            return themeSuffix
+        default:
+            // Keep future theme suffixes in logic, but map unresolved themes to current shipped assets.
+            return "basic"
+        }
+    }
+
+    private var normalizedPlantStage: Int {
+        min(max(plantStage, 1), 5)
+    }
+
+    @available(iOS 17.0, *)
+    private var resolvedPlantImageResource: ImageResource {
+        switch (normalizedPlantStage, availableThemeSuffix) {
+        case (1, "basic"): return .growthStage1SeedBasic
+        case (1, "faith"): return .growthStage1SeedFaith
+        case (1, "patience"): return .growthStage1SeedPatience
+        case (1, "peace"): return .growthStage1SeedPeace
+        case (1, "resilience"): return .growthStage1SeedResilience
+
+        case (2, "basic"): return .growthStage2SproutBasic
+        case (2, "faith"): return .growthStage2SproutFaith
+        case (2, "patience"): return .growthStage2SproutPatience
+        case (2, "peace"): return .growthStage2SproutPeace
+        case (2, "resilience"): return .growthStage2SproutResilience
+
+        case (3, "basic"): return .growthStage3YoungBasic
+        case (3, "faith"): return .growthStage3YoungFaith
+        case (3, "patience"): return .growthStage3YoungPatience
+        case (3, "peace"): return .growthStage3YoungPeace
+        case (3, "resilience"): return .growthStage3YoungResilience
+
+        case (4, "basic"): return .growthStage4MatureBasic
+        case (4, "faith"): return .growthStage4MatureFaith
+        case (4, "patience"): return .growthStage4MaturePatience
+        case (4, "peace"): return .growthStage4MaturePeace
+        case (4, "resilience"): return .growthStage4MatureResilience
+
+        case (5, "basic"): return .growthStage5FullBloomBasic
+        case (5, "faith"): return .growthStage5FullBloomFaith
+        case (5, "patience"): return .growthStage5FullBloomPatience
+        case (5, "peace"): return .growthStage5FullBloomPeace
+        case (5, "resilience"): return .growthStage5FullBloomResilience
+
+        default:
+            // Defensive default: always show a valid shipped asset.
+            return .growthStage1SeedBasic
+        }
+    }
+
     private var resolvedPlantImageName: String? {
         let candidates = plantImageCandidates
 
@@ -191,7 +244,13 @@ struct JourneyGrowthPage: View {
                     
                     VStack {
                         Spacer()
-                        if let resolvedPlantImageName, let resolvedUIImage = resolveUIImage(named: resolvedPlantImageName) {
+                        if #available(iOS 17.0, *) {
+                            Image(resolvedPlantImageResource)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
+                                .padding(.bottom, 32)
+                        } else if let resolvedPlantImageName, let resolvedUIImage = resolveUIImage(named: resolvedPlantImageName) {
                             Image(uiImage: resolvedUIImage)
                                 .resizable()
                                 .scaledToFit()
@@ -206,6 +265,9 @@ struct JourneyGrowthPage: View {
 #if DEBUG
                                 Text("Plant asset missing")
                                     .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text("themeSuffix=\(themeSuffix), mapped=\(availableThemeSuffix)")
+                                    .font(.caption2)
                                     .foregroundStyle(.secondary)
                                 Text(plantImageCandidates.joined(separator: " | "))
                                     .font(.caption2)
