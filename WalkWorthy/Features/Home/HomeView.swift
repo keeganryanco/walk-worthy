@@ -145,17 +145,37 @@ struct JourneyGrowthPage: View {
     }
 
     private var resolvedPlantImageName: String? {
-        let candidates = [
+        let candidates = plantImageCandidates
+
+        for candidate in candidates {
+            if resolveUIImage(named: candidate) != nil {
+                return candidate
+            }
+        }
+
+        return nil
+    }
+
+    private var plantImageCandidates: [String] {
+        [
             plantImageName,
             "Plants/\(plantImageName)",
             fallbackPlantImageName,
             "Plants/\(fallbackPlantImageName)"
         ]
+    }
 
-        for candidate in candidates {
-            if UIImage(named: candidate) != nil {
-                return candidate
-            }
+    private func resolveUIImage(named name: String) -> UIImage? {
+        if let image = UIImage(named: name) {
+            return image
+        }
+
+        if let image = UIImage(named: name, in: .main, compatibleWith: nil) {
+            return image
+        }
+
+        if let image = UIImage(named: name, in: Bundle(for: PlantAssetBundleLocator.self), compatibleWith: nil) {
+            return image
         }
 
         return nil
@@ -171,17 +191,30 @@ struct JourneyGrowthPage: View {
                     
                     VStack {
                         Spacer()
-                        if let resolvedPlantImageName {
-                            Image(resolvedPlantImageName)
+                        if let resolvedPlantImageName, let resolvedUIImage = resolveUIImage(named: resolvedPlantImageName) {
+                            Image(uiImage: resolvedUIImage)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
                                 .padding(.bottom, 32)
                         } else {
                             // Fallback if asset is missing
-                            Text(stageEmoji(for: plantStage))
-                                .font(.system(size: 100))
-                                .padding(.bottom, 60)
+                            VStack(spacing: 10) {
+                                Text(stageEmoji(for: plantStage))
+                                    .font(.system(size: 100))
+
+#if DEBUG
+                                Text("Plant asset missing")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(plantImageCandidates.joined(separator: " | "))
+                                    .font(.caption2)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 12)
+#endif
+                            }
+                            .padding(.bottom, 60)
                         }
                     }
                 }
@@ -332,6 +365,8 @@ struct JourneyGrowthPage: View {
         try? modelContext.save()
     }
 }
+
+private final class PlantAssetBundleLocator {}
 
 struct TendingFlowView: View {
     @Environment(\.dismiss) private var dismiss
