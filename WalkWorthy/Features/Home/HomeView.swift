@@ -91,6 +91,16 @@ struct JourneyGrowthPage: View {
     @State private var isGenerating = false
     @State private var showTendingSheet = false
     
+    // Animation States
+    @State private var justWatered = false
+    @State private var orbOffset: CGFloat = 150
+    @State private var orbOpacity: Double = 0.0
+    @State private var orbScale: CGFloat = 1.0
+    
+    // Evolution States
+    @State private var isEvolving = false
+    @State private var evolutionStep = 0
+    
     private var todaysEntry: PrayerEntry? {
         let calendar = Calendar.current
         return entries.first(where: { calendar.isDateInToday($0.createdAt) })
@@ -100,13 +110,16 @@ struct JourneyGrowthPage: View {
         entries.filter { $0.completedAt != nil }.count
     }
     
-    private var plantStage: Int {
-        let count = completedCount
+    private func stage(for count: Int) -> Int {
         if count == 0 { return 1 } // Seed
         if count < 3 { return 2 } // Sprout
         if count < 7 { return 3 } // Young plant
         if count < 14 { return 4 } // Maturing
         return 5 // Full Bloom
+    }
+    
+    private var plantStage: Int {
+        stage(for: completedCount)
     }
     
     private var themeSuffix: String {
@@ -146,7 +159,7 @@ struct JourneyGrowthPage: View {
 
     private var availableThemeSuffix: String {
         switch themeSuffix {
-        case "basic", "faith", "patience", "peace", "resilience":
+        case "basic", "community", "discipline", "faith", "healing", "joy", "patience", "peace", "resilience", "wisdom":
             return themeSuffix
         default:
             // Keep future theme suffixes in logic, but map unresolved themes to current shipped assets.
@@ -162,34 +175,59 @@ struct JourneyGrowthPage: View {
     private var resolvedPlantImageResource: ImageResource {
         switch (normalizedPlantStage, availableThemeSuffix) {
         case (1, "basic"): return .growthStage1SeedBasic
+        case (1, "community"): return .growthStage1SeedCommunity
+        case (1, "discipline"): return .growthStage1SeedDiscipline
         case (1, "faith"): return .growthStage1SeedFaith
+        case (1, "healing"): return .growthStage1SeedHealing
+        case (1, "joy"): return .growthStage1SeedJoy
         case (1, "patience"): return .growthStage1SeedPatience
         case (1, "peace"): return .growthStage1SeedPeace
         case (1, "resilience"): return .growthStage1SeedResilience
+        case (1, "wisdom"): return .growthStage1SeedWisdom
 
         case (2, "basic"): return .growthStage2SproutBasic
+        case (2, "community"): return .growthStage2SproutCommunity
+        case (2, "discipline"): return .growthStage2SproutDiscipline
         case (2, "faith"): return .growthStage2SproutFaith
+        case (2, "healing"): return .growthStage2SproutHealing
+        case (2, "joy"): return .growthStage2SproutJoy
         case (2, "patience"): return .growthStage2SproutPatience
         case (2, "peace"): return .growthStage2SproutPeace
         case (2, "resilience"): return .growthStage2SproutResilience
+        case (2, "wisdom"): return .growthStage2SproutWisdom
 
         case (3, "basic"): return .growthStage3YoungBasic
+        case (3, "community"): return .growthStage3YoungCommunity
+        case (3, "discipline"): return .growthStage3YoungDiscipline
         case (3, "faith"): return .growthStage3YoungFaith
+        case (3, "healing"): return .growthStage3YoungHealing
+        case (3, "joy"): return .growthStage3YoungJoy
         case (3, "patience"): return .growthStage3YoungPatience
         case (3, "peace"): return .growthStage3YoungPeace
         case (3, "resilience"): return .growthStage3YoungResilience
+        case (3, "wisdom"): return .growthStage3YoungWisdom
 
         case (4, "basic"): return .growthStage4MatureBasic
+        case (4, "community"): return .growthStage4MatureCommunity
+        case (4, "discipline"): return .growthStage4MatureDiscipline
         case (4, "faith"): return .growthStage4MatureFaith
+        case (4, "healing"): return .growthStage4MatureHealing
+        case (4, "joy"): return .growthStage4MatureJoy
         case (4, "patience"): return .growthStage4MaturePatience
         case (4, "peace"): return .growthStage4MaturePeace
         case (4, "resilience"): return .growthStage4MatureResilience
+        case (4, "wisdom"): return .growthStage4MatureWisdom
 
         case (5, "basic"): return .growthStage5FullBloomBasic
+        case (5, "community"): return .growthStage5FullBloomCommunity
+        case (5, "discipline"): return .growthStage5FullBloomDiscipline
         case (5, "faith"): return .growthStage5FullBloomFaith
+        case (5, "healing"): return .growthStage5FullBloomHealing
+        case (5, "joy"): return .growthStage5FullBloomJoy
         case (5, "patience"): return .growthStage5FullBloomPatience
         case (5, "peace"): return .growthStage5FullBloomPeace
         case (5, "resilience"): return .growthStage5FullBloomResilience
+        case (5, "wisdom"): return .growthStage5FullBloomWisdom
 
         default:
             // Defensive default: always show a valid shipped asset.
@@ -236,56 +274,112 @@ struct JourneyGrowthPage: View {
     
     var body: some View {
         GeometryReader { proxy in
-            VStack(spacing: 0) {
-                // Top Half: Plant Visual
+            ZStack {
+                VStack(spacing: 0) {
+                    // Top Half: Plant Visual
                 ZStack {
                     WWColor.morningGold.opacity(0.05)
                         .ignoresSafeArea(edges: .top)
                     
                     VStack {
                         Spacer()
-                        if #available(iOS 17.0, *) {
-                            Image(resolvedPlantImageResource)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
-                                .padding(.bottom, 32)
-                        } else if let resolvedPlantImageName, let resolvedUIImage = resolveUIImage(named: resolvedPlantImageName) {
-                            Image(uiImage: resolvedUIImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
-                                .padding(.bottom, 32)
-                        } else {
-                            // Fallback if asset is missing
-                            VStack(spacing: 10) {
-                                Text(stageEmoji(for: plantStage))
-                                    .font(.system(size: 100))
-
-#if DEBUG
-                                Text("Plant asset missing")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                Text("themeSuffix=\(themeSuffix), mapped=\(availableThemeSuffix)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                Text(plantImageCandidates.joined(separator: " | "))
-                                    .font(.caption2)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 12)
-#endif
-                            }
-                            .padding(.bottom, 60)
-                        }
+                        plantImageView(proxy: proxy)
+                            .scaleEffect(justWatered ? 1.05 : 1.0)
+                    }
+                    
+                    // Native Glow Orb Animation
+                    if orbOpacity > 0 {
+                        Circle()
+                            .fill(WWColor.morningGold)
+                            .frame(width: 30, height: 30)
+                            .shadow(color: WWColor.morningGold.opacity(0.8), radius: 15, x: 0, y: 0)
+                            .blur(radius: 2)
+                            .scaleEffect(orbScale)
+                            .offset(y: orbOffset)
+                            .opacity(orbOpacity)
                     }
                 }
                 .frame(height: proxy.size.height * 0.5)
+                .onChange(of: completedCount) { oldCount, newCount in
+                    if newCount > oldCount {
+                        let oldStage = stage(for: oldCount)
+                        let newStage = stage(for: newCount)
+                        
+                        if newStage > oldStage {
+                            // Stage Up! Trigger Evolution
+                            withAnimation(.easeIn(duration: 0.5)) {
+                                isEvolving = true
+                                evolutionStep = 1
+                            }
+                        } else {
+                            // Regular tend
+                            triggerWateringEffect()
+                        }
+                    }
+                }
                 
                 // Bottom Half: Content & Actions
                 bottomHalf
                     .frame(height: proxy.size.height * 0.5)
             }
+            
+            // Pokémon Style Evolution Overlay
+            if isEvolving {
+                ZStack {
+                    // Dark Vignette
+                    Color.black.opacity(0.85).ignoresSafeArea()
+                    
+                    VStack(spacing: 0) {
+                        // Mimic Top Half height for perfect alignment
+                        ZStack {
+                            VStack {
+                                Spacer()
+                                
+                                ZStack {
+                                    // Glowing Expanding Halo
+                                    if evolutionStep >= 1 {
+                                        Circle()
+                                            .fill(WWColor.morningGold.opacity(0.4))
+                                            .frame(width: proxy.size.width * 0.9, height: proxy.size.width * 0.9)
+                                            .blur(radius: 40)
+                                            .scaleEffect(evolutionStep == 2 ? 1.2 : 0.8)
+                                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: evolutionStep)
+                                    }
+                                    
+                                    // The Silhouette & Reveal
+                                    // NOTE: this requires transparent PNG backgrounds to create a true silhouette!
+                                    plantImageView(proxy: proxy)
+                                        .colorMultiply(evolutionStep >= 3 ? .white : .black)
+                                        .brightness(evolutionStep >= 3 ? 0 : -1)
+                                        .scaleEffect(evolutionStep >= 3 ? 1.1 : 0.9)
+                                        .overlay {
+                                            if evolutionStep == 2 {
+                                                // White flash frame
+                                                plantImageView(proxy: proxy)
+                                                    .colorMultiply(.white)
+                                                    .brightness(1)
+                                                    .transition(.opacity)
+                                            }
+                                        }
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.6), value: evolutionStep)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
+                                .padding(.bottom, 32)
+                            }
+                        }
+                        .frame(height: proxy.size.height * 0.5)
+                        
+                        // Push up the rest
+                        Spacer().frame(height: proxy.size.height * 0.5)
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(100)
+                .onAppear {
+                    runEvolutionSequence()
+                }
+            }
+        }
         }
         .fullScreenCover(isPresented: $showTendingSheet) {
             if let entry = todaysEntry {
@@ -386,6 +480,102 @@ struct JourneyGrowthPage: View {
         case 3: return "🌿"
         case 4: return "🪴"
         default: return "🌳"
+        }
+    }
+    
+    @ViewBuilder
+    private func plantImageView(proxy: GeometryProxy) -> some View {
+        if #available(iOS 17.0, *) {
+            Image(resolvedPlantImageResource)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
+                .padding(.bottom, 32)
+        } else if let resolvedPlantImageName, let resolvedUIImage = resolveUIImage(named: resolvedPlantImageName) {
+            Image(uiImage: resolvedUIImage)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: proxy.size.height * 0.45)
+                .padding(.bottom, 32)
+        } else {
+            // Fallback if asset is missing
+            VStack(spacing: 10) {
+                Text(stageEmoji(for: plantStage))
+                    .font(.system(size: 100))
+
+#if DEBUG
+                Text("Plant asset missing")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text("themeSuffix=\(themeSuffix), mapped=\(availableThemeSuffix)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(plantImageCandidates.joined(separator: " | "))
+                    .font(.caption2)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+#endif
+            }
+            .padding(.bottom, 60)
+        }
+    }
+
+    private func runEvolutionSequence() {
+        // Step 1: Silhouette pulse starts on appear (evolutionStep = 1)
+        // TODO: Play native AudioServicesPlaySystemSound(...) chime here!
+        
+        // Step 2: Flash white build up
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(.easeIn(duration: 0.15)) {
+                evolutionStep = 2 // White flash
+            }
+            
+            // Step 3: Reveal Full Color
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                    evolutionStep = 3 // Color reveal & scale bounce
+                }
+                
+                // Step 4: Dismiss Overlay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        isEvolving = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        evolutionStep = 0 // Reset for next time
+                    }
+                }
+            }
+        }
+    }
+
+    private func triggerWateringEffect() {
+        orbOffset = 150
+        orbOpacity = 1.0
+        orbScale = 0.5
+        
+        // 1. Float up
+        withAnimation(.easeOut(duration: 0.8)) {
+            orbOffset = -20
+        }
+        
+        // 2. Absorb into the plant and Bump
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                orbScale = 4.0
+                orbOpacity = 0.0
+            }
+            
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                justWatered = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    justWatered = false
+                }
+            }
         }
     }
     

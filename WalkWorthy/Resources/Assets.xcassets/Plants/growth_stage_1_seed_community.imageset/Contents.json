@@ -1,0 +1,23 @@
+{
+  "images" : [
+    {
+      "filename" : "growth_stage_1_seed_community.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "growth_stage_1_seed_community@2x.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "growth_stage_1_seed_community@3x.png",
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
