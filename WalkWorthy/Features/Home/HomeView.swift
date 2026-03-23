@@ -106,23 +106,37 @@ struct JourneyGrowthPage: View {
         return entries.first(where: { calendar.isDateInToday($0.createdAt) })
     }
     
+    private static let tendsPerStage = 3
+    private static let stagesPerCycle = 5
+    private static let tendsPerCycle = tendsPerStage * stagesPerCycle
+
     private var completedCount: Int {
-        entries.filter { $0.completedAt != nil }.count
+        let stored = journey.completedTends
+        if stored > 0 {
+            return stored
+        }
+        return entries.filter { $0.completedAt != nil }.count
     }
     
     private func stage(for count: Int) -> Int {
-        if count == 0 { return 1 } // Seed
-        if count < 3 { return 2 } // Sprout
-        if count < 7 { return 3 } // Young plant
-        if count < 14 { return 4 } // Maturing
-        return 5 // Full Bloom
+        guard count > 0 else { return 1 }
+        let indexInCycle = count % Self.tendsPerCycle
+        return min(Self.stagesPerCycle, max(1, (indexInCycle / Self.tendsPerStage) + 1))
     }
     
     private var plantStage: Int {
         stage(for: completedCount)
     }
+
+    private var currentCycleCount: Int {
+        max(journey.cycleCount, completedCount / Self.tendsPerCycle)
+    }
     
     private var themeSuffix: String {
+        if journey.themeKey != .basic {
+            return journey.themeKey.rawValue
+        }
+
         let cat = journey.category.lowercased()
         
         switch cat {
@@ -147,6 +161,17 @@ struct JourneyGrowthPage: View {
         default:
             return "base"
         }
+    }
+
+    private var todaysPackageRecord: DailyJourneyPackageRecord? {
+        let dayKey = JourneyContentService.dayKey(for: .now)
+        let journeyID = journey.id
+        let descriptor = FetchDescriptor<DailyJourneyPackageRecord>(
+            predicate: #Predicate {
+                $0.journeyID == journeyID && $0.dayKey == dayKey
+            }
+        )
+        return try? modelContext.fetch(descriptor).first
     }
     
     private var plantImageName: String {
@@ -387,11 +412,14 @@ struct JourneyGrowthPage: View {
                     journey: journey,
                     entry: entry,
                     entries: entries,
-                    profile: profile
+                    profile: profile,
+                    package: todaysPackageRecord?.asPackage
                 )
             }
         }
     }
+    
+    @State private var dewDropFocus = false
     
     @ViewBuilder
     private var bottomHalf: some View {
@@ -408,6 +436,12 @@ struct JourneyGrowthPage: View {
                     .font(WWTypography.caption(12).weight(.bold))
                     .foregroundStyle(WWColor.growGreen)
                     .tracking(2.0)
+
+                if currentCycleCount > 0 {
+                    Text("Cycle \(currentCycleCount + 1)")
+                        .font(WWTypography.caption(11))
+                        .foregroundStyle(WWColor.muted)
+                }
             }
             .padding(.top, 40)
             
@@ -418,10 +452,18 @@ struct JourneyGrowthPage: View {
                 if entry.completedAt != nil {
                     // Completed State: Show reflection
                     VStack(spacing: 16) {
-                        Text("Today's Tend")
-                            .font(WWTypography.caption(14).weight(.bold))
-                            .foregroundStyle(WWColor.muted)
-                            .tracking(1.0)
+                        HStack(spacing: 8) {
+                            if let img = resolveUIImage(named: "sun_streak_icon") {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                            }
+                            Text("Today's Tend")
+                                .font(WWTypography.caption(14).weight(.bold))
+                                .foregroundStyle(WWColor.muted)
+                                .tracking(1.0)
+                        }
                         
                         Text(entry.actionStep)
                             .font(WWTypography.body(16))
@@ -434,14 +476,26 @@ struct JourneyGrowthPage: View {
                     .padding(.horizontal, 32)
                 } else {
                     // Needs Tending
-                    Button {
-                        showTendingSheet = true
-                    } label: {
-                        Text("Tend to your plant")
-                            .frame(maxWidth: .infinity)
+                    VStack(spacing: 16) {
+                        if let img = resolveUIImage(named: "dew_drop_icon") {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 48, height: 48)
+                                .offset(y: dewDropFocus ? -6 : 6)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: dewDropFocus)
+                                .onAppear { dewDropFocus = true }
+                        }
+                        
+                        Button {
+                            showTendingSheet = true
+                        } label: {
+                            Text("Open Today's Tend")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.white))
+                        .padding(.horizontal, 32)
                     }
-                    .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.white))
-                    .padding(.horizontal, 32)
                 }
             } else {
                 // Needs Generation
@@ -598,7 +652,7 @@ struct JourneyGrowthPage: View {
             prompt: result.package.prayer,
             scriptureReference: result.package.scriptureReference,
             scriptureText: result.package.scriptureParaphrase,
-            actionStep: result.package.suggestedSteps.first ?? "Take one faithful next step today.",
+            actionStep: "",
             journey: journey
         )
         modelContext.insert(entry)
@@ -628,14 +682,39 @@ struct TendingFlowView: View {
     let entry: PrayerEntry
     let entries: [PrayerEntry]
     let profile: OnboardingProfile
+    let package: DailyJourneyPackage?
     
     @State private var isCompleting = false
+    @State private var smallStepInput = ""
+    @State private var showCompletionPrompt = false
+
+    private static let tendsPerCycle = 15
+
+    private var reflectionThought: String {
+        let value = package?.reflectionThought.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? "Take one faithful step in response to what God is growing in you." : value
+    }
+
+    private var prayerText: String {
+        let value = package?.prayer.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? entry.prompt : value
+    }
+
+    private var smallStepQuestion: String {
+        let value = package?.smallStepQuestion.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? DailyJourneyPackageValidation.defaultSmallStepQuestion : value
+    }
+
+    private var suggestionChips: [String] {
+        Array((package?.suggestedSteps ?? []).prefix(4))
+    }
     
     var body: some View {
         ZStack {
             WWColor.surface.ignoresSafeArea()
             
-            VStack(spacing: 32) {
+            ScrollView {
+                VStack(spacing: 24) {
                 // Header
                 HStack {
                     Button(action: { dismiss() }) {
@@ -651,43 +730,83 @@ struct TendingFlowView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
                 
-                Spacer()
-                
+                    Text(reflectionThought)
+                        .font(WWTypography.heading(28))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .lineSpacing(4)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+
                 VStack(spacing: 24) {
                     Text(entry.scriptureText)
-                        .font(WWTypography.heading(32))
+                        .font(WWTypography.heading(24))
                         .foregroundStyle(WWColor.nearBlack)
                         .lineSpacing(6)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, 24)
                     
                     Text("— " + entry.scriptureReference)
                         .font(WWTypography.body(18).weight(.bold))
                         .foregroundStyle(WWColor.growGreen)
                 }
+                .padding(.vertical, 24)
+                .padding(.horizontal, 16)
+                .background(WWColor.white)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .shadow(color: WWColor.growGreen.opacity(0.08), radius: 15, y: 8)
+                .padding(.horizontal, 24)
                 
-                Spacer()
-                
+                    Text(prayerText)
+                        .font(WWTypography.body(18))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .lineSpacing(4)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+
                 VStack(spacing: 16) {
-                    Text("TODAY's TEND")
+                    Text("TODAY'S TEND")
                         .font(WWTypography.caption(14).weight(.bold))
                         .foregroundStyle(WWColor.muted)
                         .tracking(1.5)
                     
-                    Text(entry.actionStep)
-                        .font(WWTypography.body(20))
+                    Text(smallStepQuestion)
+                        .font(WWTypography.heading(20))
                         .foregroundStyle(WWColor.nearBlack)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .padding(32)
+
+                    TextField("Type your small step...", text: $smallStepInput)
+                        .textInputAutocapitalization(.sentences)
+                        .font(WWTypography.body(18))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
                         .background(WWColor.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: WWColor.growGreen.opacity(0.08), radius: 15, y: 8)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                    if !suggestionChips.isEmpty {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 10)], spacing: 10) {
+                            ForEach(suggestionChips, id: \.self) { suggestion in
+                                Button {
+                                    smallStepInput = suggestion
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                        Text(suggestion)
+                                            .lineLimit(1)
+                                    }
+                                    .font(WWTypography.caption(13))
+                                    .foregroundStyle(WWColor.growGreen)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .background(WWColor.white)
+                                    .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
-                
-                Spacer()
-                
+
                 Button {
                     completeTending()
                 } label: {
@@ -696,15 +815,45 @@ struct TendingFlowView: View {
                             .tint(.white)
                             .frame(maxWidth: .infinity)
                     } else {
-                        Text("Tend to Plant")
+                        Text("Tend")
                             .frame(maxWidth: .infinity)
                     }
                 }
                 .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.white))
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
-                .disabled(isCompleting)
+                    .disabled(isCompleting || smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
+        }
+        .onAppear {
+            if !entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                smallStepInput = entry.actionStep
+            }
+        }
+        .alert("Journey Milestone", isPresented: $showCompletionPrompt) {
+            Button("Keep Tending") {
+                journey.lastCompletionPromptAt = .now
+                try? modelContext.save()
+                dismiss()
+            }
+            Button("Mark Complete") {
+                journey.status = .completed
+                journey.isArchived = true
+                journey.lastCompletionPromptAt = .now
+                JourneyProgressService.logEvent(
+                    journeyID: journey.id,
+                    type: .journeyCompleted,
+                    notes: "User marked journey complete from milestone prompt.",
+                    modelContext: modelContext
+                )
+                try? modelContext.save()
+                dismiss()
+            }
+        } message: {
+            Text(package?.completionSuggestion.reason.isEmpty == false
+                 ? package?.completionSuggestion.reason ?? "Looks like this journey may be complete. You can keep tending or mark it complete."
+                 : "Looks like this journey may be complete. You can keep tending or mark it complete.")
         }
     }
     
@@ -713,13 +862,21 @@ struct TendingFlowView: View {
         
         // Artificial delay so the user feels the weight of the action
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            let trimmedStep = smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines)
+            entry.actionStep = trimmedStep
             entry.completedAt = .now
+
+            let inferredCount = entries.filter { $0.completedAt != nil }.count
+            let nextCompleted = max(journey.completedTends, inferredCount) + 1
+            journey.completedTends = nextCompleted
+            journey.cycleCount = nextCompleted / Self.tendsPerCycle
+
             try? modelContext.save()
             
             JourneyProgressService.logEvent(
                 journeyID: journey.id,
                 type: .stepCompleted,
-                notes: "Completed step: \(entry.actionStep)",
+                notes: "Completed step: \(trimmedStep)",
                 modelContext: modelContext
             )
             JourneyMemoryService.refreshSnapshot(
@@ -730,7 +887,22 @@ struct TendingFlowView: View {
             )
             
             isCompleting = false
-            dismiss()
+            if shouldPromptCompletionSuggestion(completedCount: nextCompleted) {
+                showCompletionPrompt = true
+            } else {
+                dismiss()
+            }
         }
+    }
+
+    private func shouldPromptCompletionSuggestion(completedCount: Int) -> Bool {
+        guard journey.status == .active else { return false }
+        guard completedCount >= 7 else { return false }
+        guard package?.completionSuggestion.shouldPrompt == true else { return false }
+
+        if let lastPrompt = journey.lastCompletionPromptAt, Calendar.current.isDateInToday(lastPrompt) {
+            return false
+        }
+        return true
     }
 }

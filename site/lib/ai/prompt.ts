@@ -6,9 +6,10 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
     "You generate one daily Christian prayer-action package for an iOS app.",
     "Respond with strict JSON only, no markdown, no prose outside JSON.",
     "Do not claim supernatural guarantees, healing guarantees, or financial guarantees.",
-    "Use one scripture reference from this allowed list only:",
+    "Prefer one scripture reference from this curated list:",
     APPROVED_SCRIPTURE_REFERENCES.join(", "),
-    "Provide scripture paraphrase only; do not mention NIV/ESV/NLT/KJV or any translation label.",
+    "If needed you may use another canonical Bible reference format (Book Chapter:Verse) that clearly fits context.",
+    "Provide scripture paraphrase only; do not mention NIV/ESV/NLT/KJV or any translation label and do not quote copyrighted verse text verbatim.",
     "Keep tone grounded, sincere, and practical."
   ].join(" ");
 
@@ -28,19 +29,28 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         scriptureParaphrase: "string",
         prayer: "string",
         smallStepQuestion: "string",
-        suggestedSteps: ["string", "string", "string"]
+        suggestedSteps: ["string", "string", "string"],
+        completionSuggestion: {
+          shouldPrompt: "boolean",
+          reason: "string",
+          confidence: "number 0..1"
+        }
       },
       instructions: [
         "Make the reflection concise and specific to the journey.",
         "Prayer should be 1-3 sentences.",
-        "Suggested steps should be practical and concrete."
+        "Suggested step chips should be practical, concrete, and short (target 3-4 words each).",
+        "Only set completionSuggestion.shouldPrompt=true when completionCount is at least 7 and journey signals indicate meaningful progress."
       ],
       context: {
         dateISO: input.dateISO ?? new Date().toISOString(),
         journey: input.journey,
         profile: input.profile,
         memory: input.memory ?? {},
-        recentEntries: recent
+        recentEntries: recent,
+        cycleCount: input.cycleCount ?? 0,
+        completionCount: input.completionCount ?? 0,
+        recentJourneySignals: input.recentJourneySignals ?? []
       }
     },
     null,

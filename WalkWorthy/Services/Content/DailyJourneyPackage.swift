@@ -1,5 +1,11 @@
 import Foundation
 
+struct CompletionSuggestion: Codable, Equatable {
+    let shouldPrompt: Bool
+    let reason: String
+    let confidence: Double
+}
+
 struct DailyJourneyPackage: Codable, Equatable {
     let reflectionThought: String
     let scriptureReference: String
@@ -7,6 +13,7 @@ struct DailyJourneyPackage: Codable, Equatable {
     let prayer: String
     let smallStepQuestion: String
     let suggestedSteps: [String]
+    let completionSuggestion: CompletionSuggestion
     let generatedAt: Date
 }
 
@@ -32,6 +39,13 @@ enum DailyJourneyPackageValidation {
             .filter { !$0.isEmpty }
             .prefix(4)
 
+        let normalizedConfidence = min(1.0, max(0.0, package.completionSuggestion.confidence))
+        let normalizedCompletionSuggestion = CompletionSuggestion(
+            shouldPrompt: package.completionSuggestion.shouldPrompt,
+            reason: package.completionSuggestion.reason.trimmingCharacters(in: .whitespacesAndNewlines),
+            confidence: normalizedConfidence
+        )
+
         return DailyJourneyPackage(
             reflectionThought: package.reflectionThought.trimmingCharacters(in: .whitespacesAndNewlines),
             scriptureReference: normalizedReference,
@@ -39,6 +53,7 @@ enum DailyJourneyPackageValidation {
             prayer: package.prayer.trimmingCharacters(in: .whitespacesAndNewlines),
             smallStepQuestion: normalizedQuestion,
             suggestedSteps: normalizedSuggestedSteps.isEmpty ? ["Take one specific faithful step for this journey today."] : Array(normalizedSuggestedSteps),
+            completionSuggestion: normalizedCompletionSuggestion,
             generatedAt: package.generatedAt
         )
     }
@@ -71,6 +86,11 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                 "Do one concrete task that moves this journey forward.",
                 "Text one trusted person and ask for prayer."
             ],
+            completionSuggestion: CompletionSuggestion(
+                shouldPrompt: false,
+                reason: "",
+                confidence: 0
+            ),
             generatedAt: .now
         )
     }

@@ -29,3 +29,20 @@ final class JourneyMemorySnapshot {
         self.preferredTone = preferredTone
     }
 }
+
+@Model
+final class GlobalLightMemory {
+    @Attribute(.unique) var id: UUID
+    var updatedAt: Date
+    var preferredTone: String
+
+    init(
+        id: UUID = UUID(),
+        updatedAt: Date = .now,
+        preferredTone: String = "grounded-encouraging"
+    ) {
+        self.id = id
+        self.updatedAt = updatedAt
+        self.preferredTone = preferredTone
+    }
+}

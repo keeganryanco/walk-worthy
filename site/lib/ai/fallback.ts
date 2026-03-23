@@ -13,9 +13,14 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
       "Lord, steady my heart and align my next action with the growth I am asking You for.",
     smallStepQuestion: "What small step could you take today?",
     suggestedSteps: [
-      "Spend 5 focused minutes praying over this journey.",
-      "Complete one concrete task you have delayed.",
-      "Share one honest update with someone you trust."
-    ]
+      "Pray 5 minutes",
+      "Do one task",
+      "Text an update"
+    ],
+    completionSuggestion: {
+      shouldPrompt: false,
+      reason: "",
+      confidence: 0
+    }
   };
 }

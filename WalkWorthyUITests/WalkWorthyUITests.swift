@@ -10,7 +10,7 @@ final class WalkWorthyUITests: XCTestCase {
         app.launch()
 
         let onboardingExists = app.staticTexts["Welcome to Tend"].waitForExistence(timeout: 5)
-        let homeExists = app.navigationBars["Home"].waitForExistence(timeout: 5)
+        let homeExists = app.otherElements["HomeView"].waitForExistence(timeout: 5)
 
         XCTAssertTrue(onboardingExists || homeExists)
     }

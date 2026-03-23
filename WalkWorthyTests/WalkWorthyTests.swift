@@ -51,11 +51,16 @@ final class WalkWorthyTests: XCTestCase {
     func testDailyJourneyPackageValidationFallsBackToApprovedReference() {
         let package = DailyJourneyPackage(
             reflectionThought: "  Be faithful today. ",
-            scriptureReference: "Unknown 1:1",
+            scriptureReference: "NotAReference",
             scriptureParaphrase: "This is a paraphrase that should still be accepted and trimmed.",
             prayer: "  Lord, guide me. ",
             smallStepQuestion: "",
             suggestedSteps: [" ", "Take one concrete step."],
+            completionSuggestion: CompletionSuggestion(
+                shouldPrompt: true,
+                reason: "  Consider marking this complete. ",
+                confidence: 2.0
+            ),
             generatedAt: .now
         )
 
@@ -65,6 +70,25 @@ final class WalkWorthyTests: XCTestCase {
         XCTAssertEqual(validated.smallStepQuestion, "What small step could you take today?")
         XCTAssertEqual(validated.suggestedSteps, ["Take one concrete step."])
         XCTAssertEqual(validated.prayer, "Lord, guide me.")
+        XCTAssertEqual(validated.completionSuggestion.reason, "Consider marking this complete.")
+        XCTAssertEqual(validated.completionSuggestion.confidence, 1.0)
+    }
+
+    func testDailyJourneyPackageValidationAcceptsCanonicalReferenceFormat() {
+        let package = DailyJourneyPackage(
+            reflectionThought: "Stay faithful.",
+            scriptureReference: "1 Corinthians 15:58",
+            scriptureParaphrase: "Keep giving yourself fully to faithful work.",
+            prayer: "Lord, strengthen me.",
+            smallStepQuestion: "What small step could you take today?",
+            suggestedSteps: ["Send one message"],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            generatedAt: .now
+        )
+
+        let validated = DailyJourneyPackageValidation.validated(package)
+
+        XCTAssertEqual(validated.scriptureReference, "1 Corinthians 15:58")
     }
 
     func testDayKeyFormattingIsStable() {

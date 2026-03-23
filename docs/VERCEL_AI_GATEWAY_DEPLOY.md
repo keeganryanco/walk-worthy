@@ -10,7 +10,9 @@ Deploy the legal pages (`/privacy`, `/support`) and AI gateway (`/api/v1/journey
 4. Keep build settings:
 - Install command: `pnpm install`
 - Build command: `pnpm build`
-- Output: default Next.js output
+- Output: `.next` (or leave blank/default for Next.js)
+
+If you see `No Output Directory named "public"`, your Vercel project is using stale static-site settings. Set Output Directory to `.next` or clear it.
 
 ## 2. Add environment variables
 In **Project Settings -> Environment Variables**, add:

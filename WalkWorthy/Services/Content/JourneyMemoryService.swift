@@ -66,7 +66,22 @@ enum JourneyMemoryService {
             modelContext.insert(row)
         }
 
+        if let global = globalMemory(modelContext: modelContext) {
+            global.updatedAt = now
+            global.preferredTone = preferredTone
+        } else {
+            let global = GlobalLightMemory(updatedAt: now, preferredTone: preferredTone)
+            modelContext.insert(global)
+        }
+
         try? modelContext.save()
+    }
+
+    static func globalMemory(modelContext: ModelContext) -> GlobalLightMemory? {
+        let descriptor = FetchDescriptor<GlobalLightMemory>(
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+        )
+        return try? modelContext.fetch(descriptor).first
     }
 
     private static func inferredTone(from growthGoal: String) -> String {

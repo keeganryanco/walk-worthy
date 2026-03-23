@@ -2,7 +2,11 @@ import { buildPrompt } from "../prompt";
 import { JourneyPackageRequest } from "../types";
 
 export async function generateWithOpenAI(input: JourneyPackageRequest, model: string, apiKey: string): Promise<string> {
-  const { system, user } = buildPrompt(input);
+    const { system, user } = buildPrompt(input);
+    return generateWithOpenAIPrompt(system, user, model, apiKey);
+}
+
+export async function generateWithOpenAIPrompt(system: string, user: string, model: string, apiKey: string): Promise<string> {
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",

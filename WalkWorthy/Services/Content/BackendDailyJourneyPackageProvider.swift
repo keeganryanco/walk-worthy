@@ -14,6 +14,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             let id: String
             let title: String
             let category: String
+            let themeKey: String
         }
 
         struct Memory: Encodable {
@@ -34,6 +35,9 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let journey: Journey
         let memory: Memory?
         let recentEntries: [RecentEntry]
+        let cycleCount: Int
+        let completionCount: Int
+        let recentJourneySignals: [String]
         let dateISO: String
     }
 
@@ -128,7 +132,8 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let journeyPayload = RequestBody.Journey(
             id: journey.id.uuidString,
             title: journey.title,
-            category: journey.category
+            category: journey.category,
+            themeKey: journey.themeKey.rawValue
         )
 
         let memoryPayload: RequestBody.Memory?
@@ -156,12 +161,117 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
                 )
             }
 
+        let completionCount = journey.completedTends > 0 ? journey.completedTends : recentEntries.filter { $0.completedAt != nil }.count
+        let recentSignals = recentEntries
+            .sorted(by: { $0.createdAt > $1.createdAt })
+            .prefix(6)
+            .compactMap { entry -> String? in
+                let reflection = entry.userReflection.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !reflection.isEmpty else { return nil }
+                return reflection
+            }
+
         return RequestBody(
             profile: profilePayload,
             journey: journeyPayload,
             memory: memoryPayload,
             recentEntries: recent,
+            cycleCount: journey.cycleCount,
+            completionCount: completionCount,
+            recentJourneySignals: Array(recentSignals),
             dateISO: dateFormatter.string(from: .now)
         )
+    }
+}
+
+struct JourneyBootstrapPayload: Decodable {
+    struct InitialMemory: Decodable {
+        let summary: String
+        let winsSummary: String
+        let blockersSummary: String
+        let preferredTone: String
+    }
+
+    let journeyTitle: String
+    let journeyCategory: String
+    let themeKey: String
+    let initialMemory: InitialMemory
+    let initialPackage: DailyJourneyPackage
+}
+
+struct BackendJourneyBootstrapProvider {
+    private struct RequestBody: Encodable {
+        let name: String
+        let prayerIntentText: String
+        let goalIntentText: String
+        let reminderWindow: String
+    }
+
+    private struct ResponseBody: Decodable {
+        let bootstrap: JourneyBootstrapPayload
+    }
+
+    private enum ProviderError: LocalizedError {
+        case missingBaseURL
+        case invalidURL
+        case failedResponse(statusCode: Int)
+
+        var errorDescription: String? {
+            switch self {
+            case .missingBaseURL:
+                return "AI gateway URL is not configured."
+            case .invalidURL:
+                return "AI gateway URL is invalid."
+            case .failedResponse(let statusCode):
+                return "AI gateway returned status \(statusCode)."
+            }
+        }
+    }
+
+    func bootstrap(
+        name: String,
+        prayerIntentText: String,
+        goalIntentText: String,
+        reminderWindow: String
+    ) async throws -> JourneyBootstrapPayload {
+        let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !baseURLString.isEmpty else {
+            throw ProviderError.missingBaseURL
+        }
+
+        guard let baseURL = URL(string: baseURLString) else {
+            throw ProviderError.invalidURL
+        }
+
+        let endpoint = baseURL.appendingPathComponent("/api/v1/journey-bootstrap")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !appKey.isEmpty {
+            request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
+        }
+
+        let payload = RequestBody(
+            name: name,
+            prayerIntentText: prayerIntentText,
+            goalIntentText: goalIntentText,
+            reminderWindow: reminderWindow
+        )
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ProviderError.failedResponse(statusCode: -1)
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode)
+        }
+
+        let decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
+        return decoded.bootstrap
     }
 }

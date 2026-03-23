@@ -5,14 +5,11 @@ struct ExperimentalOnboardingFlowView: View {
     enum Step: Int, CaseIterable {
         case intro
         case name
-        case age
         case bannerName
         case bannerTruth
         case bannerChange
-        case growIn
-        case blockers
-        case growthVision
-        case supportMode
+        case prayerIntent
+        case goalIntent
         case method
         case grounding
         case reminder
@@ -30,28 +27,15 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var step: Step = .intro
 
     @State private var name = ""
-    @State private var ageRange = ""
-    @State private var growIn = ""
-    @State private var blocker = ""
-    @State private var growthVision = ""
-    @State private var supportMode = ""
+    @State private var prayerIntentText = ""
+    @State private var goalIntentText = ""
+    @State private var reminderWindow = ""
 
     @State private var reviewActionTaken = false
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
-    private let ages = ["18-24", "25-34", "35-44", "45-54", "55+"]
-    private let growInOptions = [
-        "🕊️ peace", "⏱️ discipline", "🌟 confidence", "🌱 patience", "✝️ faith",
-        "🧭 purpose", "🤝 relationships", "❤️‍🩹 healing", "🦁 courage", "🔁 consistency"
-    ]
-    private let blockerOptions = [
-        "I overthink", "I lose consistency", "I feel stuck", "I forget", "I don’t know what step to take", "I pray, but don’t follow through"
-    ]
-    private let growthVisionOptions = [
-        "more peace in my day", "better habits", "more trust in God", "more courage to act", "more consistency", "feel less stuck", "more clarity"
-    ]
-    private let supportOptions = ["daily check-ins", "few times a week", "when I need guidance most"]
+    private let reminderOptions = ["Morning", "Afternoon", "Evening"]
 
     // MARK: - Body
     var body: some View {
@@ -62,6 +46,12 @@ struct ExperimentalOnboardingFlowView: View {
             
             ZStack {
                 backgroundColor.ignoresSafeArea()
+                
+                if isBannerStep {
+                    AmbientBannerBackground(step: step)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                }
                 
                 VStack(spacing: 0) {
                     // Top Progress Bar
@@ -140,7 +130,7 @@ struct ExperimentalOnboardingFlowView: View {
             switch step {
             case .intro:
                 OnboardingIntroLoopView(size: min(height * 0.7, 220))
-            case .name, .age, .growIn, .blockers, .growthVision, .supportMode:
+            case .name, .prayerIntent, .goalIntent:
                 // Placeholder graphic for input steps
                 Image("TendMark")
                     .resizable()
@@ -194,28 +184,22 @@ struct ExperimentalOnboardingFlowView: View {
     private func bottomInteractiveHalf(metrics: GeometryProxy, availableHeight: CGFloat) -> some View {
         let contentScale = bottomContentScale(for: step, availableHeight: availableHeight)
 
-        return VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) {
             switch step {
             case .intro:
                 introContent
             case .name:
                 nameContent
-            case .age:
-                ageContent
             case .bannerName:
                 bannerNameContent
             case .bannerTruth:
                 bannerTruthContent
             case .bannerChange:
                 bannerChangeContent
-            case .growIn:
-                optionsContent(title: "What are you hoping to grow in?", options: growInOptions, selection: $growIn, twoColumns: true)
-            case .blockers:
-                optionsContent(title: "What tends to get in the way?", options: blockerOptions, selection: $blocker, twoColumns: false)
-            case .growthVision:
-                optionsContent(title: "What would growth look like for you?", options: growthVisionOptions, selection: $growthVision, twoColumns: false)
-            case .supportMode:
-                optionsContent(title: "How would you like Tend to support you?", options: supportOptions, selection: $supportMode, twoColumns: false)
+            case .prayerIntent:
+                prayerIntentContent
+            case .goalIntent:
+                goalIntentContent
             case .method:
                 methodContent
             case .grounding:
@@ -274,40 +258,43 @@ struct ExperimentalOnboardingFlowView: View {
         }
     }
     
-    private var ageContent: some View {
+    private var prayerIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("How old are you?")
-                .font(WWTypography.display(32))
-                .foregroundStyle(WWColor.nearBlack)
-            
-            VStack(spacing: 10) {
-                ForEach(ages, id: \.self) { item in
-                    optionRow(title: item, selected: ageRange == item) { ageRange = item }
-                }
-            }
-        }
-    }
-    
-    private func optionsContent(title: String, options: [String], selection: Binding<String>, twoColumns: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(WWTypography.display(28))
+            Text("What do you want to pray about right now?")
+                .font(WWTypography.display(30))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
-            
-            if twoColumns {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(options, id: \.self) { item in
-                        optionRow(title: item, selected: selection.wrappedValue == item) { selection.wrappedValue = item }
-                    }
-                }
-            } else {
-                VStack(spacing: 10) {
-                    ForEach(options, id: \.self) { item in
-                        optionRow(title: item, selected: selection.wrappedValue == item) { selection.wrappedValue = item }
-                    }
-                }
-            }
+
+            TextEditor(text: $prayerIntentText)
+                .font(WWTypography.heading(18))
+                .frame(minHeight: 130, maxHeight: 180)
+                .padding(12)
+                .background(WWColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : WWColor.growGreen, lineWidth: 1.5)
+                )
+        }
+    }
+
+    private var goalIntentContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("What goal are you moving toward with God right now?")
+                .font(WWTypography.display(30))
+                .foregroundStyle(WWColor.nearBlack)
+                .fixedSize(horizontal: false, vertical: true)
+
+            TextEditor(text: $goalIntentText)
+                .font(WWTypography.heading(18))
+                .frame(minHeight: 130, maxHeight: 180)
+                .padding(12)
+                .background(WWColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : WWColor.growGreen, lineWidth: 1.5)
+                )
         }
     }
     
@@ -403,6 +390,23 @@ struct ExperimentalOnboardingFlowView: View {
             Text("Set a reminder to return to your prayer journey and take your next small step.")
                 .font(WWTypography.heading(18))
                 .foregroundStyle(WWColor.nearBlack.opacity(0.8))
+
+            HStack(spacing: 10) {
+                ForEach(reminderOptions, id: \.self) { option in
+                    Button {
+                        reminderWindow = option
+                    } label: {
+                        Text(option)
+                            .font(WWTypography.heading(16))
+                            .foregroundStyle(reminderWindow == option ? WWColor.white : WWColor.nearBlack)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(reminderWindow == option ? WWColor.growGreen : WWColor.surface)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
     
@@ -591,7 +595,7 @@ struct ExperimentalOnboardingFlowView: View {
         let compact = availableHeight < 760
 
         switch step {
-        case .age, .growIn, .blockers, .growthVision, .supportMode:
+        case .prayerIntent, .goalIntent:
             return compact ? 0.24 : 0.30
         case .name, .method, .grounding, .reminder, .widget:
             return compact ? 0.30 : 0.38
@@ -609,9 +613,9 @@ struct ExperimentalOnboardingFlowView: View {
 
         let adjustment: CGFloat
         switch step {
-        case .growIn:
+        case .prayerIntent:
             adjustment = availableHeight < 760 ? -0.14 : -0.08
-        case .blockers, .growthVision, .supportMode, .age:
+        case .goalIntent:
             adjustment = availableHeight < 760 ? -0.10 : -0.04
         case .method, .grounding, .reminder, .widget:
             adjustment = availableHeight < 760 ? -0.06 : -0.02
@@ -638,11 +642,9 @@ struct ExperimentalOnboardingFlowView: View {
     private var canAdvance: Bool {
         switch step {
         case .name: return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .age: return !ageRange.isEmpty
-        case .growIn: return !growIn.isEmpty
-        case .blockers: return !blocker.isEmpty
-        case .growthVision: return !growthVision.isEmpty
-        case .supportMode: return !supportMode.isEmpty
+        case .prayerIntent: return !prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .goalIntent: return !goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .reminder: return !reminderWindow.isEmpty
         default: return true
         }
     }
@@ -659,12 +661,12 @@ struct ExperimentalOnboardingFlowView: View {
         if step == .review {
             let profile = OnboardingProfile(
                 name: firstNameDisplay,
-                ageRange: ageRange,
-                prayerFocus: growIn,
-                growthGoal: growthVision,
-                reminderWindow: supportMode,
-                blocker: blocker,
-                supportCadence: supportMode
+                ageRange: "",
+                prayerFocus: prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
+                growthGoal: goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
+                reminderWindow: reminderWindow,
+                blocker: "",
+                supportCadence: ""
             )
             onComplete(profile)
             return
@@ -679,5 +681,64 @@ struct ExperimentalOnboardingFlowView: View {
         if let prev = Step(rawValue: step.rawValue - 1) {
             withAnimation(.default) { step = prev }
         }
+    }
+}
+
+// MARK: - Native Ambient Background
+private struct AmbientBannerBackground: View {
+    let step: ExperimentalOnboardingFlowView.Step
+    
+    @State private var animatePhase = false
+    
+    var body: some View {
+        GeometryReader { proxy in
+            let w = proxy.size.width
+            let h = proxy.size.height
+            
+            ZStack {
+                // Orb 1: Morning Gold
+                Circle()
+                    .fill(WWColor.morningGold.opacity(isStep3 ? 0.5 : 0.3))
+                    .frame(width: w * 0.8)
+                    .blur(radius: w * 0.25)
+                    .offset(
+                        x: animatePhase ? w * 0.2 : -w * 0.2,
+                        y: animatePhase ? -h * 0.1 : h * 0.2
+                    )
+                
+                // Orb 2: Grow Green
+                Circle()
+                    .fill(WWColor.growGreen.opacity(isStep2 ? 0.4 : 0.2))
+                    .frame(width: w * 0.9)
+                    .blur(radius: w * 0.3)
+                    .offset(
+                        x: animatePhase ? -w * 0.1 : w * 0.3,
+                        y: animatePhase ? h * 0.3 : 0
+                    )
+                    
+                // Orb 3: Deep Green (appears later)
+                Circle()
+                    .fill(WWColor.growGreen.opacity(isStep3 ? 0.3 : 0.0))
+                    .frame(width: w * 0.7)
+                    .blur(radius: w * 0.2)
+                    .offset(
+                        x: animatePhase ? w * 0.3 : 0,
+                        y: animatePhase ? h * 0.5 : h * 0.2
+                    )
+            }
+            .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true), value: animatePhase)
+            .animation(.easeInOut(duration: 1.5), value: step)
+            .onAppear {
+                animatePhase = true
+            }
+        }
+    }
+    
+    private var isStep2: Bool {
+        step.rawValue >= ExperimentalOnboardingFlowView.Step.bannerTruth.rawValue
+    }
+    
+    private var isStep3: Bool {
+        step == .bannerChange
     }
 }

@@ -88,6 +88,11 @@ final class JourneyContentService {
             prayer: "Lord, ground me in trust and guide one concrete action today.",
             smallStepQuestion: DailyJourneyPackageValidation.defaultSmallStepQuestion,
             suggestedSteps: ["Choose one specific action that moves this journey forward."],
+            completionSuggestion: CompletionSuggestion(
+                shouldPrompt: false,
+                reason: "",
+                confidence: 0
+            ),
             generatedAt: date
         )
 
@@ -168,6 +173,7 @@ final class JourneyContentService {
             prayer: package.prayer,
             smallStepQuestion: package.smallStepQuestion,
             suggestedSteps: package.suggestedSteps,
+            completionSuggestion: package.completionSuggestion,
             generatedAt: package.generatedAt,
             source: source
         )

@@ -9,6 +9,7 @@ struct RootView: View {
 
     @Query(sort: \OnboardingProfile.createdAt) private var profiles: [OnboardingProfile]
     @Query(sort: \AppSettings.lastSessionDate, order: .reverse) private var settingsRows: [AppSettings]
+    @Query(sort: \PrayerJourney.createdAt, order: .reverse) private var allJourneys: [PrayerJourney]
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
     @Query(sort: \PrayerEntry.createdAt, order: .reverse) private var allEntries: [PrayerEntry]
@@ -17,9 +18,11 @@ struct RootView: View {
     @State private var selectedTab: RootTab = .home
     @State private var showPaywall = false
     @State private var trackedOnboardingStart = false
+    @State private var onboardingErrorMessage: String?
+    @State private var isBootstrappingJourney = false
 
-    private let cardGenerator = TemplateTodayCardGenerator()
     private let journeyContentService = JourneyContentService()
+    private let bootstrapProvider = BackendJourneyBootstrapProvider()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
     private var profile: OnboardingProfile? {
@@ -43,7 +46,7 @@ struct RootView: View {
                 )
             } else {
                 ExperimentalOnboardingFlowView { completedProfile in
-                    seedInitialExperience(with: completedProfile)
+                    Task { await seedInitialExperience(with: completedProfile) }
                 }
             }
         }
@@ -53,6 +56,7 @@ struct RootView: View {
             bootstrapSettingsIfNeeded()
             registerSessionIfNeeded()
             showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: subscriptionService.isPremium, settings: settings)
+            await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
         }
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
@@ -65,7 +69,10 @@ struct RootView: View {
         }
         .onChange(of: connectivityService.isOnline) { _, isOnline in
             guard isOnline else { return }
-            Task { await prefetchDailyPackagesIfPossible() }
+            Task {
+                await bootstrapFirstJourneyIfNeeded()
+                await prefetchDailyPackagesIfPossible()
+            }
         }
         .onChange(of: activeJourneys.count) { _, _ in
             Task { await prefetchDailyPackagesIfPossible() }
@@ -89,6 +96,17 @@ struct RootView: View {
                 isPremium: subscriptionService.isPremium
             )
             .environmentObject(subscriptionService)
+        }
+        .alert(
+            "Unable to Create Journey",
+            isPresented: Binding(
+                get: { onboardingErrorMessage != nil },
+                set: { if !$0 { onboardingErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(onboardingErrorMessage ?? "")
         }
     }
 
@@ -124,46 +142,24 @@ struct RootView: View {
         showPaywall = true
     }
 
-    private func seedInitialExperience(with completedProfile: OnboardingProfile) {
+    private func seedInitialExperience(with completedProfile: OnboardingProfile) async {
         modelContext.insert(completedProfile)
+        try? modelContext.save()
 
-        let firstJourney = PrayerJourney(title: "First Journey", category: completedProfile.prayerFocus)
-        modelContext.insert(firstJourney)
-
-        let card = cardGenerator.generateTodayCard(profile: completedProfile, journeys: [firstJourney], date: .now)
-        let entry = PrayerEntry(
-            prompt: card.prayerPrompt,
-            scriptureReference: card.scriptureReference,
-            scriptureText: card.scriptureText,
-            actionStep: card.actionStep,
-            journey: firstJourney
-        )
-        modelContext.insert(entry)
-        JourneyProgressService.logEvent(
-            journeyID: firstJourney.id,
-            type: .packageGenerated,
-            notes: "Initial onboarding package seeded.",
-            modelContext: modelContext
-        )
-        JourneyMemoryService.refreshSnapshot(
-            for: firstJourney,
-            entries: [entry],
-            profile: completedProfile,
-            modelContext: modelContext
-        )
+        await bootstrapFirstJourneyIfNeeded()
 
         if settings == nil {
             modelContext.insert(AppSettings())
         }
 
         try? modelContext.save()
-        analytics.track(.onboardingCompleted, properties: ["first_journey_category": firstJourney.category])
-        analytics.track(.journeyCreated, properties: ["source": "onboarding_seed"])
+        analytics.track(.onboardingCompleted, properties: [:])
 
         Task {
             let granted = await notificationService.requestAuthorization()
             guard granted else { return }
-            await notificationService.scheduleDailyReminder(hour: 8, minute: 0)
+            let reminder = hourForReminderWindow(completedProfile.reminderWindow)
+            await notificationService.scheduleDailyReminder(hour: reminder, minute: 0)
         }
     }
 
@@ -193,6 +189,94 @@ struct RootView: View {
             isOnline: true,
             modelContext: modelContext
         )
+    }
+
+    private func bootstrapFirstJourneyIfNeeded() async {
+        guard connectivityService.isOnline else { return }
+        guard !isBootstrappingJourney else { return }
+        guard allJourneys.isEmpty else { return }
+        guard let profile else { return }
+
+        isBootstrappingJourney = true
+        defer { isBootstrappingJourney = false }
+
+        do {
+            let payload = try await bootstrapProvider.bootstrap(
+                name: profile.name,
+                prayerIntentText: profile.prayerFocus,
+                goalIntentText: profile.growthGoal,
+                reminderWindow: profile.reminderWindow
+            )
+
+            let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
+            let firstJourney = PrayerJourney(
+                title: payload.journeyTitle,
+                category: payload.journeyCategory,
+                themeKey: theme,
+                status: .active
+            )
+            modelContext.insert(firstJourney)
+
+            let entry = PrayerEntry(
+                prompt: payload.initialPackage.prayer,
+                scriptureReference: payload.initialPackage.scriptureReference,
+                scriptureText: payload.initialPackage.scriptureParaphrase,
+                actionStep: "",
+                journey: firstJourney
+            )
+            modelContext.insert(entry)
+
+            let dayKey = JourneyContentService.dayKey(for: .now)
+            let record = DailyJourneyPackageRecord(
+                journeyID: firstJourney.id,
+                dayKey: dayKey,
+                reflectionThought: payload.initialPackage.reflectionThought,
+                scriptureReference: payload.initialPackage.scriptureReference,
+                scriptureParaphrase: payload.initialPackage.scriptureParaphrase,
+                prayer: payload.initialPackage.prayer,
+                smallStepQuestion: payload.initialPackage.smallStepQuestion,
+                suggestedSteps: payload.initialPackage.suggestedSteps,
+                completionSuggestion: payload.initialPackage.completionSuggestion,
+                generatedAt: payload.initialPackage.generatedAt,
+                source: .remote,
+                linkedEntryID: entry.id
+            )
+            modelContext.insert(record)
+
+            let snapshot = JourneyMemorySnapshot(
+                journeyID: firstJourney.id,
+                summary: payload.initialMemory.summary,
+                winsSummary: payload.initialMemory.winsSummary,
+                blockersSummary: payload.initialMemory.blockersSummary,
+                preferredTone: payload.initialMemory.preferredTone
+            )
+            modelContext.insert(snapshot)
+
+            JourneyProgressService.logEvent(
+                journeyID: firstJourney.id,
+                type: .packageGenerated,
+                notes: "Initial onboarding package seeded from bootstrap endpoint.",
+                modelContext: modelContext
+            )
+
+            try? modelContext.save()
+            analytics.track(.journeyCreated, properties: ["source": "bootstrap"])
+        } catch {
+            onboardingErrorMessage = "We couldn't create your first journey right now. Connect to the internet and try again."
+        }
+    }
+
+    private func hourForReminderWindow(_ value: String) -> Int {
+        switch value.lowercased() {
+        case "morning":
+            return 8
+        case "afternoon":
+            return 13
+        case "evening":
+            return 19
+        default:
+            return 8
+        }
     }
 }
 

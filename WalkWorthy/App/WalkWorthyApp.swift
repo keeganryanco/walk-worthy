@@ -17,6 +17,7 @@ struct TendApp: App {
                 OnboardingProfile.self,
                 AppSettings.self,
                 JourneyMemorySnapshot.self,
+                GlobalLightMemory.self,
                 JourneyProgressEvent.self,
                 DailyJourneyPackageRecord.self
             ])

@@ -12,7 +12,8 @@ For AI gateway deployment details, see:
 3. Set **Root Directory** to `site`.
 4. Install command: `pnpm install`.
 5. Build command: `pnpm build`.
-6. Deploy.
+6. Output Directory: `.next` (or blank/default Next.js output).
+7. Deploy.
 
 Optional:
 7. Set `NEXT_PUBLIC_GA_ID` in Vercel environment variables to enable GA4 on the legal site.

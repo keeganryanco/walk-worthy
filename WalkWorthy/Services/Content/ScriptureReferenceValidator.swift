@@ -15,7 +15,14 @@ struct ScriptureReferenceValidator {
     ]
 
     static func isApproved(_ reference: String) -> Bool {
-        approvedReferences.contains(reference)
+        let trimmed = reference.trimmingCharacters(in: .whitespacesAndNewlines)
+        if approvedReferences.contains(trimmed) {
+            return true
+        }
+
+        // Canonical format fallback: "<Book> <Chapter>:<Verse>" or verse ranges.
+        let pattern = #"^(?:[1-3]\s)?[A-Za-z]+(?:\s[A-Za-z]+)*\s\d{1,3}:\d{1,3}(?:-\d{1,3})?$"#
+        return trimmed.range(of: pattern, options: .regularExpression) != nil
     }
 
     static func sanitizedSnippet(_ text: String, maxLength: Int = 220) -> String {

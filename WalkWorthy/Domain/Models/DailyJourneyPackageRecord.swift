@@ -18,6 +18,10 @@ final class DailyJourneyPackageRecord {
     var prayer: String
     var smallStepQuestion: String
     var suggestedStepsJSON: String
+    // Optional for safe schema migration from pre-completionSuggestion builds.
+    var completionShouldPrompt: Bool?
+    var completionReason: String?
+    var completionConfidence: Double?
     var generatedAt: Date
     var sourceRaw: String
     var linkedEntryID: UUID?
@@ -32,6 +36,7 @@ final class DailyJourneyPackageRecord {
         prayer: String,
         smallStepQuestion: String,
         suggestedSteps: [String],
+        completionSuggestion: CompletionSuggestion,
         generatedAt: Date = .now,
         source: DailyJourneyPackageSource,
         linkedEntryID: UUID? = nil
@@ -45,6 +50,9 @@ final class DailyJourneyPackageRecord {
         self.prayer = prayer
         self.smallStepQuestion = smallStepQuestion
         self.suggestedStepsJSON = (try? String(data: JSONEncoder().encode(suggestedSteps), encoding: .utf8)) ?? "[]"
+        self.completionShouldPrompt = completionSuggestion.shouldPrompt
+        self.completionReason = completionSuggestion.reason
+        self.completionConfidence = completionSuggestion.confidence
         self.generatedAt = generatedAt
         self.sourceRaw = source.rawValue
         self.linkedEntryID = linkedEntryID
@@ -71,6 +79,11 @@ final class DailyJourneyPackageRecord {
             prayer: prayer,
             smallStepQuestion: smallStepQuestion,
             suggestedSteps: suggestedSteps,
+            completionSuggestion: CompletionSuggestion(
+                shouldPrompt: completionShouldPrompt ?? false,
+                reason: completionReason ?? "",
+                confidence: completionConfidence ?? 0
+            ),
             generatedAt: generatedAt
         )
     }

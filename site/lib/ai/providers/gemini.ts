@@ -3,6 +3,10 @@ import { JourneyPackageRequest } from "../types";
 
 export async function generateWithGemini(input: JourneyPackageRequest, model: string, apiKey: string): Promise<string> {
   const { system, user } = buildPrompt(input);
+  return generateWithGeminiPrompt(system, user, model, apiKey);
+}
+
+export async function generateWithGeminiPrompt(system: string, user: string, model: string, apiKey: string): Promise<string> {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const response = await fetch(endpoint, {

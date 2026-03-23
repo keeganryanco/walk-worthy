@@ -11,6 +11,41 @@ type Candidate = {
   escalated: boolean;
 };
 
+function enforceCompletionPromptRules(
+  input: JourneyPackageRequest,
+  parsed: OrchestratedResult["package"]
+): OrchestratedResult["package"] {
+  const completionCount = typeof input.completionCount === "number" ? input.completionCount : 0;
+
+  if (completionCount < 7) {
+    return {
+      ...parsed,
+      completionSuggestion: {
+        shouldPrompt: false,
+        reason: "",
+        confidence: 0
+      }
+    };
+  }
+
+  if (!parsed.completionSuggestion.shouldPrompt) {
+    return parsed;
+  }
+
+  if (!parsed.completionSuggestion.reason.trim()) {
+    return {
+      ...parsed,
+      completionSuggestion: {
+        shouldPrompt: false,
+        reason: "",
+        confidence: 0
+      }
+    };
+  }
+
+  return parsed;
+}
+
 function buildCandidates(): Candidate[] {
   const candidates: Candidate[] = [];
 
@@ -60,9 +95,10 @@ export async function generateJourneyPackage(input: JourneyPackageRequest): Prom
       if (!parsed) {
         continue;
       }
+      const constrained = enforceCompletionPromptRules(input, parsed);
 
       return {
-        package: parsed,
+        package: constrained,
         provider: candidate.provider,
         model: candidate.model,
         escalated: candidate.escalated,

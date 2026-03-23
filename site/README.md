@@ -5,6 +5,7 @@ Minimal Next.js site for App Store-required URLs.
 ## Routes
 - `/privacy`
 - `/support`
+- `/api/v1/journey-bootstrap` (POST)
 - `/api/v1/journey-package` (POST)
 
 ## Local development
@@ -46,14 +47,43 @@ Optional:
 - `GEMINI_PRIMARY_MODEL` (default `gemini-2.5-flash`)
 
 ## API contract (MVP)
-`POST /api/v1/journey-package`
+
+### `POST /api/v1/journey-bootstrap`
 
 Headers:
 - `Content-Type: application/json`
 - `x-tend-app-key: <TEND_APP_SHARED_SECRET>` (if configured)
 
 Body:
-- `profile`, `journey`, optional `memory`, optional `recentEntries`, optional `dateISO`
+- `name`
+- `prayerIntentText`
+- `goalIntentText`
+- `reminderWindow`
+
+Response:
+- `bootstrap`:
+  - `journeyTitle`
+  - `journeyCategory`
+  - `themeKey` (`basic | faith | patience | peace | resilience | community | discipline | healing | joy | wisdom`)
+  - `initialMemory`
+  - `initialPackage`
+- `meta` (`provider`, `model`, `escalated`, `fallbackUsed`, `generatedAt`)
+
+### `POST /api/v1/journey-package`
+
+Headers:
+- `Content-Type: application/json`
+- `x-tend-app-key: <TEND_APP_SHARED_SECRET>` (if configured)
+
+Body:
+- `profile`
+- `journey` (supports `themeKey`)
+- optional `memory`
+- optional `recentEntries`
+- optional `cycleCount`
+- optional `completionCount`
+- optional `recentJourneySignals`
+- optional `dateISO`
 
 Response:
 - `package` (reflection/scripture/prayer/step payload)
