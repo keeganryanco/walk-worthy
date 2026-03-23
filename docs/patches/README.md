@@ -10,3 +10,4 @@ Implementation tracking tickets for incremental delivery.
 - PATCH-006: Vercel AI gateway + iOS wiring
 - PATCH-007: onboarding intro loop hook
 - PATCH-008: onboarding no-scroll + App Store review prompt intent
+- PATCH-009: widgets + chip quality + first-tend hooks

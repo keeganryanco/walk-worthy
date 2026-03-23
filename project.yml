@@ -30,12 +30,44 @@ targets:
         PRODUCT_MODULE_NAME: WalkWorthy
         INFOPLIST_FILE: WalkWorthy/Resources/Info.plist
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: WalkWorthy/Resources/WalkWorthy.entitlements
         TARGETED_DEVICE_FAMILY: 1
     preBuildScripts: []
     postBuildScripts: []
     dependencies:
+      - target: TendWidgets
+        embed: true
       - package: RevenueCat
         product: RevenueCat
+  TendWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: '17.0'
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    sources:
+      - path: TendWidgets
+      - path: WalkWorthy/Shared/AppConstants.swift
+        group: WalkWorthy/Shared
+      - path: WalkWorthy/Shared/Widget
+        group: WalkWorthy/Shared
+      - path: WalkWorthy/DesignSystem/WWColor.swift
+        group: WalkWorthy/DesignSystem
+      - path: WalkWorthy/DesignSystem/WWTypography.swift
+        group: WalkWorthy/DesignSystem
+      - path: WalkWorthy/Resources/Assets.xcassets
+        group: WalkWorthy/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.keeganryan.tend.widgets
+        PRODUCT_NAME: TendWidgets
+        PRODUCT_MODULE_NAME: TendWidgets
+        INFOPLIST_FILE: TendWidgets/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: TendWidgets/TendWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: 1
+        APPLICATION_EXTENSION_API_ONLY: YES
   WalkWorthyTests:
     type: bundle.unit-test
     platform: iOS
@@ -68,6 +100,7 @@ schemes:
     build:
       targets:
         WalkWorthy: all
+        TendWidgets: all
         WalkWorthyTests: [test]
         WalkWorthyUITests: [test]
     test:

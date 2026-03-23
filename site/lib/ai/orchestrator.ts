@@ -91,7 +91,7 @@ export async function generateJourneyPackage(input: JourneyPackageRequest): Prom
   for (const candidate of candidates) {
     try {
       const raw = await candidate.call(input);
-      const parsed = parseAndNormalizePackage(raw);
+      const parsed = parseAndNormalizePackage(raw, input);
       if (!parsed) {
         continue;
       }

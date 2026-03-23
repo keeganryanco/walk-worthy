@@ -3,6 +3,7 @@ import { generateWithGeminiPrompt } from "./providers/gemini";
 import { generateWithOpenAIPrompt } from "./providers/openai";
 import {
   BootstrapOrchestratedResult,
+  JourneyPackageRequest,
   JourneyBootstrapRequest,
   JourneyBootstrapResponse,
   JourneyThemeKey
@@ -101,6 +102,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Classify the journey into one themeKey from:",
     THEME_KEYS.join(", "),
     "Create concise, practical initial memory and a daily package.",
+    "Suggested step chips must be complete actionable phrases, not fragments.",
     "Use scripture paraphrase only. No translation labels. No copyright-protected direct verse quoting.",
     "Keep tone grounded, sincere, practical, and hopeful."
   ].join(" ");
@@ -146,14 +148,29 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
   const source = parsed as Record<string, unknown>;
 
   const fallback = fallbackBootstrap(request);
+  const themeCandidate = cleanText(source.themeKey, 40).toLowerCase() as JourneyThemeKey;
+  const themeKey = THEME_KEYS.includes(themeCandidate) ? themeCandidate : fallback.themeKey;
+
+  const normalizationContext: JourneyPackageRequest = {
+    profile: {
+      prayerFocus: request.prayerIntentText,
+      growthGoal: request.goalIntentText,
+      reminderWindow: request.reminderWindow
+    },
+    journey: {
+      id: "bootstrap",
+      title: cleanText(source.journeyTitle, 60) || fallback.journeyTitle,
+      category: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
+      themeKey
+    },
+    recentJourneySignals: [request.prayerIntentText, request.goalIntentText]
+  };
+
   const packageSource =
     source.initialPackage && typeof source.initialPackage === "object"
       ? (source.initialPackage as Record<string, unknown>)
       : null;
-  const normalizedPackage = packageSource ? normalizePackageFromObject(packageSource) : null;
-
-  const themeCandidate = cleanText(source.themeKey, 40).toLowerCase() as JourneyThemeKey;
-  const themeKey = THEME_KEYS.includes(themeCandidate) ? themeCandidate : fallback.themeKey;
+  const normalizedPackage = packageSource ? normalizePackageFromObject(packageSource, normalizationContext) : null;
 
   return {
     journeyTitle: cleanText(source.journeyTitle, 60) || fallback.journeyTitle,

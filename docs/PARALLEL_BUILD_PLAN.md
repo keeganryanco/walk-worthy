@@ -74,3 +74,13 @@ Gemini can start UI immediately using mock/sample data if contracts are not yet 
 - M3: In progress (Codex-owned)
 - M4: In progress (PostHog + RevenueCat SDK wired; paywall experiment rollout logic pending)
 - M5: Pending
+
+## New integration notes (Weeds Pass 1)
+- Widget extension added (`TendWidgets`) with `systemSmall` + `systemMedium`.
+- Shared snapshot contract is now in `WalkWorthy/Shared/Widget/TendWidgetSnapshot.swift`.
+- App publishes widget snapshots via `WidgetSyncService` on:
+  - bootstrap success,
+  - daily package generation,
+  - tend completion.
+- First-tend milestone logic is now persisted in `AppSettings` and exposed via `FirstTendMilestoneService`.
+- Gemini should keep current onboarding/home UI ownership and use these hooks without replacing core logic files.

@@ -21,6 +21,11 @@ Gemini should integrate against these existing services/contracts:
 - `JourneyProgressService` for package-generated / step-completed / journey-completed event logging.
 - `JourneyCreationPolicy` for offline/paywall/free-tier creation gating.
 - `ConnectivityService` for online/offline state-aware UI behavior.
+- `FirstTendMilestoneService` for post-first-tend orchestration hooks:
+  - `isFirstTendCompleted(settings:)`
+  - `isReviewEligibleAfterFirstTend(settings:)`
+  - `markReviewPromptShownAfterFirstTend(settings:)`
+- `WidgetSyncService` + `TendWidgetSnapshotStore` for widget data publishing and clearing.
 
 ## 1.2 Mandatory startup checklist for Gemini
 Before coding, review:
@@ -69,6 +74,22 @@ Gemini should summarize understanding in docs before implementation starts.
   - AI/content/memory service contracts,
   - current build/test commands and repo hygiene.
 - If a refinement risks breaking existing flow, choose additive changes first and document rationale in patch notes.
+
+### 3.1.4 New Codex hooks (do not remove)
+- Widget extension is now active with `systemSmall` + `systemMedium` only.
+- Widget tap deep-link: `tend://home` (Root handler sets Home tab).
+- Shared snapshot is app-group backed (`group.co.keeganryan.tend`) and published by Codex from:
+  - bootstrap success,
+  - daily package generation,
+  - tend completion.
+- If Gemini changes tend completion UX, keep the milestone/write hooks in the completion path:
+  - `FirstTendMilestoneService.markFirstTendCompleted(...)`
+  - `WidgetSyncService.publishFromModelContext(...)`
+
+### 3.1.5 First-tend review/paywall sequencing
+- No first-flow UI changes in this pass.
+- Logic hook is now present: first-tend completion state persists in `AppSettings`.
+- Gemini should attach future review UI after first tend using `isReviewEligibleAfterFirstTend(...)` and then mark consumption via `markReviewPromptShownAfterFirstTend(...)`.
 
 ### 3.2 Journey reward loop
 - Each journey is represented by a plant state (seed -> sprout -> young plant -> mature plant).

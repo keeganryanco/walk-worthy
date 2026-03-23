@@ -1,5 +1,70 @@
 import { DailyJourneyPackage } from "./types";
+import { JourneyPackageRequest } from "./types";
 import { normalizeReference } from "./scripture";
+
+const CHIP_MIN_WORDS = 2;
+const CHIP_MAX_WORDS = 7;
+const CHIP_MAX_LENGTH = 80;
+const CHIP_LIMIT = 4;
+const CHIP_FALLBACK_COUNT = 3;
+
+const DANGLING_ENDINGS = new Set([
+  "a",
+  "an",
+  "and",
+  "at",
+  "because",
+  "for",
+  "from",
+  "in",
+  "into",
+  "of",
+  "on",
+  "or",
+  "that",
+  "the",
+  "to",
+  "toward",
+  "towards",
+  "with"
+]);
+
+const LEADING_FRAGMENT_WORDS = new Set([
+  "and",
+  "because",
+  "for",
+  "if",
+  "or",
+  "so",
+  "then",
+  "to",
+  "when",
+  "while",
+  "with"
+]);
+
+const themeChipBank: Record<string, string[]> = {
+  basic: ["Pray over one task", "Take one faithful step", "Complete one delayed task"],
+  faith: ["Pray with full trust", "Write one trust statement", "Release one control area"],
+  patience: ["Wait before reacting", "Choose one slow step", "Finish one lingering task"],
+  peace: ["Take five calm breaths", "Pray through one worry", "Silence one distraction"],
+  resilience: ["Do one hard thing", "Reframe one setback", "Ask for strength today"],
+  community: ["Send one encouragement text", "Pray for one friend", "Schedule one check-in"],
+  discipline: ["Set one focused block", "Remove one distraction", "Start before you feel ready"],
+  healing: ["Name one honest feeling", "Take one gentle action", "Reach out for support"],
+  joy: ["Write three gratitude lines", "Celebrate one small win", "Share one praise update"],
+  wisdom: ["Pause and seek wisdom", "Write one wise next step", "Ask trusted counsel today"]
+};
+
+const contextualKeywordChips: Array<{ pattern: RegExp; chips: string[] }> = [
+  { pattern: /(anx|worr|fear|stress|panic|calm|rest|peace)/i, chips: ["Pray through this worry", "Take five calm breaths"] },
+  { pattern: /(focus|disciplin|habit|procrastin|delay|consisten)/i, chips: ["Start one focused block", "Finish one delayed task"] },
+  { pattern: /(family|marriage|friend|relationship|team|community)/i, chips: ["Send one honest message", "Pray for this relationship"] },
+  { pattern: /(money|financial|budget|debt|career|business|work)/i, chips: ["Review one key number", "Take one work action"] },
+  { pattern: /(health|heal|grief|pain|recover|tired)/i, chips: ["Take one healing step", "Rest and pray ten minutes"] }
+];
+
+const genericFallbackChips = ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
 
 function cleanText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") {
@@ -9,11 +74,78 @@ function cleanText(value: unknown, maxLength: number): string {
 }
 
 function normalizeChip(value: unknown): string {
-  const cleaned = cleanText(value, 80).replace(/[^\p{L}\p{N}\s'-]/gu, " ");
+  const cleaned = cleanText(value, CHIP_MAX_LENGTH).replace(/[^\p{L}\p{N}\s'-]/gu, " ");
   if (!cleaned) return "";
+
   const compact = cleaned.replace(/\s+/g, " ").trim();
-  const words = compact.split(" ").slice(0, 4);
+  if (!compact) return "";
+
+  const words = compact.split(" ");
+  if (words.length < CHIP_MIN_WORDS || words.length > CHIP_MAX_WORDS) {
+    return "";
+  }
+
+  const firstWord = words[0]?.toLowerCase() ?? "";
+  const lastWord = words[words.length - 1]?.toLowerCase() ?? "";
+  if (LEADING_FRAGMENT_WORDS.has(firstWord) || DANGLING_ENDINGS.has(lastWord)) {
+    return "";
+  }
+
+  if (/[,:;]$/.test(compact) || compact.endsWith("...")) {
+    return "";
+  }
+
   return words.join(" ");
+}
+
+function dedupeChips(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const chip of values) {
+    const key = chip.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(chip);
+  }
+  return result;
+}
+
+function contextSignals(input?: JourneyPackageRequest): string {
+  if (!input) return "";
+  const profile = `${input.profile.prayerFocus} ${input.profile.growthGoal}`;
+  const journey = `${input.journey.title} ${input.journey.category}`;
+  const recent = (input.recentJourneySignals ?? []).join(" ");
+  return `${profile} ${journey} ${recent}`.toLowerCase();
+}
+
+function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
+  const themeKey = input?.journey.themeKey ?? "basic";
+  const chips: string[] = [...(themeChipBank[themeKey] ?? themeChipBank.basic)];
+
+  const signals = contextSignals(input);
+  for (const keywordSet of contextualKeywordChips) {
+    if (keywordSet.pattern.test(signals)) {
+      chips.push(...keywordSet.chips);
+    }
+  }
+
+  chips.push(...genericFallbackChips);
+  const normalized = dedupeChips(chips.map((chip) => normalizeChip(chip)).filter(Boolean));
+  return normalized.slice(0, CHIP_FALLBACK_COUNT);
+}
+
+function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): string[] {
+  const generated = dedupeChips(rawValues.map((item) => normalizeChip(item)).filter(Boolean)).slice(0, CHIP_LIMIT);
+  if (generated.length > 0) {
+    return generated;
+  }
+
+  const contextual = contextualFallbackChips(input);
+  if (contextual.length > 0) {
+    return contextual;
+  }
+
+  return ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
 }
 
 function extractJSON(raw: string): unknown {
@@ -37,21 +169,21 @@ function extractJSON(raw: string): unknown {
   return null;
 }
 
-export function parseAndNormalizePackage(rawText: string): DailyJourneyPackage | null {
+export function parseAndNormalizePackage(rawText: string, input?: JourneyPackageRequest): DailyJourneyPackage | null {
   const parsed = extractJSON(rawText);
   if (!parsed || typeof parsed !== "object") {
     return null;
   }
 
-  return normalizePackageFromObject(parsed as Record<string, unknown>);
+  return normalizePackageFromObject(parsed as Record<string, unknown>, input);
 }
 
-export function normalizePackageFromObject(source: Record<string, unknown>): DailyJourneyPackage | null {
+export function normalizePackageFromObject(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest
+): DailyJourneyPackage | null {
   const suggestedRaw = Array.isArray(source.suggestedSteps) ? source.suggestedSteps : [];
-  const suggested = suggestedRaw
-    .map((item) => normalizeChip(item))
-    .filter(Boolean)
-    .slice(0, 4);
+  const suggested = normalizedChips(suggestedRaw, input);
 
   const completionRaw =
     source.completionSuggestion && typeof source.completionSuggestion === "object"
@@ -66,7 +198,7 @@ export function normalizePackageFromObject(source: Record<string, unknown>): Dai
     scriptureParaphrase: cleanText(source.scriptureParaphrase, 320),
     prayer: cleanText(source.prayer, 360),
     smallStepQuestion: cleanText(source.smallStepQuestion, 120) || "What small step could you take today?",
-    suggestedSteps: suggested.length > 0 ? suggested : ["Pray 5 minutes", "Do one task", "Text an update"],
+    suggestedSteps: suggested,
     completionSuggestion: {
       shouldPrompt: completionRaw.shouldPrompt === true,
       reason: cleanText(completionRaw.reason, 220),

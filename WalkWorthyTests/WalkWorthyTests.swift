@@ -100,4 +100,41 @@ final class WalkWorthyTests: XCTestCase {
         let date = Calendar.current.date(from: components) ?? .now
         XCTAssertEqual(JourneyContentService.dayKey(for: date), "2026-03-17")
     }
+
+    func testWidgetSnapshotDecodesWithMissingFields() throws {
+        let legacyJSON = """
+        {
+          "hasActiveJourney": true,
+          "activeJourneyTitle": "Faith Journey",
+          "scriptureSnippet": "Stay faithful."
+        }
+        """
+        let data = Data(legacyJSON.utf8)
+
+        let snapshot = try JSONDecoder().decode(TendWidgetSnapshot.self, from: data)
+
+        XCTAssertTrue(snapshot.hasActiveJourney)
+        XCTAssertEqual(snapshot.activeJourneyTitle, "Faith Journey")
+        XCTAssertEqual(snapshot.scriptureSnippet, "Stay faithful.")
+        XCTAssertEqual(snapshot.todayStep, "Start your first tend")
+        XCTAssertEqual(snapshot.streakCount, 0)
+    }
+
+    func testFirstTendMilestoneFlagsToggleOnce() {
+        let settings = AppSettings()
+
+        XCTAssertFalse(FirstTendMilestoneService.isFirstTendCompleted(settings: settings))
+        XCTAssertFalse(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+
+        FirstTendMilestoneService.markFirstTendCompleted(settings: settings, now: Date(timeIntervalSince1970: 10))
+        XCTAssertTrue(FirstTendMilestoneService.isFirstTendCompleted(settings: settings))
+        XCTAssertTrue(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+        XCTAssertEqual(settings.firstTendCompletedAt, Date(timeIntervalSince1970: 10))
+
+        FirstTendMilestoneService.markFirstTendCompleted(settings: settings, now: Date(timeIntervalSince1970: 20))
+        XCTAssertEqual(settings.firstTendCompletedAt, Date(timeIntervalSince1970: 10))
+
+        FirstTendMilestoneService.markReviewPromptShownAfterFirstTend(settings: settings, now: Date(timeIntervalSince1970: 30))
+        XCTAssertFalse(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+    }
 }

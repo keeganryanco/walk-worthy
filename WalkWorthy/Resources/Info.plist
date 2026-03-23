@@ -12,6 +12,17 @@
 	<string>Tend</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>co.keeganryan.tend.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tend</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>

@@ -1,11 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1430"
-   version = "1.3">
+   wasCreatedForAppExtension = "YES"
+   version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
       <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
+               BuildableName = "TendWidgets.appex"
+               BlueprintName = "TendWidgets"
+               ReferencedContainer = "container:WalkWorthy.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
             buildForRunning = "YES"
@@ -59,9 +74,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
-            BuildableName = "Tend.app"
-            BlueprintName = "WalkWorthy"
+            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
+            BuildableName = "TendWidgets.appex"
+            BlueprintName = "TendWidgets"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -91,21 +106,23 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
+      askForAppToLaunch = "Yes"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "YES"
+      launchAutomaticallySubstyle = "2">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
-            BuildableName = "Tend.app"
-            BlueprintName = "WalkWorthy"
+            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
+            BuildableName = "TendWidgets.appex"
+            BlueprintName = "TendWidgets"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -120,9 +137,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
-            BuildableName = "Tend.app"
-            BlueprintName = "WalkWorthy"
+            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
+            BuildableName = "TendWidgets.appex"
+            BlueprintName = "TendWidgets"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

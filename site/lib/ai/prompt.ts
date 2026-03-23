@@ -39,7 +39,8 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
       instructions: [
         "Make the reflection concise and specific to the journey.",
         "Prayer should be 1-3 sentences.",
-        "Suggested step chips should be practical, concrete, and short (target 3-4 words each).",
+        "Suggested step chips must be complete, actionable phrases (no fragments), practical, and short (target 3-6 words each).",
+        "Never end a suggested chip with dangling words like 'to', 'for', or 'with'.",
         "Only set completionSuggestion.shouldPrompt=true when completionCount is at least 7 and journey signals indicate meaningful progress."
       ],
       context: {

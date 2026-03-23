@@ -61,6 +61,7 @@ struct RootView: View {
             showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: subscriptionService.isPremium, settings: settings)
             await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
+            syncWidgetSnapshot()
         }
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
             if isPremium {
@@ -75,11 +76,14 @@ struct RootView: View {
             Task {
                 await bootstrapFirstJourneyIfNeeded()
                 await prefetchDailyPackagesIfPossible()
+                syncWidgetSnapshot()
             }
         }
         .onChange(of: activeJourneys.count) { _, _ in
+            syncWidgetSnapshot()
             Task { await prefetchDailyPackagesIfPossible() }
         }
+        .onOpenURL(perform: handleDeepLink)
         .onAppear {
             trackOnboardingStartedIfNeeded()
         }
@@ -174,7 +178,10 @@ struct RootView: View {
 
     private func prefetchDailyPackagesIfPossible() async {
         guard connectivityService.isOnline, let profile else { return }
-        guard !activeJourneys.isEmpty else { return }
+        guard !activeJourneys.isEmpty else {
+            syncWidgetSnapshot()
+            return
+        }
 
         var entriesByJourneyID: [UUID: [PrayerEntry]] = [:]
         for entry in allEntries {
@@ -192,6 +199,7 @@ struct RootView: View {
             isOnline: true,
             modelContext: modelContext
         )
+        syncWidgetSnapshot()
     }
 
     private func bootstrapFirstJourneyIfNeeded() async {
@@ -276,6 +284,7 @@ struct RootView: View {
             )
 
             try? modelContext.save()
+            syncWidgetSnapshot()
             rootLogger.log("bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public) theme=\(payload.themeKey, privacy: .public)")
             analytics.track(.journeyCreated, properties: ["source": "bootstrap"])
         } catch {
@@ -298,6 +307,24 @@ struct RootView: View {
         default:
             return 8
         }
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme?.lowercased() == AppConstants.DeepLink.scheme else { return }
+
+        let host = url.host?.lowercased()
+        let normalizedPath = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
+        if host == AppConstants.DeepLink.homeHost || normalizedPath == AppConstants.DeepLink.homeHost {
+            selectedTab = .home
+        }
+    }
+
+    private func syncWidgetSnapshot() {
+        guard !activeJourneys.isEmpty else {
+            WidgetSyncService.clearWidgetSnapshot()
+            return
+        }
+        WidgetSyncService.publishFromModelContext(modelContext)
     }
 }
 

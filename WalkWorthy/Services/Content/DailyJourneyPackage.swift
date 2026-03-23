@@ -73,6 +73,10 @@ struct DailyJourneyPackage: Codable, Equatable {
 
 enum DailyJourneyPackageValidation {
     static let defaultSmallStepQuestion = "What small step could you take today?"
+    private static let danglingEndings: Set<String> = [
+        "a", "an", "and", "at", "because", "for", "from", "in", "into", "of", "on", "or",
+        "that", "the", "to", "toward", "towards", "with"
+    ]
 
     static func validated(_ package: DailyJourneyPackage) -> DailyJourneyPackage {
         let normalizedReference = ScriptureReferenceValidator.isApproved(package.scriptureReference)
@@ -88,10 +92,7 @@ enum DailyJourneyPackageValidation {
             normalizedQuestion = package.smallStepQuestion
         }
 
-        let normalizedSuggestedSteps = package.suggestedSteps
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .prefix(4)
+        let normalizedSuggestedSteps = normalizedChipSteps(package.suggestedSteps)
 
         let normalizedConfidence = min(1.0, max(0.0, package.completionSuggestion.confidence))
         let normalizedCompletionSuggestion = CompletionSuggestion(
@@ -106,10 +107,48 @@ enum DailyJourneyPackageValidation {
             scriptureParaphrase: normalizedParaphrase,
             prayer: package.prayer.trimmingCharacters(in: .whitespacesAndNewlines),
             smallStepQuestion: normalizedQuestion,
-            suggestedSteps: normalizedSuggestedSteps.isEmpty ? ["Take one specific faithful step for this journey today."] : Array(normalizedSuggestedSteps),
+            suggestedSteps: normalizedSuggestedSteps.isEmpty
+                ? [
+                    "Take one faithful action today.",
+                    "Pray over one next step.",
+                    "Finish one delayed task."
+                ]
+                : Array(normalizedSuggestedSteps),
             completionSuggestion: normalizedCompletionSuggestion,
             generatedAt: package.generatedAt
         )
+    }
+
+    private static func normalizedChipSteps(_ values: [String]) -> [String] {
+        var seen: Set<String> = []
+        var chips: [String] = []
+
+        for value in values {
+            let compact = value
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+
+            guard !compact.isEmpty else { continue }
+
+            let words = compact.split(separator: " ")
+            guard (2...7).contains(words.count) else { continue }
+
+            let first = words.first?.lowercased() ?? ""
+            let last = words.last?.lowercased() ?? ""
+            guard !["and", "or", "to", "for", "with", "because", "if", "when"].contains(first) else { continue }
+            guard !danglingEndings.contains(last) else { continue }
+
+            let key = compact.lowercased()
+            guard !seen.contains(key) else { continue }
+            seen.insert(key)
+            chips.append(compact)
+
+            if chips.count == 4 {
+                break
+            }
+        }
+
+        return chips
     }
 }
 

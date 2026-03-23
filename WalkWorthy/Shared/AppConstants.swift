@@ -4,6 +4,12 @@ enum AppConstants {
     static let appName = "Tend"
     static let subtitle = "pray. act. grow."
     static let supportEmail = "keegan.ryan@keeganryan.co"
+    static let appGroupID = "group.co.keeganryan.tend"
+
+    enum DeepLink {
+        static let scheme = "tend"
+        static let homeHost = "home"
+    }
 
     enum Subscription {
         static let weeklyProductID = "co.keeganryan.tend.premium.weekly"

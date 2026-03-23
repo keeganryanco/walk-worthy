@@ -669,6 +669,7 @@ struct JourneyGrowthPage: View {
             modelContext: modelContext
         )
         try? modelContext.save()
+        WidgetSyncService.publishFromModelContext(modelContext)
     }
 }
 
@@ -677,6 +678,7 @@ private final class PlantAssetBundleLocator {}
 struct TendingFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \AppSettings.firstLaunchAt, order: .forward) private var settingsRows: [AppSettings]
     
     let journey: PrayerJourney
     let entry: PrayerEntry
@@ -835,6 +837,7 @@ struct TendingFlowView: View {
             Button("Keep Tending") {
                 journey.lastCompletionPromptAt = .now
                 try? modelContext.save()
+                WidgetSyncService.publishFromModelContext(modelContext)
                 dismiss()
             }
             Button("Mark Complete") {
@@ -848,6 +851,7 @@ struct TendingFlowView: View {
                     modelContext: modelContext
                 )
                 try? modelContext.save()
+                WidgetSyncService.publishFromModelContext(modelContext)
                 dismiss()
             }
         } message: {
@@ -871,6 +875,11 @@ struct TendingFlowView: View {
             journey.completedTends = nextCompleted
             journey.cycleCount = nextCompleted / Self.tendsPerCycle
 
+            let settings = settingsRows.first
+            let wasFirstTendCompleted = FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
+            FirstTendMilestoneService.markFirstTendCompleted(settings: settings)
+            let didCompleteFirstTend = !wasFirstTendCompleted && FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
+
             try? modelContext.save()
             
             JourneyProgressService.logEvent(
@@ -879,12 +888,21 @@ struct TendingFlowView: View {
                 notes: "Completed step: \(trimmedStep)",
                 modelContext: modelContext
             )
+            if didCompleteFirstTend {
+                JourneyProgressService.logEvent(
+                    journeyID: journey.id,
+                    type: .firstTendCompleted,
+                    notes: "First tend milestone reached.",
+                    modelContext: modelContext
+                )
+            }
             JourneyMemoryService.refreshSnapshot(
                 for: journey,
                 entries: entries,
                 profile: profile,
                 modelContext: modelContext
             )
+            WidgetSyncService.publishFromModelContext(modelContext)
             
             isCompleting = false
             if shouldPromptCompletionSuggestion(completedCount: nextCompleted) {
