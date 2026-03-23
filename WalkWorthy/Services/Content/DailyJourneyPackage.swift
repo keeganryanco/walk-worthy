@@ -4,6 +4,19 @@ struct CompletionSuggestion: Codable, Equatable {
     let shouldPrompt: Bool
     let reason: String
     let confidence: Double
+
+    init(shouldPrompt: Bool, reason: String, confidence: Double) {
+        self.shouldPrompt = shouldPrompt
+        self.reason = reason
+        self.confidence = confidence
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        shouldPrompt = try container.decodeIfPresent(Bool.self, forKey: .shouldPrompt) ?? false
+        reason = try container.decodeIfPresent(String.self, forKey: .reason) ?? ""
+        confidence = try container.decodeIfPresent(Double.self, forKey: .confidence) ?? 0
+    }
 }
 
 struct DailyJourneyPackage: Codable, Equatable {
@@ -15,6 +28,47 @@ struct DailyJourneyPackage: Codable, Equatable {
     let suggestedSteps: [String]
     let completionSuggestion: CompletionSuggestion
     let generatedAt: Date
+
+    init(
+        reflectionThought: String,
+        scriptureReference: String,
+        scriptureParaphrase: String,
+        prayer: String,
+        smallStepQuestion: String,
+        suggestedSteps: [String],
+        completionSuggestion: CompletionSuggestion,
+        generatedAt: Date
+    ) {
+        self.reflectionThought = reflectionThought
+        self.scriptureReference = scriptureReference
+        self.scriptureParaphrase = scriptureParaphrase
+        self.prayer = prayer
+        self.smallStepQuestion = smallStepQuestion
+        self.suggestedSteps = suggestedSteps
+        self.completionSuggestion = completionSuggestion
+        self.generatedAt = generatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        reflectionThought = try container.decodeIfPresent(String.self, forKey: .reflectionThought) ?? ""
+        scriptureReference = try container.decodeIfPresent(String.self, forKey: .scriptureReference) ?? ""
+        scriptureParaphrase = try container.decodeIfPresent(String.self, forKey: .scriptureParaphrase) ?? ""
+        prayer = try container.decodeIfPresent(String.self, forKey: .prayer) ?? ""
+        smallStepQuestion = try container.decodeIfPresent(String.self, forKey: .smallStepQuestion) ?? ""
+        suggestedSteps = try container.decodeIfPresent([String].self, forKey: .suggestedSteps) ?? []
+        completionSuggestion = try container.decodeIfPresent(CompletionSuggestion.self, forKey: .completionSuggestion)
+            ?? CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0)
+
+        if let unix = try container.decodeIfPresent(Double.self, forKey: .generatedAt) {
+            generatedAt = Date(timeIntervalSince1970: unix)
+        } else if let isoString = try container.decodeIfPresent(String.self, forKey: .generatedAt) {
+            let iso = ISO8601DateFormatter()
+            generatedAt = iso.date(from: isoString) ?? .now
+        } else {
+            generatedAt = .now
+        }
+    }
 }
 
 enum DailyJourneyPackageValidation {
