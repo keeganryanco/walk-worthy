@@ -4,6 +4,10 @@ import { JourneyPackageRequest } from "../../../../lib/ai/types";
 
 export const runtime = "nodejs";
 
+function requestId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function isValidRequestPayload(payload: unknown): payload is JourneyPackageRequest {
   if (!payload || typeof payload !== "object") {
     return false;
@@ -40,7 +44,11 @@ function authorize(request: NextRequest): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = requestId();
+  console.info(`[journey-package][${rid}] request received`);
+
   if (!authorize(request)) {
+    console.warn(`[journey-package][${rid}] unauthorized`);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,23 +56,39 @@ export async function POST(request: NextRequest) {
   try {
     payload = await request.json();
   } catch {
+    console.warn(`[journey-package][${rid}] invalid JSON`);
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
   if (!isValidRequestPayload(payload)) {
+    console.warn(`[journey-package][${rid}] invalid schema`);
     return NextResponse.json({ error: "Invalid request schema" }, { status: 422 });
   }
 
-  const result = await generateJourneyPackage(payload);
+  const typedPayload = payload as JourneyPackageRequest;
+  console.info(
+    `[journey-package][${rid}] start generation journeyId=${typedPayload.journey.id} completionCount=${typedPayload.completionCount ?? 0} cycleCount=${typedPayload.cycleCount ?? 0}`
+  );
 
-  return NextResponse.json({
-    package: result.package,
-    meta: {
-      provider: result.provider,
-      model: result.model,
-      escalated: result.escalated,
-      fallbackUsed: result.fallbackUsed,
-      generatedAt: new Date().toISOString()
-    }
-  });
+  try {
+    const result = await generateJourneyPackage(typedPayload);
+    console.info(
+      `[journey-package][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed}`
+    );
+
+    return NextResponse.json({
+      package: result.package,
+      meta: {
+        provider: result.provider,
+        model: result.model,
+        escalated: result.escalated,
+        fallbackUsed: result.fallbackUsed,
+        generatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown package generation error";
+    console.error(`[journey-package][${rid}] unhandled error: ${message}`);
+    return NextResponse.json({ error: "Journey package generation failed", details: message }, { status: 500 });
+  }
 }

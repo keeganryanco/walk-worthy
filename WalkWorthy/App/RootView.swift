@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import os
+
+private let rootLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend", category: "RootView")
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
@@ -192,13 +195,26 @@ struct RootView: View {
     }
 
     private func bootstrapFirstJourneyIfNeeded() async {
-        guard connectivityService.isOnline else { return }
-        guard !isBootstrappingJourney else { return }
-        guard allJourneys.isEmpty else { return }
-        guard let profile else { return }
+        guard connectivityService.isOnline else {
+            rootLogger.log("bootstrap skipped: offline")
+            return
+        }
+        guard !isBootstrappingJourney else {
+            rootLogger.log("bootstrap skipped: already running")
+            return
+        }
+        guard allJourneys.isEmpty else {
+            rootLogger.log("bootstrap skipped: journey already exists count=\(allJourneys.count)")
+            return
+        }
+        guard let profile else {
+            rootLogger.log("bootstrap skipped: onboarding profile missing")
+            return
+        }
 
         isBootstrappingJourney = true
         defer { isBootstrappingJourney = false }
+        rootLogger.log("bootstrap started")
 
         do {
             let payload = try await bootstrapProvider.bootstrap(
@@ -260,9 +276,14 @@ struct RootView: View {
             )
 
             try? modelContext.save()
+            rootLogger.log("bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public) theme=\(payload.themeKey, privacy: .public)")
             analytics.track(.journeyCreated, properties: ["source": "bootstrap"])
         } catch {
-            onboardingErrorMessage = "We couldn't create your first journey right now. Connect to the internet and try again."
+            let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            rootLogger.error("bootstrap failed error=\(details, privacy: .public)")
+            onboardingErrorMessage = details.isEmpty
+                ? "We couldn't create your first journey right now. Connect to the internet and try again."
+                : "We couldn't create your first journey: \(details)"
         }
     }
 

@@ -4,6 +4,10 @@ import { JourneyBootstrapRequest } from "../../../../lib/ai/types";
 
 export const runtime = "nodejs";
 
+function requestId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function authorize(request: NextRequest): boolean {
   const requiredSecret = process.env.TEND_APP_SHARED_SECRET?.trim();
   if (!requiredSecret) {
@@ -26,7 +30,11 @@ function isValidPayload(payload: unknown): payload is JourneyBootstrapRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = requestId();
+  console.info(`[journey-bootstrap][${rid}] request received`);
+
   if (!authorize(request)) {
+    console.warn(`[journey-bootstrap][${rid}] unauthorized`);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,23 +42,39 @@ export async function POST(request: NextRequest) {
   try {
     payload = await request.json();
   } catch {
+    console.warn(`[journey-bootstrap][${rid}] invalid JSON`);
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
   if (!isValidPayload(payload)) {
+    console.warn(`[journey-bootstrap][${rid}] invalid schema`);
     return NextResponse.json({ error: "Invalid request schema" }, { status: 422 });
   }
 
-  const result = await generateJourneyBootstrap(payload);
+  const typedPayload = payload as JourneyBootstrapRequest;
+  console.info(
+    `[journey-bootstrap][${rid}] start generation reminderWindow=${typedPayload.reminderWindow} prayerLen=${typedPayload.prayerIntentText.length} goalLen=${typedPayload.goalIntentText.length}`
+  );
 
-  return NextResponse.json({
-    bootstrap: result.bootstrap,
-    meta: {
-      provider: result.provider,
-      model: result.model,
-      escalated: result.escalated,
-      fallbackUsed: result.fallbackUsed,
-      generatedAt: new Date().toISOString()
-    }
-  });
+  try {
+    const result = await generateJourneyBootstrap(typedPayload);
+    console.info(
+      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey}`
+    );
+
+    return NextResponse.json({
+      bootstrap: result.bootstrap,
+      meta: {
+        provider: result.provider,
+        model: result.model,
+        escalated: result.escalated,
+        fallbackUsed: result.fallbackUsed,
+        generatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown bootstrap error";
+    console.error(`[journey-bootstrap][${rid}] unhandled error: ${message}`);
+    return NextResponse.json({ error: "Journey bootstrap failed", details: message }, { status: 500 });
+  }
 }

@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend", category: "AI")
 
 struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     private struct RequestBody: Encodable {
@@ -57,7 +60,8 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     private enum ProviderError: LocalizedError {
         case missingBaseURL
         case invalidURL
-        case failedResponse(statusCode: Int)
+        case failedResponse(statusCode: Int, bodySnippet: String?)
+        case decodeFailure(bodySnippet: String)
 
         var errorDescription: String? {
             switch self {
@@ -65,8 +69,13 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
                 return "AI gateway URL is not configured."
             case .invalidURL:
                 return "AI gateway URL is invalid."
-            case .failedResponse(let statusCode):
+            case .failedResponse(let statusCode, let bodySnippet):
+                if let bodySnippet, !bodySnippet.isEmpty {
+                    return "AI gateway returned status \(statusCode): \(bodySnippet)"
+                }
                 return "AI gateway returned status \(statusCode)."
+            case .decodeFailure(let bodySnippet):
+                return "AI gateway response could not be decoded: \(bodySnippet)"
             }
         }
     }
@@ -79,14 +88,17 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     ) async throws -> DailyJourneyPackage {
         let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !baseURLString.isEmpty else {
+            aiLogger.error("journey-package blocked: TENDAI_BASE_URL is empty")
             throw ProviderError.missingBaseURL
         }
 
         guard let baseURL = URL(string: baseURLString) else {
+            aiLogger.error("journey-package blocked: TENDAI_BASE_URL invalid '\(baseURLString, privacy: .public)'")
             throw ProviderError.invalidURL
         }
 
         let endpoint = baseURL.appendingPathComponent("/api/v1/journey-package")
+        aiLogger.log("journey-package request start endpoint=\(endpoint.absoluteString, privacy: .public)")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
@@ -95,6 +107,8 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
         if !appKey.isEmpty {
             request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
+        } else {
+            aiLogger.error("journey-package warning: TENDAI_APP_KEY empty (request will be unauthorized if backend requires shared secret)")
         }
 
         let encoder = JSONEncoder()
@@ -104,14 +118,30 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ProviderError.failedResponse(statusCode: -1)
+            aiLogger.error("journey-package failed: non-HTTP response")
+            throw ProviderError.failedResponse(statusCode: -1, bodySnippet: nil)
         }
 
+        aiLogger.log("journey-package response status=\(httpResponse.statusCode)")
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode)
+            let bodySnippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400)
+            let snippet = bodySnippet.map(String.init)
+            aiLogger.error("journey-package failed status=\(httpResponse.statusCode) body=\(snippet ?? "<empty>", privacy: .public)")
+            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode, bodySnippet: snippet)
         }
 
-        let decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
+        let decoded: ResponseBody
+        do {
+            decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
+        } catch {
+            let snippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400) ?? "<non-utf8>"
+            aiLogger.error("journey-package decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
+            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
+        }
         return DailyJourneyPackageValidation.validated(decoded.package)
     }
 
@@ -214,7 +244,8 @@ struct BackendJourneyBootstrapProvider {
     private enum ProviderError: LocalizedError {
         case missingBaseURL
         case invalidURL
-        case failedResponse(statusCode: Int)
+        case failedResponse(statusCode: Int, bodySnippet: String?)
+        case decodeFailure(bodySnippet: String)
 
         var errorDescription: String? {
             switch self {
@@ -222,8 +253,13 @@ struct BackendJourneyBootstrapProvider {
                 return "AI gateway URL is not configured."
             case .invalidURL:
                 return "AI gateway URL is invalid."
-            case .failedResponse(let statusCode):
+            case .failedResponse(let statusCode, let bodySnippet):
+                if let bodySnippet, !bodySnippet.isEmpty {
+                    return "AI gateway returned status \(statusCode): \(bodySnippet)"
+                }
                 return "AI gateway returned status \(statusCode)."
+            case .decodeFailure(let bodySnippet):
+                return "AI gateway response could not be decoded: \(bodySnippet)"
             }
         }
     }
@@ -236,14 +272,17 @@ struct BackendJourneyBootstrapProvider {
     ) async throws -> JourneyBootstrapPayload {
         let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !baseURLString.isEmpty else {
+            aiLogger.error("journey-bootstrap blocked: TENDAI_BASE_URL is empty")
             throw ProviderError.missingBaseURL
         }
 
         guard let baseURL = URL(string: baseURLString) else {
+            aiLogger.error("journey-bootstrap blocked: TENDAI_BASE_URL invalid '\(baseURLString, privacy: .public)'")
             throw ProviderError.invalidURL
         }
 
         let endpoint = baseURL.appendingPathComponent("/api/v1/journey-bootstrap")
+        aiLogger.log("journey-bootstrap request start endpoint=\(endpoint.absoluteString, privacy: .public)")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
@@ -252,6 +291,8 @@ struct BackendJourneyBootstrapProvider {
         let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
         if !appKey.isEmpty {
             request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
+        } else {
+            aiLogger.error("journey-bootstrap warning: TENDAI_APP_KEY empty (request will be unauthorized if backend requires shared secret)")
         }
 
         let payload = RequestBody(
@@ -264,14 +305,30 @@ struct BackendJourneyBootstrapProvider {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ProviderError.failedResponse(statusCode: -1)
+            aiLogger.error("journey-bootstrap failed: non-HTTP response")
+            throw ProviderError.failedResponse(statusCode: -1, bodySnippet: nil)
         }
 
+        aiLogger.log("journey-bootstrap response status=\(httpResponse.statusCode)")
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode)
+            let bodySnippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400)
+            let snippet = bodySnippet.map(String.init)
+            aiLogger.error("journey-bootstrap failed status=\(httpResponse.statusCode) body=\(snippet ?? "<empty>", privacy: .public)")
+            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode, bodySnippet: snippet)
         }
 
-        let decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
+        let decoded: ResponseBody
+        do {
+            decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
+        } catch {
+            let snippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400) ?? "<non-utf8>"
+            aiLogger.error("journey-bootstrap decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
+            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
+        }
         return decoded.bootstrap
     }
 }

@@ -21,7 +21,20 @@ enum AppConstants {
 
     enum AI {
         static var gatewayBaseURLString: String {
-            Bundle.main.object(forInfoDictionaryKey: "TENDAIBaseURL") as? String ?? ""
+            let raw = (Bundle.main.object(forInfoDictionaryKey: "TENDAIBaseURL") as? String ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !raw.isEmpty else { return "" }
+
+            if raw.contains("://") {
+                return raw
+            }
+
+            if raw == "https:" || raw == "http:" {
+                // Common xcconfig pitfall when using https:// directly (// treated as comment).
+                return ""
+            }
+
+            return "https://\(raw)"
         }
 
         static var gatewayAppKey: String {
