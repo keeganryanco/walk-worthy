@@ -373,6 +373,7 @@ struct ExperimentalOnboardingFlowView: View {
             Text("Your first step is ready.")
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
+                .fixedSize(horizontal: false, vertical: true)
             
             WWCard {
                 VStack(alignment: .leading, spacing: 16) {
@@ -384,13 +385,20 @@ struct ExperimentalOnboardingFlowView: View {
                     Text(generatedPackage?.scriptureParaphrase ?? "...")
                         .font(WWTypography.heading(20))
                         .foregroundStyle(WWColor.nearBlack)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                     
                     Divider()
                     
                     Text(generatedPackage?.reflectionThought ?? "...")
                         .font(WWTypography.body(17))
                         .foregroundStyle(WWColor.muted)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -400,16 +408,22 @@ struct ExperimentalOnboardingFlowView: View {
             Text("Take a moment to pray.")
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
+                .fixedSize(horizontal: false, vertical: true)
             
             Text("Read this prayer drawn from your intent and scripture.")
                 .font(WWTypography.heading(19))
                 .foregroundStyle(WWColor.muted)
+                .fixedSize(horizontal: false, vertical: true)
             
             WWCard {
                 Text(generatedPackage?.prayer ?? "...")
                     .font(WWTypography.body(17))
                     .foregroundStyle(WWColor.nearBlack)
                     .italic()
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -778,7 +792,7 @@ struct ExperimentalOnboardingFlowView: View {
         case .prayerIntent, .goalIntent:
             return compact ? 0.23 : 0.28
         case .tendReflection, .tendPrayer, .tendNextStep:
-            return compact ? 0.22 : 0.27
+            return compact ? 0.16 : 0.21
         case .widget:
             return compact ? 0.36 : 0.44
         case .name:
@@ -825,6 +839,8 @@ struct ExperimentalOnboardingFlowView: View {
         switch step {
         case .creationSprout, .generating:
             return 24
+        case .tendReflection, .tendPrayer, .tendNextStep:
+            return 196
         default:
             return 132
         }
