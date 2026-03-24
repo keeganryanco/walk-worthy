@@ -1,5 +1,11 @@
 import WidgetKit
 import SwiftUI
+import os
+
+private let widgetLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend.widgets",
+    category: "TendSnapshotWidget"
+)
 
 struct TendSnapshotEntry: TimelineEntry {
     enum SnapshotState {
@@ -15,15 +21,27 @@ struct TendSnapshotEntry: TimelineEntry {
 
 struct TendSnapshotProvider: TimelineProvider {
     func placeholder(in context: Context) -> TendSnapshotEntry {
-        TendSnapshotEntry(
-            date: .now,
-            snapshot: TendWidgetSnapshot.empty,
-            state: .noCachedSnapshot
-        )
+        previewEntry()
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TendSnapshotEntry) -> Void) {
+        if context.isPreview {
+            completion(previewEntry())
+            return
+        }
         completion(buildEntry())
+    }
+
+    private func previewEntry() -> TendSnapshotEntry {
+        let dummy = TendWidgetSnapshot(
+            hasActiveJourney: true,
+            activeJourneyTitle: "Growing in Patience",
+            scriptureSnippet: "Be joyful in hope, patient in affliction, faithful in prayer. - Rom 12:12",
+            todayStep: "When frustrated today, take 3 deep breaths before responding.",
+            streakCount: 12,
+            updatedAt: .now
+        )
+        return TendSnapshotEntry(date: .now, snapshot: dummy, state: .active)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TendSnapshotEntry>) -> Void) {
@@ -34,16 +52,22 @@ struct TendSnapshotProvider: TimelineProvider {
 
     private func buildEntry() -> TendSnapshotEntry {
         guard let snapshot = TendWidgetSnapshotStore.load() else {
+#if DEBUG
+            widgetLogger.debug("snapshot load: no cached snapshot")
+#endif
             return TendSnapshotEntry(date: .now, snapshot: .empty, state: .noCachedSnapshot)
         }
 
         let state: TendSnapshotEntry.SnapshotState = snapshot.hasActiveJourney ? .active : .noActiveJourney
+#if DEBUG
+        widgetLogger.debug("snapshot load: active=\(snapshot.hasActiveJourney, privacy: .public) title=\(snapshot.activeJourneyTitle, privacy: .public) streak=\(snapshot.streakCount, privacy: .public)")
+#endif
         return TendSnapshotEntry(date: .now, snapshot: snapshot, state: state)
     }
 }
 
 struct TendSnapshotWidget: Widget {
-    private let kind = "TendSnapshotWidget"
+    private let kind = AppConstants.Widget.snapshotKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: TendSnapshotProvider()) { entry in
@@ -58,6 +82,7 @@ struct TendSnapshotWidget: Widget {
 
 private struct TendSnapshotWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.colorScheme) private var colorScheme
 
     let entry: TendSnapshotEntry
 
@@ -65,75 +90,166 @@ private struct TendSnapshotWidgetView: View {
         switch family {
         case .systemSmall:
             smallBody
-                .containerBackground(WWColor.surface, for: .widget)
+                .containerBackground(for: .widget) {
+                    widgetBackground(for: .systemSmall)
+                }
         default:
             mediumBody
-                .containerBackground(WWColor.surface, for: .widget)
+                .containerBackground(for: .widget) {
+                    widgetBackground(for: .systemMedium)
+                }
         }
     }
 
-    private var smallBody: some View {
-        ZStack(alignment: .bottomLeading) {
-            Image("WidgetArtSmall")
+    @ViewBuilder
+    private func widgetBackground(for family: WidgetFamily) -> some View {
+        ZStack {
+            artFallbackBackground
+            Image(artAssetName(for: family))
                 .resizable()
                 .scaledToFill()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
-
-            if entry.state == .active {
-                VStack(alignment: .trailing, spacing: 6) {
-                    streakBadge
-                    Text(entry.snapshot.todayStep)
-                        .font(WWTypography.caption(12).weight(.medium))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .multilineTextAlignment(.trailing)
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+            
+            if family != .systemSmall {
+                GeometryReader { proxy in
+                    HStack(spacing: 0) {
+                        Spacer(minLength: proxy.size.width * 0.12)
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.24),
+                                Color.black.opacity(0.88),
+                                Color.black.opacity(1.0)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    }
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            } else {
-                fallbackStack
+            }
+        }
+    }
+
+    private var smallBody: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .topTrailing) {
+                if entry.state == .active {
+                    let panelWidth = proxy.size.width * 0.72
+                    let panelHeight = proxy.size.height * 0.72
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 0) {
+                            Spacer()
+                            streakBadge
+                        }
+
+                        Text("TODAY'S STEP")
+                            .font(WWTypography.caption(9).weight(.heavy))
+                            .tracking(1.0)
+                            .foregroundStyle(Color.white.opacity(0.78))
+
+                        Text(stepText)
+                            .font(WWTypography.caption(14).weight(.semibold))
+                            .foregroundStyle(primaryTextColor)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(4)
+                            .minimumScaleFactor(0.88)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .frame(width: panelWidth, height: panelHeight, alignment: .topLeading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: colorScheme == .dark
+                                        ? [Color.black.opacity(0.80), Color.black.opacity(0.66)]
+                                        : [Color.black.opacity(0.62), Color.black.opacity(0.50)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(
+                                        RadialGradient(
+                                            colors: colorScheme == .dark
+                                                ? [Color.black.opacity(0.48), Color.black.opacity(0.18), Color.clear]
+                                                : [Color.black.opacity(0.34), Color.black.opacity(0.12), Color.clear],
+                                            center: .center,
+                                            startRadius: 8,
+                                            endRadius: 120
+                                        )
+                                    )
+                            )
+                    )
+                    .padding(8)
+                } else {
+                    fallbackStack
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
             }
         }
     }
 
     private var mediumBody: some View {
-        ZStack(alignment: .leading) {
-            Image("WidgetArtMedium")
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+        GeometryReader { proxy in
+            HStack(spacing: 0) {
+                Spacer(minLength: proxy.size.width * 0.25)
 
-            if entry.state == .active {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 96)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(entry.snapshot.activeJourneyTitle)
-                            .font(WWTypography.caption(12).weight(.semibold))
-                            .foregroundStyle(WWColor.muted)
+                if entry.state == .active {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(journeyTitle)
+                            .font(WWTypography.caption(11).weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.8))
                             .lineLimit(1)
-                        Text(entry.snapshot.scriptureSnippet)
-                            .font(WWTypography.body(15).weight(.semibold))
-                            .foregroundStyle(WWColor.nearBlack)
+                            .truncationMode(.tail)
+
+                        Text(scriptureText)
+                            .font(WWTypography.body(14).weight(.semibold))
+                            .foregroundStyle(Color.white)
                             .lineLimit(3)
-                        Text(entry.snapshot.todayStep)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.nearBlack)
+                            .multilineTextAlignment(.leading)
+
+                        Text(stepText)
+                            .font(WWTypography.caption(12).weight(.medium))
+                            .foregroundStyle(Color.white.opacity(0.85))
                             .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+
                         streakBadge
                     }
-                    .padding(.trailing, 12)
-                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                } else {
+                    fallbackStack
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 }
-            } else {
-                fallbackStack
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(10)
+        }
+    }
+
+    private var artFallbackBackground: some View {
+        LinearGradient(
+            colors: [
+                colorScheme == .dark ? Color(red: 0.10, green: 0.12, blue: 0.10) : Color(red: 0.96, green: 0.97, blue: 0.95),
+                colorScheme == .dark ? Color(red: 0.13, green: 0.14, blue: 0.18) : Color(red: 0.92, green: 0.95, blue: 0.93)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private func artAssetName(for family: WidgetFamily) -> String {
+        switch (family, colorScheme) {
+        case (.systemSmall, .dark):
+            return "WidgetArtSmallDark"
+        case (.systemSmall, _):
+            return "WidgetArtSmallLight"
+        case (_, .dark):
+            return "WidgetArtMediumDark"
+        default:
+            return "WidgetArtMediumLight"
         }
     }
 
@@ -141,16 +257,16 @@ private struct TendSnapshotWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Tend")
                 .font(WWTypography.caption(12).weight(.semibold))
-                .foregroundStyle(WWColor.muted)
+                .foregroundStyle(mutedTextColor)
 
             Text(fallbackTitle)
                 .font(WWTypography.body(14).weight(.semibold))
-                .foregroundStyle(WWColor.nearBlack)
+                .foregroundStyle(primaryTextColor)
                 .lineLimit(3)
 
             Text(fallbackSubtitle)
                 .font(WWTypography.caption(11))
-                .foregroundStyle(WWColor.muted)
+                .foregroundStyle(secondaryTextColor)
                 .lineLimit(2)
         }
     }
@@ -185,5 +301,36 @@ private struct TendSnapshotWidgetView: View {
                 .font(WWTypography.caption(11).weight(.semibold))
         }
         .foregroundStyle(WWColor.growGreen)
+    }
+
+    private var journeyTitle: String {
+        let trimmed = entry.snapshot.activeJourneyTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Today's Journey" : trimmed
+    }
+
+    private var scriptureText: String {
+        let trimmed = entry.snapshot.scriptureSnippet.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? TendWidgetSnapshot.empty.scriptureSnippet : trimmed
+    }
+
+    private var stepText: String {
+        let trimmed = entry.snapshot.todayStep.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? TendWidgetSnapshot.empty.todayStep : trimmed
+    }
+
+    private var primaryTextColor: Color {
+        colorScheme == .dark ? Color.white : Color(red: 0.08, green: 0.09, blue: 0.08)
+    }
+
+    private var secondaryTextColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.88) : Color(red: 0.16, green: 0.20, blue: 0.16)
+    }
+
+    private var mutedTextColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.74) : WWColor.muted
+    }
+
+    private var textPanelBackground: Color {
+        colorScheme == .dark ? Color.black.opacity(0.32) : Color.white.opacity(0.68)
     }
 }
