@@ -6,6 +6,9 @@ struct HomeView: View {
     @EnvironmentObject private var connectivityService: ConnectivityService
 
     let profile: OnboardingProfile
+    let isPremium: Bool
+    let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onNavigateToJournal: () -> Void
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -19,11 +22,12 @@ struct HomeView: View {
     private let contentService = JourneyContentService()
     
     @State private var selectedJourneyID: UUID?
+    private let createJourneyTabID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     var body: some View {
         NavigationStack {
             ZStack {
-                WWColor.surface.ignoresSafeArea()
+                WWColor.darkBackground.ignoresSafeArea()
                 
                 if activeJourneys.isEmpty {
                     emptyState
@@ -39,6 +43,14 @@ struct HomeView: View {
                             )
                             .tag(journey.id as UUID?)
                         }
+                        
+                        CreateJourneyTerminalPage(
+                            profile: profile,
+                            isPremium: isPremium,
+                            onRequirePaywall: onRequirePaywall,
+                            onNavigateToJournal: onNavigateToJournal
+                        )
+                            .tag(createJourneyTabID as UUID?)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .always))
                     .ignoresSafeArea(edges: .top)
@@ -48,6 +60,18 @@ struct HomeView: View {
                 if selectedJourneyID == nil {
                     selectedJourneyID = activeJourneys.first?.id
                 }
+            }
+            .onChange(of: activeJourneys.map(\.id)) { _, ids in
+                guard !ids.isEmpty else {
+                    selectedJourneyID = nil
+                    return
+                }
+                if let selectedJourneyID,
+                   selectedJourneyID != createJourneyTabID,
+                   ids.contains(selectedJourneyID) {
+                    return
+                }
+                selectedJourneyID = ids.first
             }
             .navigationBarHidden(true)
             .accessibilityIdentifier("HomeView")
@@ -78,6 +102,74 @@ struct HomeView: View {
     }
 }
 
+struct CreateJourneyTerminalPage: View {
+    let profile: OnboardingProfile
+    let isPremium: Bool
+    let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onNavigateToJournal: () -> Void
+    
+    @State private var isCreating = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            VStack(spacing: 24) {
+                Spacer()
+                
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(WWColor.growGreen)
+                    .shadow(color: WWColor.growGreen.opacity(0.3), radius: 20, y: 10)
+                
+                Text(profile.name.isEmpty ? "Start a New Journey" : "\(profile.name), start a new journey")
+                    .font(WWTypography.heading(28))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                
+                Text("What area of your life needs tending next?")
+                    .font(WWTypography.body(18))
+                    .foregroundStyle(WWColor.muted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                Button {
+                    isCreating = true
+                } label: {
+                    Text("Begin New Journey")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                .padding(.horizontal, 32)
+                
+                Spacer().frame(height: 60)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(WWColor.surface)
+                    .shadow(color: .black.opacity(0.2), radius: 40, y: -10)
+            )
+        }
+        .padding(.horizontal, 8)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 24)
+                .onEnded { value in
+                    let horizontal = value.translation.width
+                    let vertical = value.translation.height
+                    guard abs(horizontal) > abs(vertical) else { return }
+                    if horizontal < -64 {
+                        onNavigateToJournal()
+                    }
+                }
+        )
+        .sheet(isPresented: $isCreating) {
+            CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+        }
+    }
+}
+
 struct JourneyGrowthPage: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var connectivityService: ConnectivityService
@@ -90,6 +182,7 @@ struct JourneyGrowthPage: View {
     
     @State private var isGenerating = false
     @State private var showTendingSheet = false
+    @State private var showJournalEntrySheet = false
     
     // Animation States
     @State private var justWatered = false
@@ -100,6 +193,12 @@ struct JourneyGrowthPage: View {
     // Evolution States
     @State private var isEvolving = false
     @State private var evolutionStep = 0
+
+    // New states for streak overlay
+    @State private var showStreakOverlay = false
+    @State private var particles: [CGPoint] = []
+    @State private var isBottomSheetExpanded = false
+    @GestureState private var bottomSheetDragOffset: CGFloat = 0
     
     private var todaysEntry: PrayerEntry? {
         let calendar = Calendar.current
@@ -130,6 +229,36 @@ struct JourneyGrowthPage: View {
 
     private var currentCycleCount: Int {
         max(journey.cycleCount, completedCount / Self.tendsPerCycle)
+    }
+
+    private var followThroughMeaningLine: String? {
+        guard
+            let recentClosure = entries
+                .sorted(by: { $0.createdAt > $1.createdAt })
+                .first(where: { $0.followThroughStatus != .unanswered }),
+            let answeredAt = recentClosure.followThroughAnsweredAt
+        else {
+            return nil
+        }
+
+        let daysSinceAnswer = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: answeredAt),
+            to: Calendar.current.startOfDay(for: .now)
+        ).day ?? 99
+
+        guard daysSinceAnswer <= 2 else { return nil }
+
+        switch recentClosure.followThroughStatus {
+        case .yes:
+            return "This grew because you followed through."
+        case .partial:
+            return "Progress still counts. Keep tending with one smaller step."
+        case .no:
+            return "Grace for today. Start with one tiny step."
+        case .unanswered:
+            return nil
+        }
     }
     
     private var themeSuffix: String {
@@ -299,17 +428,20 @@ struct JourneyGrowthPage: View {
     
     var body: some View {
         GeometryReader { proxy in
-            ZStack {
-                VStack(spacing: 0) {
-                    // Top Half: Plant Visual
+            ZStack(alignment: .top) {
+                let collapsedTop = proxy.size.height * 0.50
+                let expandedTop = max(proxy.safeAreaInsets.top + 16, proxy.size.height * 0.14)
+                let currentSheetTop = isBottomSheetExpanded ? expandedTop : collapsedTop
+                let interactiveDragOffset = isBottomSheetExpanded ? max(0, bottomSheetDragOffset) : min(0, bottomSheetDragOffset)
+
+                // Top Plant Visual
                 ZStack {
-                    WWColor.morningGold.opacity(0.05)
-                        .ignoresSafeArea(edges: .top)
-                    
+                    // Plant Visual Area
                     VStack {
                         Spacer()
                         plantImageView(proxy: proxy)
                             .scaleEffect(justWatered ? 1.05 : 1.0)
+                            .shadow(color: .black.opacity(0.4), radius: 20, y: 15)
                     }
                     
                     // Native Glow Orb Animation
@@ -324,7 +456,7 @@ struct JourneyGrowthPage: View {
                             .opacity(orbOpacity)
                     }
                 }
-                .frame(height: proxy.size.height * 0.5)
+                .frame(height: proxy.size.height * 0.58)
                 .onChange(of: completedCount) { oldCount, newCount in
                     if newCount > oldCount {
                         let oldStage = stage(for: oldCount)
@@ -339,13 +471,20 @@ struct JourneyGrowthPage: View {
                         } else {
                             // Regular tend
                             triggerWateringEffect()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation { showStreakOverlay = true }
+                            }
                         }
                     }
                 }
                 
-                // Bottom Half: Content & Actions
+                // Bottom sheet: content & actions
                 bottomHalf
-                    .frame(height: proxy.size.height * 0.5)
+                    .frame(height: isBottomSheetExpanded ? proxy.size.height * 0.82 : proxy.size.height * 0.50)
+                    .offset(y: currentSheetTop + interactiveDragOffset)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(bottomSheetDragGesture)
+                    .animation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.15), value: isBottomSheetExpanded)
             }
             
             // Pokémon Style Evolution Overlay
@@ -404,7 +543,14 @@ struct JourneyGrowthPage: View {
                     runEvolutionSequence()
                 }
             }
-        }
+
+            if showStreakOverlay {
+                StreakOverlayView(
+                    streakCount: TendingFlowView.calculateGlobalStreakCount(for: entries),
+                    onDismiss: { showStreakOverlay = false }
+                )
+                .zIndex(200)
+            }
         }
         .fullScreenCover(isPresented: $showTendingSheet) {
             if let entry = todaysEntry {
@@ -417,114 +563,208 @@ struct JourneyGrowthPage: View {
                 )
             }
         }
+        .sheet(isPresented: $showJournalEntrySheet) {
+            if let entry = todaysEntry {
+                NavigationStack {
+                    HistoricalTendDetailView(entry: entry)
+                }
+            }
+        }
     }
     
     @State private var dewDropFocus = false
     
     @ViewBuilder
     private var bottomHalf: some View {
-        VStack(spacing: 24) {
-            // Header
-            VStack(spacing: 8) {
-                Text(journey.title)
-                    .font(WWTypography.heading(28))
-                    .foregroundStyle(WWColor.nearBlack)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                
-                Text(journey.category.uppercased())
-                    .font(WWTypography.caption(12).weight(.bold))
-                    .foregroundStyle(WWColor.growGreen)
-                    .tracking(2.0)
-
-                if currentCycleCount > 0 {
-                    Text("Cycle \(currentCycleCount + 1)")
-                        .font(WWTypography.caption(11))
-                        .foregroundStyle(WWColor.muted)
-                }
-            }
-            .padding(.top, 40)
-            
-            Spacer()
-            
-            // Action or Completed State
-            if let entry = todaysEntry {
-                if entry.completedAt != nil {
-                    // Completed State: Show reflection
-                    VStack(spacing: 16) {
-                        HStack(spacing: 8) {
-                            if let img = resolveUIImage(named: "sun_streak_icon") {
-                                Image(uiImage: img)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                            }
-                            Text("Today's Tend")
-                                .font(WWTypography.caption(14).weight(.bold))
-                                .foregroundStyle(WWColor.muted)
-                                .tracking(1.0)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 20) {
+                Capsule()
+                    .fill(WWColor.muted.opacity(0.5))
+                    .frame(width: 44, height: 5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.interactiveSpring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.1)) {
+                            isBottomSheetExpanded.toggle()
                         }
-                        
-                        Text(entry.actionStep)
-                            .font(WWTypography.body(16))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .multilineTextAlignment(.center)
-                            .padding(20)
-                            .background(WWColor.growGreen.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .padding(.horizontal, 32)
-                } else {
-                    // Needs Tending
-                    VStack(spacing: 16) {
-                        if let img = resolveUIImage(named: "dew_drop_icon") {
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 48, height: 48)
-                                .offset(y: dewDropFocus ? -6 : 6)
-                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: dewDropFocus)
-                                .onAppear { dewDropFocus = true }
-                        }
-                        
+
+                // Header
+                VStack(spacing: 8) {
+                    Text(journey.title)
+                        .font(WWTypography.heading(32))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                    
+                    Text(journey.category.uppercased())
+                        .font(WWTypography.caption(12).weight(.heavy))
+                        .foregroundStyle(WWColor.growGreen)
+                        .tracking(2.0)
+
+                    if let followThroughMeaningLine {
+                        Text(followThroughMeaningLine)
+                            .font(WWTypography.caption(12))
+                            .foregroundStyle(WWColor.muted)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 4)
+                    }
+
+                    if currentCycleCount > 0 {
+                        Text("Cycle \(currentCycleCount + 1)")
+                            .font(WWTypography.caption(11))
+                            .foregroundStyle(WWColor.muted)
+                    }
+                }
+                .padding(.top, 8)
+                
+                // Action or Completed State
+                if let entry = todaysEntry {
+                    if entry.completedAt != nil {
                         Button {
-                            showTendingSheet = true
+                            showJournalEntrySheet = true
                         } label: {
-                            Text("Open Today's Tend")
+                            VStack(spacing: 16) {
+                                HStack(spacing: 8) {
+                                    if let img = resolveUIImage(named: "sun_streak_icon") {
+                                        Image(uiImage: img)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 24, height: 24)
+                                    } else {
+                                        Text("☀️")
+                                    }
+                                    Text("Today's Tend")
+                                        .font(WWTypography.caption(14).weight(.bold))
+                                        .foregroundStyle(WWColor.muted)
+                                        .tracking(1.0)
+                                }
+
+                                Text(entry.actionStep)
+                                    .font(WWTypography.body(16))
+                                    .foregroundStyle(WWColor.nearBlack)
+                                    .multilineTextAlignment(.center)
+                                    .padding(20)
+                                    .frame(maxWidth: .infinity)
+                                    .background(WWColor.darkBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+                                    )
+
+                                Text("View today's journal entry")
+                                    .font(WWTypography.caption(13).weight(.medium))
+                                    .foregroundStyle(WWColor.growGreen)
+                            }
+                            .padding(.horizontal, 32)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        VStack(spacing: 16) {
+                            HStack(spacing: 8) {
+                                if let img = resolveUIImage(named: "sun_streak_icon") {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 24, height: 24)
+                                        .grayscale(1.0)
+                                        .opacity(0.3)
+                                } else {
+                                    Text("☀️").grayscale(1.0).opacity(0.3)
+                                }
+                                Text("Today's Tend")
+                                    .font(WWTypography.caption(14).weight(.bold))
+                                    .foregroundStyle(WWColor.muted)
+                                    .tracking(1.0)
+                            }
+                            
+                            Button {
+                                showTendingSheet = true
+                            } label: {
+                                Text(entry.actionStep.isEmpty ? "Tap to open today's step" : entry.actionStep)
+                                    .font(WWTypography.body(16))
+                                    .foregroundStyle(WWColor.nearBlack)
+                                    .lineLimit(2)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .background(WWColor.darkBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+                            )
+                            .padding(.horizontal, 32)
+                        }
+                    }
+                } else {
+                    Button {
+                        Task { await generateEntry() }
+                    } label: {
+                        if isGenerating {
+                            ProgressView()
+                                .tint(.white)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Reveal Today's Step")
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.white))
-                        .padding(.horizontal, 32)
                     }
+                    .buttonStyle(WWPrimaryButtonStyle(background: WWColor.darkBackground, foreground: WWColor.white))
+                    .padding(.horizontal, 32)
+                    .disabled(isGenerating)
                 }
-            } else {
-                // Needs Generation
-                Button {
-                    Task { await generateEntry() }
-                } label: {
-                    if isGenerating {
-                        ProgressView()
-                            .tint(.white)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("Reveal Today's Step")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.nearBlack, foreground: WWColor.white))
-                .padding(.horizontal, 32)
-                .disabled(isGenerating)
+
+                Spacer(minLength: 10)
             }
-            
-            Spacer()
-            Spacer()
+            .padding(.bottom, 118)
         }
+        .scrollDisabled(!isBottomSheetExpanded)
+        .scrollBounceBehavior(.basedOnSize)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(WWColor.white)
-                .shadow(color: WWColor.nearBlack.opacity(0.05), radius: 20, y: -10)
+                .fill(WWColor.surface)
+                .shadow(color: .black.opacity(0.2), radius: 40, y: -10)
         )
-        .ignoresSafeArea(edges: .bottom)
+    }
+
+    private func dampedSheetTranslation(_ translation: CGFloat) -> CGFloat {
+        let constrained = isBottomSheetExpanded ? max(0, translation) : min(0, translation)
+        let absolute = abs(constrained)
+        let softLimit: CGFloat = 120
+
+        guard absolute > softLimit else { return constrained }
+
+        let overflow = absolute - softLimit
+        let resisted = softLimit + (overflow * 0.24)
+        return constrained.sign == .minus ? -resisted : resisted
+    }
+
+    private var bottomSheetDragGesture: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .updating($bottomSheetDragOffset) { value, state, _ in
+                state = dampedSheetTranslation(value.translation.height)
+            }
+            .onEnded { value in
+                let translation = value.translation.height
+                let predicted = value.predictedEndTranslation.height
+
+                let shouldExpand: Bool
+                if isBottomSheetExpanded {
+                    shouldExpand = !(translation > 56 || predicted > 110)
+                } else {
+                    shouldExpand = translation < -56 || predicted < -110
+                }
+
+                if shouldExpand != isBottomSheetExpanded {
+                    withAnimation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
+                        isBottomSheetExpanded = shouldExpand
+                    }
+                }
+            }
     }
     
     private func stageEmoji(for stage: Int) -> String {
@@ -689,6 +929,7 @@ struct TendingFlowView: View {
     @State private var isCompleting = false
     @State private var smallStepInput = ""
     @State private var showCompletionPrompt = false
+    @State private var selectedFollowThroughStatus: FollowThroughStatus?
 
     private static let tendsPerCycle = 15
 
@@ -710,121 +951,163 @@ struct TendingFlowView: View {
     private var suggestionChips: [String] {
         Array((package?.suggestedSteps ?? []).prefix(4))
     }
+
+    private var pendingClosureEntry: PrayerEntry? {
+        FollowThroughService.pendingClosureCheck(
+            in: entries,
+            currentEntryID: entry.id
+        )
+    }
+
+    private var closureFeedbackLine: String? {
+        switch selectedFollowThroughStatus {
+        case .yes:
+            return "This grew because you followed through."
+        case .partial:
+            return "You still moved forward. Let today be one smaller, doable step."
+        case .no:
+            return "No shame. Let's reset with one tiny step you can finish today."
+        case .unanswered, .none:
+            return nil
+        }
+    }
+
+    private var requiresClosureAnswer: Bool {
+        pendingClosureEntry != nil
+    }
     
     var body: some View {
         ZStack {
             WWColor.surface.ignoresSafeArea()
             
             ScrollView {
-                VStack(spacing: 24) {
-                // Header
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(WWColor.muted)
-                            .padding(12)
-                            .background(Circle().fill(WWColor.white))
-                            .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+                VStack(spacing: 32) {
+                    // Header
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(WWColor.muted)
+                                .padding(12)
+                                .background(Circle().fill(WWColor.darkBackground))
+                        }
+                        Spacer()
                     }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+
+                    if let pendingClosureEntry {
+                        closureCard(for: pendingClosureEntry)
+                            .padding(.horizontal, 24)
+                    }
                 
                     Text(reflectionThought)
-                        .font(WWTypography.heading(28))
+                        .font(WWTypography.heading(26))
                         .foregroundStyle(WWColor.nearBlack)
                         .lineSpacing(4)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
 
-                VStack(spacing: 24) {
-                    Text(entry.scriptureText)
-                        .font(WWTypography.heading(24))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .lineSpacing(6)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                    
-                    Text("— " + entry.scriptureReference)
-                        .font(WWTypography.body(18).weight(.bold))
-                        .foregroundStyle(WWColor.growGreen)
-                }
-                .padding(.vertical, 24)
-                .padding(.horizontal, 16)
-                .background(WWColor.white)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
-                .shadow(color: WWColor.growGreen.opacity(0.08), radius: 15, y: 8)
-                .padding(.horizontal, 24)
+                    VStack(spacing: 24) {
+                        Text(entry.scriptureText)
+                            .font(WWTypography.heading(24))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .lineSpacing(6)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                        
+                        Text("— " + entry.scriptureReference)
+                            .font(WWTypography.body(16).weight(.bold))
+                            .foregroundStyle(WWColor.growGreen)
+                    }
+                    .padding(.vertical, 32)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(WWColor.darkBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
                 
                     Text(prayerText)
                         .font(WWTypography.body(18))
                         .foregroundStyle(WWColor.nearBlack)
-                        .lineSpacing(4)
+                        .lineSpacing(6)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
 
-                VStack(spacing: 16) {
-                    Text("TODAY'S TEND")
-                        .font(WWTypography.caption(14).weight(.bold))
-                        .foregroundStyle(WWColor.muted)
-                        .tracking(1.5)
-                    
-                    Text(smallStepQuestion)
-                        .font(WWTypography.heading(20))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 20) {
+                        Text("TODAY'S TEND")
+                            .font(WWTypography.caption(14).weight(.heavy))
+                            .foregroundStyle(WWColor.muted)
+                            .tracking(2.0)
+                        
+                        Text(smallStepQuestion)
+                            .font(WWTypography.heading(22))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
 
-                    TextField("Type your small step...", text: $smallStepInput)
-                        .textInputAutocapitalization(.sentences)
-                        .font(WWTypography.body(18))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(WWColor.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        TextField("Type your small step...", text: $smallStepInput)
+                            .textInputAutocapitalization(.sentences)
+                            .font(WWTypography.body(18))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 18)
+                            .background(WWColor.darkBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(WWColor.white.opacity(0.05), lineWidth: 1))
 
-                    if !suggestionChips.isEmpty {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 10)], spacing: 10) {
-                            ForEach(suggestionChips, id: \.self) { suggestion in
-                                Button {
-                                    smallStepInput = suggestion
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "plus.circle.fill")
-                                        Text(suggestion)
-                                            .lineLimit(1)
+                        if !suggestionChips.isEmpty {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
+                                ForEach(suggestionChips, id: \.self) { suggestion in
+                                    Button {
+                                        smallStepInput = suggestion
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "plus.circle.fill")
+                                                .foregroundStyle(WWColor.growGreen)
+                                            Text(suggestion)
+                                                .font(WWTypography.caption(13).weight(.medium))
+                                                .foregroundStyle(WWColor.nearBlack)
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 12)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(WWColor.darkBackground)
+                                        .clipShape(Capsule())
+                                        .overlay(Capsule().stroke(WWColor.white.opacity(0.05), lineWidth: 1))
                                     }
-                                    .font(WWTypography.caption(13))
-                                    .foregroundStyle(WWColor.growGreen)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                                    .background(WWColor.white)
-                                    .clipShape(Capsule())
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
-                }
-                .padding(.horizontal, 24)
+                    .padding(.horizontal, 24)
 
-                Button {
-                    completeTending()
-                } label: {
-                    if isCompleting {
-                        ProgressView()
-                            .tint(.white)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("Tend")
-                            .frame(maxWidth: .infinity)
+                    Button {
+                        completeTending()
+                    } label: {
+                        if isCompleting {
+                            ProgressView()
+                                .tint(WWColor.nearBlack)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Tend")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
-                }
-                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.white))
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-                    .disabled(isCompleting || smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 48)
+                    .padding(.top, 16)
+                    .disabled(
+                        isCompleting ||
+                        smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                        (requiresClosureAnswer && selectedFollowThroughStatus == nil)
+                    )
                 }
             }
         }
@@ -866,14 +1149,39 @@ struct TendingFlowView: View {
         
         // Artificial delay so the user feels the weight of the action
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            let now = Date()
             let trimmedStep = smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines)
             entry.actionStep = trimmedStep
-            entry.completedAt = .now
+            entry.completedAt = now
 
-            let inferredCount = entries.filter { $0.completedAt != nil }.count
-            let nextCompleted = max(journey.completedTends, inferredCount) + 1
-            journey.completedTends = nextCompleted
-            journey.cycleCount = nextCompleted / Self.tendsPerCycle
+            let closureTarget = pendingClosureEntry
+            if let closureTarget, let selectedFollowThroughStatus {
+                FollowThroughService.recordFollowThrough(
+                    status: selectedFollowThroughStatus,
+                    for: closureTarget,
+                    on: entry,
+                    at: now
+                )
+                JourneyProgressService.logEvent(
+                    journeyID: journey.id,
+                    type: .followThroughAnswered,
+                    notes: "Follow-through recorded as \(selectedFollowThroughStatus.rawValue) for priorEntryID=\(closureTarget.id.uuidString)",
+                    modelContext: modelContext,
+                    date: now
+                )
+            }
+
+            let growthPoints = FollowThroughService.growthPoints(
+                for: selectedFollowThroughStatus,
+                hasPriorCommitmentToEvaluate: closureTarget != nil
+            )
+
+            let inferredLegacyCount = entries.filter { $0.completedAt != nil }.count
+            let baselineProgressPoints = max(journey.completedTends, inferredLegacyCount)
+            let nextProgressPoints = baselineProgressPoints + growthPoints
+            journey.completedTends = nextProgressPoints
+            journey.cycleCount = nextProgressPoints / Self.tendsPerCycle
+            let nextCompletedSessionCount = inferredLegacyCount + 1
 
             let settings = settingsRows.first
             let wasFirstTendCompleted = FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
@@ -885,7 +1193,7 @@ struct TendingFlowView: View {
             JourneyProgressService.logEvent(
                 journeyID: journey.id,
                 type: .stepCompleted,
-                notes: "Completed step: \(trimmedStep)",
+                notes: "Completed step: \(trimmedStep) | growthPoints: \(growthPoints)",
                 modelContext: modelContext
             )
             if didCompleteFirstTend {
@@ -905,12 +1213,76 @@ struct TendingFlowView: View {
             WidgetSyncService.publishFromModelContext(modelContext)
             
             isCompleting = false
-            if shouldPromptCompletionSuggestion(completedCount: nextCompleted) {
+            if shouldPromptCompletionSuggestion(completedCount: nextCompletedSessionCount) {
                 showCompletionPrompt = true
             } else {
                 dismiss()
             }
         }
+    }
+
+    @ViewBuilder
+    private func closureCard(for priorEntry: PrayerEntry) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("FOLLOW-THROUGH")
+                .font(WWTypography.caption(12).weight(.heavy))
+                .tracking(2.0)
+                .foregroundStyle(WWColor.muted)
+
+            Text("Did you do the step you committed to yesterday?")
+                .font(WWTypography.heading(22))
+                .foregroundStyle(WWColor.nearBlack)
+
+            Text(priorEntry.actionStep)
+                .font(WWTypography.body(16))
+                .foregroundStyle(WWColor.muted)
+                .lineLimit(2)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(WWColor.darkBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            HStack(spacing: 8) {
+                followThroughButton(title: "Yes", status: .yes)
+                followThroughButton(title: "Partially", status: .partial)
+                followThroughButton(title: "No", status: .no)
+            }
+
+            if let closureFeedbackLine {
+                Text(closureFeedbackLine)
+                    .font(WWTypography.caption(13))
+                    .foregroundStyle(WWColor.growGreen)
+            }
+        }
+        .padding(24)
+        .background(WWColor.darkBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+        )
+    }
+
+    private func followThroughButton(title: String, status: FollowThroughStatus) -> some View {
+        let isSelected = selectedFollowThroughStatus == status
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedFollowThroughStatus = status
+            }
+        } label: {
+            Text(title)
+                .font(WWTypography.body(14).weight(.semibold))
+                .foregroundStyle(isSelected ? WWColor.nearBlack : WWColor.nearBlack)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+                .background(isSelected ? WWColor.growGreen : WWColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? WWColor.growGreen : WWColor.white.opacity(0.1), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private func shouldPromptCompletionSuggestion(completedCount: Int) -> Bool {
@@ -922,5 +1294,92 @@ struct TendingFlowView: View {
             return false
         }
         return true
+    }
+
+    static func calculateGlobalStreakCount(for entries: [PrayerEntry]) -> Int {
+        let calendar = Calendar.current
+        let completedDays: [Date] = Array(Set(entries.compactMap { entry in
+            guard let completedAt = entry.completedAt else { return nil }
+            return calendar.startOfDay(for: completedAt)
+        }))
+        .sorted(by: >)
+
+        guard let first = completedDays.first else { return 0 }
+        var streak = 1
+        var previous = first
+
+        for day in completedDays.dropFirst() {
+            let diff = calendar.dateComponents([.day], from: day, to: previous).day ?? 0
+            if diff == 1 {
+                streak += 1
+                previous = day
+            } else {
+                break
+            }
+        }
+
+        return streak
+    }
+}
+
+struct StreakOverlayView: View {
+    let streakCount: Int
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        ZStack {
+            WWColor.darkBackground.ignoresSafeArea()
+            
+            VStack(spacing: 32) {
+                Spacer()
+                
+                if let img = UIImage(named: "sun_streak_icon") {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 140, height: 140)
+                        .shadow(color: WWColor.growGreen.opacity(0.4), radius: 30, y: 10)
+                } else {
+                    Image(systemName: "sun.max.fill")
+                        .font(.system(size: 100))
+                        .foregroundStyle(WWColor.growGreen)
+                        .shadow(color: WWColor.growGreen.opacity(0.4), radius: 30, y: 10)
+                }
+                
+                VStack(spacing: 12) {
+                    Text("\(streakCount)")
+                        .font(WWTypography.display(64))
+                        .foregroundStyle(WWColor.nearBlack)
+                        
+                    Text("Day Streak!")
+                        .font(WWTypography.heading(28))
+                        .foregroundStyle(WWColor.nearBlack)
+                }
+                
+                HStack(spacing: 8) {
+                    ForEach(0..<min(streakCount, 7), id: \.self) { _ in
+                        Circle()
+                            .fill(WWColor.growGreen)
+                            .frame(width: 12, height: 12)
+                    }
+                    if streakCount > 7 {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(WWColor.growGreen)
+                    }
+                }
+                .padding(.top, 16)
+                
+                Spacer()
+                
+                Button(action: onDismiss) {
+                    Text("Continue")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                .padding(.horizontal, 32)
+                .padding(.bottom, 60)
+            }
+        }
     }
 }
