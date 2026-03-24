@@ -1,5 +1,6 @@
 import StoreKit
 import SwiftUI
+import SwiftData
 
 struct ExperimentalOnboardingFlowView: View {
     enum Step: Int, CaseIterable {
@@ -8,28 +9,41 @@ struct ExperimentalOnboardingFlowView: View {
         case bannerName
         case bannerTruth
         case bannerChange
-        case prayerIntent
-        case goalIntent
         case method
         case grounding
-        case reminder
-        case widget
+        case prayerIntent
+        case goalIntent
+        case generating
+        case tendReflection
+        case tendPrayer
+        case tendNextStep
         case creationSprout
         case review
+        case reminder
+        case widget
     }
 
+    let onGenerate: (String, String, String) async -> DailyJourneyPackageRecord?
     let onComplete: (OnboardingProfile) -> Void
 
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var notificationService: NotificationService
 
-    @FocusState private var isNameFocused: Bool
+    @Query(sort: \ReminderSchedule.sortOrder) private var reminderRows: [ReminderSchedule]
+
+    enum Field: Hashable {
+        case name, prayer, goal, action
+    }
+    @FocusState private var focusedField: Field?
 
     @State private var step: Step = .intro
 
     @State private var name = ""
     @State private var prayerIntentText = ""
     @State private var goalIntentText = ""
-    @State private var reminderWindow = ""
+    @State private var actionStepText = ""
+    @State private var generatedPackage: DailyJourneyPackageRecord?
 
     @State private var reviewActionTaken = false
 
@@ -43,9 +57,14 @@ struct ExperimentalOnboardingFlowView: View {
             let safeArea = proxy.safeAreaInsets
             let availableHeight = proxy.size.height - safeArea.top - safeArea.bottom
             let topHalfHeight = availableHeight * topHalfRatio(for: step, availableHeight: availableHeight)
+            let horizontalInset = max(16, min(22, proxy.size.width * 0.05))
             
             ZStack {
-                backgroundColor.ignoresSafeArea()
+                backgroundColor
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        focusedField = nil
+                    }
                 
                 if isBannerStep {
                     AmbientBannerBackground(step: step)
@@ -55,9 +74,9 @@ struct ExperimentalOnboardingFlowView: View {
                 
                 VStack(spacing: 0) {
                     // Top Progress Bar
-                    if step != .intro && step != .creationSprout && step != .review {
+                    if step != .intro && step != .generating && step != .creationSprout && step != .widget {
                         progressBar
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, horizontalInset)
                             .padding(.top, 16)
                     } else {
                         Spacer().frame(height: 24) // Placeholder for alignment
@@ -71,30 +90,37 @@ struct ExperimentalOnboardingFlowView: View {
                     // Bottom Half: Interactive Controls
                     bottomInteractiveHalf(metrics: proxy, availableHeight: availableHeight)
                         .frame(maxHeight: .infinity)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 24)
+                        .padding(.horizontal, horizontalInset)
+                        .padding(.top, 16)
                 }
 
                 // Fixed CTA Row Overlay
-                if step != .creationSprout {
+                if step != .creationSprout && step != .generating {
                     VStack {
                         Spacer()
                         ctaRow
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, horizontalInset)
                             .padding(.bottom, max(16, safeArea.bottom))
                     }
                 }
             }
             .animation(.easeInOut(duration: 0.35), value: step)
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onChange(of: step) { _, newStep in
-            if newStep == .name {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    isNameFocused = true
+        .onChange(of: step, initial: false) { _, newStep in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                switch newStep {
+                case .name: focusedField = .name
+                case .prayerIntent: focusedField = .prayer
+                case .goalIntent: focusedField = .goal
+                case .tendNextStep: focusedField = .action
+                default: focusedField = nil
                 }
-            } else {
-                isNameFocused = false
+            }
+
+            if newStep == .reminder && reminderRows.isEmpty {
+                let defaultReminder = ReminderSchedule(hour: 8, minute: 0, isEnabled: true, sortOrder: 0)
+                modelContext.insert(defaultReminder)
+                try? modelContext.save()
             }
 
             if newStep == .creationSprout {
@@ -130,33 +156,33 @@ struct ExperimentalOnboardingFlowView: View {
             switch step {
             case .intro:
                 OnboardingIntroLoopView(size: min(height * 0.7, 220))
-            case .name, .prayerIntent, .goalIntent:
+            case .name, .prayerIntent, .goalIntent, .generating, .tendReflection, .tendPrayer, .tendNextStep:
                 // Placeholder graphic for input steps
                 Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.5, 120))
+                    .frame(width: min(height * 0.56, 136))
                     .opacity(0.8)
             case .method:
                  Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.5, 120))
+                    .frame(width: min(height * 0.56, 136))
             case .grounding:
                  Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.5, 120))
+                    .frame(width: min(height * 0.56, 136))
             case .reminder:
                 Image("OnboardingReminderClock")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 100)
+                    .frame(width: min(height * 0.48, 132))
             case .widget:
                 Image("OnboardingNotificationsPhone")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: min(height * 0.8, 280))
+                    .frame(height: min(height * 0.92, 340))
             case .creationSprout:
                 ZStack {
                     Circle()
@@ -200,18 +226,26 @@ struct ExperimentalOnboardingFlowView: View {
                 prayerIntentContent
             case .goalIntent:
                 goalIntentContent
+            case .generating:
+                generatingContent
+            case .tendReflection:
+                tendReflectionContent
+            case .tendPrayer:
+                tendPrayerContent
+            case .tendNextStep:
+                tendNextStepContent
             case .method:
                 methodContent
             case .grounding:
                 groundingContent
+            case .review:
+                reviewContent
             case .reminder:
                 reminderContent
             case .widget:
                 widgetContent
             case .creationSprout:
                 creationSproutContent
-            case .review:
-                reviewContent
             }
         }
         .frame(maxWidth: .infinity, alignment: step == .intro || isBannerStep ? .center : .leading)
@@ -247,54 +281,154 @@ struct ExperimentalOnboardingFlowView: View {
                 .foregroundStyle(WWColor.nearBlack)
             
             TextField("Enter your name", text: $name)
-                .focused($isNameFocused)
+                .focused($focusedField, equals: .name)
                 .font(WWTypography.heading(22))
                 .foregroundStyle(WWColor.nearBlack)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-                .background(WWColor.surface)
+                .background(WWColor.white)
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(WWColor.growGreen.opacity(name.isEmpty ? 0 : 1), lineWidth: 1))
+                .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
         }
     }
     
     private var prayerIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("What do you want to pray about right now?")
-                .font(WWTypography.display(30))
+                .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
 
-            TextEditor(text: $prayerIntentText)
+            TextField("My prayer is...", text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
+                .focused($focusedField, equals: .prayer)
+                .submitLabel(.done)
+                .onSubmit { focusedField = nil }
                 .font(WWTypography.heading(18))
-                .frame(minHeight: 130, maxHeight: 180)
-                .padding(12)
-                .background(WWColor.surface)
+                .foregroundStyle(WWColor.nearBlack)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .frame(minHeight: 130, alignment: .top)
+                .background(WWColor.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : WWColor.growGreen, lineWidth: 1.5)
+                        .stroke(WWColor.growGreen.opacity(prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0 : 1), lineWidth: 1)
                 )
+                .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
         }
     }
 
     private var goalIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("What goal are you moving toward with God right now?")
-                .font(WWTypography.display(30))
+                .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
 
-            TextEditor(text: $goalIntentText)
+            TextField("My goal is...", text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
+                .focused($focusedField, equals: .goal)
+                .submitLabel(.done)
+                .onSubmit { focusedField = nil }
                 .font(WWTypography.heading(18))
-                .frame(minHeight: 130, maxHeight: 180)
-                .padding(12)
-                .background(WWColor.surface)
+                .foregroundStyle(WWColor.nearBlack)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .frame(minHeight: 130, alignment: .top)
+                .background(WWColor.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : WWColor.growGreen, lineWidth: 1.5)
+                        .stroke(WWColor.growGreen.opacity(goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0 : 1), lineWidth: 1)
                 )
+                .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
+        }
+    }
+    
+    private var generatingContent: some View {
+        VStack(spacing: 24) {
+            ProgressView()
+                .tint(WWColor.growGreen)
+                .scaleEffect(1.5)
+            Text("Designing your journey...")
+                .font(WWTypography.heading(24))
+                .foregroundStyle(WWColor.nearBlack)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var tendReflectionContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Your first step is ready.")
+                .font(WWTypography.display(36))
+                .foregroundStyle(WWColor.nearBlack)
+            
+            WWCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(generatedPackage?.scriptureReference ?? "Scripture")
+                        .font(WWTypography.caption(12).weight(.bold))
+                        .foregroundStyle(WWColor.growGreen)
+                        .tracking(1.0)
+                    
+                    Text(generatedPackage?.scriptureParaphrase ?? "...")
+                        .font(WWTypography.heading(20))
+                        .foregroundStyle(WWColor.nearBlack)
+                    
+                    Divider()
+                    
+                    Text(generatedPackage?.reflectionThought ?? "...")
+                        .font(WWTypography.body(17))
+                        .foregroundStyle(WWColor.muted)
+                }
+            }
+        }
+    }
+
+    private var tendPrayerContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Take a moment to pray.")
+                .font(WWTypography.display(36))
+                .foregroundStyle(WWColor.nearBlack)
+            
+            Text("Read this prayer drawn from your intent and scripture.")
+                .font(WWTypography.heading(19))
+                .foregroundStyle(WWColor.muted)
+            
+            WWCard {
+                Text(generatedPackage?.prayer ?? "...")
+                    .font(WWTypography.body(17))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .italic()
+            }
+        }
+    }
+
+    private var tendNextStepContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Choose your first step.")
+                .font(WWTypography.display(34))
+                .foregroundStyle(WWColor.nearBlack)
+            
+            Text(generatedPackage?.smallStepQuestion ?? "What is one small step you can take today?")
+                .font(WWTypography.heading(20))
+                .foregroundStyle(WWColor.nearBlack)
+            
+            TextField("My next step is...", text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
+                .focused($focusedField, equals: .action)
+                .submitLabel(.done)
+                .onSubmit { focusedField = nil }
+                .font(WWTypography.heading(20))
+                .foregroundStyle(WWColor.nearBlack)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .frame(minHeight: 130, alignment: .top)
+                .background(WWColor.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(WWColor.growGreen.opacity(actionStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0 : 1), lineWidth: 1)
+                )
+                .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
         }
     }
     
@@ -384,40 +518,75 @@ struct ExperimentalOnboardingFlowView: View {
     private var reminderContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Growth is easier when it stays in front of you.")
-                .font(WWTypography.display(30))
+                .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
             
             Text("Set a reminder to return to your prayer journey and take your next small step.")
                 .font(WWTypography.heading(18))
                 .foregroundStyle(WWColor.nearBlack.opacity(0.8))
 
-            HStack(spacing: 10) {
-                ForEach(reminderOptions, id: \.self) { option in
-                    Button {
-                        reminderWindow = option
-                    } label: {
-                        Text(option)
-                            .font(WWTypography.heading(16))
-                            .foregroundStyle(reminderWindow == option ? WWColor.white : WWColor.nearBlack)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(reminderWindow == option ? WWColor.growGreen : WWColor.surface)
-                            .clipShape(Capsule())
+            List {
+                ForEach(reminderRows) { reminder in
+                    HStack {
+                        DatePicker("", selection: Binding(
+                            get: { Calendar.current.date(from: DateComponents(hour: reminder.hour, minute: reminder.minute)) ?? .now },
+                            set: { value in
+                                let c = Calendar.current.dateComponents([.hour, .minute], from: value)
+                                reminder.hour = c.hour ?? 8
+                                reminder.minute = c.minute ?? 0
+                                try? modelContext.save()
+                            }
+                        ), displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: Binding(
+                            get: { reminder.isEnabled },
+                            set: { value in
+                                reminder.isEnabled = value
+                                try? modelContext.save()
+                            }
+                        ))
+                        .labelsHidden()
+                        .tint(WWColor.growGreen)
                     }
-                    .buttonStyle(.plain)
+                    .listRowBackground(WWColor.white)
                 }
+                .onDelete { indexSet in
+                    for index in indexSet {
+                        modelContext.delete(reminderRows[index])
+                    }
+                    try? modelContext.save()
+                }
+
+                Button {
+                    let newReminder = ReminderSchedule(hour: 8, minute: 0, isEnabled: true, sortOrder: reminderRows.count)
+                    modelContext.insert(newReminder)
+                    try? modelContext.save()
+                } label: {
+                    Label("Add Reminder", systemImage: "plus.circle.fill")
+                        .foregroundStyle(WWColor.growGreen)
+                        .font(WWTypography.heading(16))
+                }
+                .listRowBackground(WWColor.white)
             }
+            .listStyle(.plain)
+            .background(WWColor.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
+            .frame(height: 180)
         }
     }
     
     private var widgetContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Keep your journey close.")
-                .font(WWTypography.display(32))
+                .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
             
             Text("See your current prayer, verse, and next step right from your home screen.")
-                .font(WWTypography.heading(18))
+                .font(WWTypography.heading(20))
                 .foregroundStyle(WWColor.nearBlack.opacity(0.8))
         }
     }
@@ -504,7 +673,7 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var ctaRow: some View {
         HStack(spacing: 12) {
-            if step != .intro {
+            if step != .intro && step != .generating && step != .creationSprout {
                 Button {
                     goBack()
                 } label: {
@@ -540,7 +709,7 @@ struct ExperimentalOnboardingFlowView: View {
         switch step {
         case .intro:
             return "Get started"
-        case .review:
+        case .widget:
             return "Enter Tend"
         default:
             return "Next"
@@ -596,9 +765,11 @@ struct ExperimentalOnboardingFlowView: View {
 
         switch step {
         case .prayerIntent, .goalIntent:
-            return compact ? 0.24 : 0.30
-        case .name, .method, .grounding, .reminder, .widget:
-            return compact ? 0.30 : 0.38
+            return compact ? 0.26 : 0.31
+        case .widget:
+            return compact ? 0.36 : 0.44
+        case .name, .method, .grounding, .reminder, .generating, .tendReflection, .tendPrayer, .tendNextStep:
+            return compact ? 0.34 : 0.42
         case .bannerName, .bannerTruth, .bannerChange, .review:
             return compact ? 0.20 : 0.25
         case .creationSprout:
@@ -609,21 +780,21 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private func bottomContentScale(for step: Step, availableHeight: CGFloat) -> CGFloat {
-        let base = min(1.0, max(0.82, availableHeight / 852))
+        let base = min(1.0, max(0.90, availableHeight / 852))
 
         let adjustment: CGFloat
         switch step {
         case .prayerIntent:
-            adjustment = availableHeight < 760 ? -0.14 : -0.08
-        case .goalIntent:
-            adjustment = availableHeight < 760 ? -0.10 : -0.04
-        case .method, .grounding, .reminder, .widget:
             adjustment = availableHeight < 760 ? -0.06 : -0.02
+        case .goalIntent:
+            adjustment = availableHeight < 760 ? -0.05 : -0.02
+        case .method, .grounding, .reminder, .widget:
+            adjustment = availableHeight < 760 ? -0.04 : -0.01
         default:
             adjustment = 0
         }
 
-        return min(1.0, max(0.72, base + adjustment))
+        return min(1.0, max(0.84, base + adjustment))
     }
     
     private var isBannerStep: Bool {
@@ -644,7 +815,8 @@ struct ExperimentalOnboardingFlowView: View {
         case .name: return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .prayerIntent: return !prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .goalIntent: return !goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .reminder: return !reminderWindow.isEmpty
+        case .tendNextStep: return !actionStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .generating: return generatedPackage != nil
         default: return true
         }
     }
@@ -654,17 +826,76 @@ struct ExperimentalOnboardingFlowView: View {
         if trimmed.isEmpty { return "Friend" }
         return trimmed
     }
+
+    private func newlineDismissBinding(for source: Binding<String>) -> Binding<String> {
+        Binding(
+            get: { source.wrappedValue },
+            set: { newValue in
+                if newValue.contains("\n") {
+                    source.wrappedValue = newValue.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
+                    focusedField = nil
+                } else {
+                    source.wrappedValue = newValue
+                }
+            }
+        )
+    }
     
     private func advance() {
         guard canAdvance else { return }
 
-        if step == .review {
+        if step == .goalIntent {
+            withAnimation(.default) { step = .generating }
+            Task {
+                if let pkg = await onGenerate(firstNameDisplay, prayerIntentText, goalIntentText) {
+                    await MainActor.run {
+                        self.generatedPackage = pkg
+                        self.advance()
+                    }
+                } else {
+                    await MainActor.run { step = .goalIntent }
+                }
+            }
+            return
+        }
+
+        if step == .tendNextStep {
+            if let entryID = generatedPackage?.linkedEntryID {
+                let descriptor = FetchDescriptor<PrayerEntry>(predicate: #Predicate { $0.id == entryID })
+                if let entry = try? modelContext.fetch(descriptor).first {
+                    entry.actionStep = actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    entry.completedAt = .now
+                    
+                    if let journey = entry.journey {
+                        journey.completedTends += 1
+                        JourneyProgressService.logEvent(journeyID: journey.id, type: .stepCompleted, notes: "Onboarding first tend completed.", modelContext: modelContext)
+                    }
+                    try? modelContext.save()
+                    WidgetSyncService.publishFromModelContext(modelContext)
+                }
+            }
+        }
+
+        if step == .reminder {
+            Task {
+                _ = await notificationService.requestAuthorization()
+                await notificationService.scheduleReminderSchedules(reminderRows)
+                await MainActor.run { proceedToNextStep() }
+            }
+            return
+        }
+
+        proceedToNextStep()
+    }
+
+    private func proceedToNextStep() {
+        if step == .widget {
             let profile = OnboardingProfile(
                 name: firstNameDisplay,
                 ageRange: "",
                 prayerFocus: prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
                 growthGoal: goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
-                reminderWindow: reminderWindow,
+                reminderWindow: "Configured via System",
                 blocker: "",
                 supportCadence: ""
             )
