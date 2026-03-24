@@ -537,7 +537,7 @@ struct JourneyGrowthPage: View {
                     .frame(height: isBottomSheetExpanded ? proxy.size.height * 0.82 : proxy.size.height * 0.50)
                     .offset(y: currentSheetTop + interactiveDragOffset)
                     .contentShape(Rectangle())
-                    .highPriorityGesture(bottomSheetDragGesture)
+                    .simultaneousGesture(bottomSheetDragGesture, including: .all)
                     .animation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.15), value: isBottomSheetExpanded)
             }
             
@@ -782,6 +782,7 @@ struct JourneyGrowthPage: View {
             }
             .padding(.bottom, 118)
         }
+        .contentShape(Rectangle())
         .scrollDisabled(!isBottomSheetExpanded)
         .scrollBounceBehavior(.basedOnSize)
         .background(

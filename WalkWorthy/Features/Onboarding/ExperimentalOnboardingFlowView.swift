@@ -57,6 +57,8 @@ struct ExperimentalOnboardingFlowView: View {
             let safeArea = proxy.safeAreaInsets
             let availableHeight = proxy.size.height - safeArea.top - safeArea.bottom
             let topHalfHeight = availableHeight * topHalfRatio(for: step, availableHeight: availableHeight)
+            let keyboardActive = focusedField != nil
+            let keyboardCompactedTopHeight = (isTextEntryStep && keyboardActive) ? topHalfHeight * 0.66 : topHalfHeight
             let horizontalInset = max(16, min(22, proxy.size.width * 0.05))
             
             ZStack {
@@ -83,28 +85,27 @@ struct ExperimentalOnboardingFlowView: View {
                     }
                     
                     // Top Half: Visuals
-                    topVisualHalf(metrics: proxy, height: topHalfHeight)
-                        .frame(height: topHalfHeight)
+                    topVisualHalf(metrics: proxy, height: keyboardCompactedTopHeight)
+                        .frame(height: keyboardCompactedTopHeight)
                         .frame(maxWidth: .infinity)
                     
                     // Bottom Half: Interactive Controls
                     bottomInteractiveHalf(metrics: proxy, availableHeight: availableHeight)
                         .frame(maxHeight: .infinity)
                         .padding(.horizontal, horizontalInset)
-                        .padding(.top, 16)
-                }
-
-                // Fixed CTA Row Overlay
-                if step != .creationSprout && step != .generating {
-                    VStack {
-                        Spacer()
-                        ctaRow
-                            .padding(.horizontal, horizontalInset)
-                            .padding(.bottom, max(16, safeArea.bottom))
-                    }
+                        .padding(.top, 12)
                 }
             }
             .animation(.easeInOut(duration: 0.35), value: step)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if step != .creationSprout && step != .generating {
+                    ctaRow
+                        .padding(.horizontal, horizontalInset)
+                        .padding(.top, 8)
+                        .padding(.bottom, keyboardActive ? 8 : max(16, safeArea.bottom))
+                        .background(Color.clear)
+                }
+            }
         }
         .onChange(of: step, initial: false) { _, newStep in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -161,18 +162,18 @@ struct ExperimentalOnboardingFlowView: View {
                 Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.56, 136))
+                    .frame(width: min(height * 0.48, 116))
                     .opacity(0.8)
             case .method:
                  Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.56, 136))
+                    .frame(width: min(height * 0.48, 116))
             case .grounding:
                  Image("TendMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: min(height * 0.56, 136))
+                    .frame(width: min(height * 0.48, 116))
             case .reminder:
                 Image("OnboardingReminderClock")
                     .resizable()
@@ -210,46 +211,56 @@ struct ExperimentalOnboardingFlowView: View {
     private func bottomInteractiveHalf(metrics: GeometryProxy, availableHeight: CGFloat) -> some View {
         let contentScale = bottomContentScale(for: step, availableHeight: availableHeight)
 
-        VStack(alignment: .leading, spacing: 20) {
-            switch step {
-            case .intro:
-                introContent
-            case .name:
-                nameContent
-            case .bannerName:
-                bannerNameContent
-            case .bannerTruth:
-                bannerTruthContent
-            case .bannerChange:
-                bannerChangeContent
-            case .prayerIntent:
-                prayerIntentContent
-            case .goalIntent:
-                goalIntentContent
-            case .generating:
-                generatingContent
-            case .tendReflection:
-                tendReflectionContent
-            case .tendPrayer:
-                tendPrayerContent
-            case .tendNextStep:
-                tendNextStepContent
-            case .method:
-                methodContent
-            case .grounding:
-                groundingContent
-            case .review:
-                reviewContent
-            case .reminder:
-                reminderContent
-            case .widget:
-                widgetContent
-            case .creationSprout:
-                creationSproutContent
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                switch step {
+                case .intro:
+                    introContent
+                case .name:
+                    nameContent
+                case .bannerName:
+                    bannerNameContent
+                case .bannerTruth:
+                    bannerTruthContent
+                case .bannerChange:
+                    bannerChangeContent
+                case .prayerIntent:
+                    prayerIntentContent
+                case .goalIntent:
+                    goalIntentContent
+                case .generating:
+                    generatingContent
+                case .tendReflection:
+                    tendReflectionContent
+                case .tendPrayer:
+                    tendPrayerContent
+                case .tendNextStep:
+                    tendNextStepContent
+                case .method:
+                    methodContent
+                case .grounding:
+                    groundingContent
+                case .review:
+                    reviewContent
+                case .reminder:
+                    reminderContent
+                case .widget:
+                    widgetContent
+                case .creationSprout:
+                    creationSproutContent
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: step == .intro || isBannerStep ? .center : .leading)
+            .scaleEffect(contentScale, anchor: .top)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .padding(.bottom, ctaClearanceInset)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                focusedField = nil
             }
         }
-        .frame(maxWidth: .infinity, alignment: step == .intro || isBannerStep ? .center : .leading)
-        .scaleEffect(contentScale, anchor: .top)
+        .scrollDismissesKeyboard(.interactively)
+        .scrollBounceBehavior(.basedOnSize)
         .frame(maxHeight: .infinity, alignment: .top)
     }
     
@@ -765,11 +776,15 @@ struct ExperimentalOnboardingFlowView: View {
 
         switch step {
         case .prayerIntent, .goalIntent:
-            return compact ? 0.26 : 0.31
+            return compact ? 0.23 : 0.28
+        case .tendReflection, .tendPrayer, .tendNextStep:
+            return compact ? 0.22 : 0.27
         case .widget:
             return compact ? 0.36 : 0.44
-        case .name, .method, .grounding, .reminder, .generating, .tendReflection, .tendPrayer, .tendNextStep:
-            return compact ? 0.34 : 0.42
+        case .name:
+            return compact ? 0.24 : 0.30
+        case .method, .grounding, .reminder, .generating:
+            return compact ? 0.30 : 0.36
         case .bannerName, .bannerTruth, .bannerChange, .review:
             return compact ? 0.20 : 0.25
         case .creationSprout:
@@ -795,6 +810,24 @@ struct ExperimentalOnboardingFlowView: View {
         }
 
         return min(1.0, max(0.84, base + adjustment))
+    }
+
+    private var isTextEntryStep: Bool {
+        switch step {
+        case .name, .prayerIntent, .goalIntent, .tendNextStep:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var ctaClearanceInset: CGFloat {
+        switch step {
+        case .creationSprout, .generating:
+            return 24
+        default:
+            return 132
+        }
     }
     
     private var isBannerStep: Bool {

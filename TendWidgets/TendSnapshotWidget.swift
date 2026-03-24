@@ -112,20 +112,17 @@ private struct TendSnapshotWidgetView: View {
                 .clipped()
             
             if family != .systemSmall {
-                GeometryReader { proxy in
-                    HStack(spacing: 0) {
-                        Spacer(minLength: proxy.size.width * 0.12)
-                        LinearGradient(
-                            colors: [
-                                Color.black.opacity(0.24),
-                                Color.black.opacity(0.88),
-                                Color.black.opacity(1.0)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    }
-                }
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.black.opacity(0.00), location: 0.18),
+                        .init(color: Color.black.opacity(0.12), location: 0.36),
+                        .init(color: Color.black.opacity(0.34), location: 0.53),
+                        .init(color: Color.black.opacity(0.62), location: 0.72),
+                        .init(color: Color.black.opacity(0.90), location: 1.00)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
             }
         }
     }
