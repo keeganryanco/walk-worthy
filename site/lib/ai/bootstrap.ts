@@ -103,6 +103,8 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     THEME_KEYS.join(", "),
     "Create concise, practical initial memory and a daily package.",
     "Suggested step chips must be complete actionable phrases, not fragments.",
+    "Prayer must be strict first-person voice (I/me/my/we/us/our).",
+    "Never refer to the user in third person (for example: 'the user', 'they', or by name).",
     "Use scripture paraphrase only. No translation labels. No copyright-protected direct verse quoting.",
     "Keep tone grounded, sincere, practical, and hopeful."
   ].join(" ");

@@ -27,7 +27,13 @@ final class WalkWorthyTests: XCTestCase {
     func testPaywallRequiredAfterSecondSession() {
         let fourDaysAgo = Calendar.current.date(byAdding: .day, value: -4, to: .now) ?? .now
         let settings = AppSettings(firstLaunchAt: fourDaysAgo, totalSessions: 2)
-        XCTAssertTrue(MonetizationPolicy.requiresPaywall(hasPremium: false, settings: settings))
+        XCTAssertTrue(
+            MonetizationPolicy.requiresPaywall(
+                hasPremium: false,
+                settings: settings,
+                paywallMode: .sessionGate
+            )
+        )
     }
 
     func testNoPaywallDuringFirstThreeDays() {
@@ -53,7 +59,7 @@ final class WalkWorthyTests: XCTestCase {
             reflectionThought: "  Be faithful today. ",
             scriptureReference: "NotAReference",
             scriptureParaphrase: "This is a paraphrase that should still be accepted and trimmed.",
-            prayer: "  Lord, guide me. ",
+            prayer: "  Lord, guide the user today. ",
             smallStepQuestion: "",
             suggestedSteps: [" ", "Take one concrete step."],
             completionSuggestion: CompletionSuggestion(
@@ -68,10 +74,26 @@ final class WalkWorthyTests: XCTestCase {
 
         XCTAssertEqual(validated.scriptureReference, "Philippians 4:6-7")
         XCTAssertEqual(validated.smallStepQuestion, "What small step could you take today?")
-        XCTAssertEqual(validated.suggestedSteps, ["Take one concrete step."])
-        XCTAssertEqual(validated.prayer, "Lord, guide me.")
+        XCTAssertEqual(validated.suggestedSteps.first, "Take one concrete step.")
+        XCTAssertEqual(validated.prayer, DailyJourneyPackageValidation.defaultFirstPersonPrayer)
         XCTAssertEqual(validated.completionSuggestion.reason, "Consider marking this complete.")
         XCTAssertEqual(validated.completionSuggestion.confidence, 1.0)
+    }
+
+    func testDailyJourneyPackageValidationKeepsFirstPersonPrayer() {
+        let package = DailyJourneyPackage(
+            reflectionThought: "Stay faithful.",
+            scriptureReference: "James 1:5",
+            scriptureParaphrase: "God gives wisdom generously.",
+            prayer: "Lord, I'm trusting You today. Help me take one faithful step.",
+            smallStepQuestion: "What small step could you take today?",
+            suggestedSteps: ["Take one faithful action"],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            generatedAt: .now
+        )
+
+        let validated = DailyJourneyPackageValidation.validated(package)
+        XCTAssertEqual(validated.prayer, "Lord, I'm trusting You today. Help me take one faithful step.")
     }
 
     func testDailyJourneyPackageValidationAcceptsCanonicalReferenceFormat() {
@@ -136,5 +158,105 @@ final class WalkWorthyTests: XCTestCase {
 
         FirstTendMilestoneService.markReviewPromptShownAfterFirstTend(settings: settings, now: Date(timeIntervalSince1970: 30))
         XCTAssertFalse(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+    }
+
+    func testFollowThroughGrowthPointsMapping() {
+        XCTAssertEqual(
+            FollowThroughService.growthPoints(for: nil, hasPriorCommitmentToEvaluate: false),
+            1
+        )
+        XCTAssertEqual(
+            FollowThroughService.growthPoints(for: .yes, hasPriorCommitmentToEvaluate: true),
+            2
+        )
+        XCTAssertEqual(
+            FollowThroughService.growthPoints(for: .partial, hasPriorCommitmentToEvaluate: true),
+            1
+        )
+        XCTAssertEqual(
+            FollowThroughService.growthPoints(for: .no, hasPriorCommitmentToEvaluate: true),
+            0
+        )
+    }
+
+    func testPendingClosureCheckPicksLatestUnansweredCommittedStep() {
+        let now = Date(timeIntervalSince1970: 10_000)
+        let oldAnswered = PrayerEntry(
+            createdAt: now.addingTimeInterval(-86_400 * 3),
+            prompt: "p1",
+            scriptureReference: "Philippians 4:6-7",
+            scriptureText: "t1",
+            actionStep: "Send encouragement text",
+            completedAt: now.addingTimeInterval(-86_400 * 3),
+            followThroughStatus: .yes
+        )
+        let latestPending = PrayerEntry(
+            createdAt: now.addingTimeInterval(-86_400),
+            prompt: "p2",
+            scriptureReference: "Galatians 6:9",
+            scriptureText: "t2",
+            actionStep: "Finish one delayed task",
+            completedAt: now.addingTimeInterval(-86_400),
+            followThroughStatus: .unanswered
+        )
+        let currentEntry = PrayerEntry(
+            createdAt: now,
+            prompt: "p3",
+            scriptureReference: "James 1:5",
+            scriptureText: "t3",
+            actionStep: "",
+            completedAt: nil,
+            followThroughStatus: .unanswered
+        )
+
+        let pending = FollowThroughService.pendingClosureCheck(
+            in: [oldAnswered, latestPending, currentEntry],
+            currentEntryID: currentEntry.id
+        )
+
+        XCTAssertEqual(pending?.id, latestPending.id)
+    }
+
+    func testValidationPrefersSmallerFallbackChipsAfterNoFollowThrough() {
+        let package = DailyJourneyPackage(
+            reflectionThought: "Be faithful in small things.",
+            scriptureReference: "Philippians 4:6-7",
+            scriptureParaphrase: "Bring concerns to God in prayer.",
+            prayer: "Lord, help me take one faithful step today.",
+            smallStepQuestion: "",
+            suggestedSteps: ["to", "and", "for"],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            generatedAt: .now
+        )
+
+        let validated = DailyJourneyPackageValidation.validated(
+            package,
+            followThroughStatus: .no
+        )
+
+        XCTAssertEqual(
+            Array(validated.suggestedSteps.prefix(3)),
+            ["Take one tiny step", "Do a two minute task", "Choose one easier action"]
+        )
+    }
+
+    func testLatestAnsweredContextIncludesPreviousCommitmentAndStatus() {
+        let now = Date(timeIntervalSince1970: 20_000)
+        let entry = PrayerEntry(
+            createdAt: now.addingTimeInterval(-86_400),
+            prompt: "Prompt",
+            scriptureReference: "James 1:5",
+            scriptureText: "Wisdom snippet",
+            actionStep: "Review one key number",
+            completedAt: now.addingTimeInterval(-86_400),
+            followThroughStatus: .partial,
+            followThroughAnsweredAt: now
+        )
+
+        let context = FollowThroughService.latestAnsweredContext(from: [entry], now: now)
+
+        XCTAssertEqual(context?.previousCommitmentText, "Review one key number")
+        XCTAssertEqual(context?.previousFollowThroughStatus, .partial)
+        XCTAssertEqual(context?.daysSinceCommitment, 1)
     }
 }

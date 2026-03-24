@@ -38,9 +38,12 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
       },
       instructions: [
         "Make the reflection concise and specific to the journey.",
-        "Prayer should be 1-3 sentences.",
+        "Prayer should be 1-3 sentences and strictly first-person voice (I/me/my/we/us/our).",
+        "Never refer to the user in third person (for example: 'the user', 'they', or by name).",
         "Suggested step chips must be complete, actionable phrases (no fragments), practical, and short (target 3-6 words each).",
         "Never end a suggested chip with dangling words like 'to', 'for', or 'with'.",
+        "If followThroughContext.previousFollowThroughStatus is partial or no, lower the next-step difficulty and use gentler wording.",
+        "For partial/no follow-through, suggested chips should feel easier and smaller than a normal day.",
         "Only set completionSuggestion.shouldPrompt=true when completionCount is at least 7 and journey signals indicate meaningful progress."
       ],
       context: {
@@ -48,6 +51,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         journey: input.journey,
         profile: input.profile,
         memory: input.memory ?? {},
+        followThroughContext: input.followThroughContext ?? {},
         recentEntries: recent,
         cycleCount: input.cycleCount ?? 0,
         completionCount: input.completionCount ?? 0,

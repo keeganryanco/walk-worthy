@@ -65,6 +65,15 @@ const contextualKeywordChips: Array<{ pattern: RegExp; chips: string[] }> = [
 ];
 
 const genericFallbackChips = ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
+const FIRST_PERSON_PRAYER_REGEX = /\b(i|i'm|i’ve|i've|i’d|i'll|i’ll|me|my|mine|myself|we|we're|we’ve|we've|we’d|we'll|we’ll|us|our|ours|ourselves)\b/i;
+const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES = [
+  "the user",
+  "this user",
+  "for the user",
+  "their journey",
+  "his journey",
+  "her journey"
+];
 
 function cleanText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") {
@@ -119,6 +128,15 @@ function contextSignals(input?: JourneyPackageRequest): string {
 }
 
 function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
+  const followThroughStatus = input?.followThroughContext?.previousFollowThroughStatus;
+  if (followThroughStatus === "partial" || followThroughStatus === "no") {
+    return [
+      "Take a two minute step",
+      "Choose one easier action",
+      "Pray then start small"
+    ];
+  }
+
   const themeKey = input?.journey.themeKey ?? "basic";
   const chips: string[] = [...(themeChipBank[themeKey] ?? themeChipBank.basic)];
 
@@ -136,16 +154,34 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
 
 function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): string[] {
   const generated = dedupeChips(rawValues.map((item) => normalizeChip(item)).filter(Boolean)).slice(0, CHIP_LIMIT);
-  if (generated.length > 0) {
-    return generated;
-  }
-
   const contextual = contextualFallbackChips(input);
-  if (contextual.length > 0) {
-    return contextual;
+
+  const merged = dedupeChips([...generated, ...contextual]).slice(0, CHIP_LIMIT);
+  if (merged.length >= CHIP_FALLBACK_COUNT) {
+    return merged;
   }
 
-  return ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
+  const toppedUp = dedupeChips([...merged, ...genericFallbackChips.map((chip) => normalizeChip(chip)).filter(Boolean)]).slice(
+    0,
+    CHIP_LIMIT
+  );
+  if (toppedUp.length >= CHIP_FALLBACK_COUNT) {
+    return toppedUp;
+  }
+
+  return ["Pray and choose one step", "Take one faithful action", "Write today's next step"].slice(0, CHIP_LIMIT);
+}
+
+function normalizeFirstPersonPrayer(value: unknown): string {
+  const trimmed = cleanText(value, 360);
+  if (!trimmed) return "";
+
+  const normalized = trimmed.toLowerCase().replace(/[’`]/g, "'");
+  if (DISALLOWED_THIRD_PERSON_PRAYER_PHRASES.some((phrase) => normalized.includes(phrase))) {
+    return "";
+  }
+
+  return FIRST_PERSON_PRAYER_REGEX.test(normalized) ? trimmed : "";
 }
 
 function extractJSON(raw: string): unknown {
@@ -192,12 +228,18 @@ export function normalizePackageFromObject(
   const confidenceRaw = typeof completionRaw.confidence === "number" ? completionRaw.confidence : 0;
   const confidence = Math.min(1, Math.max(0, confidenceRaw));
 
+  const followThroughStatus = input?.followThroughContext?.previousFollowThroughStatus;
+  const defaultQuestion =
+    followThroughStatus === "partial" || followThroughStatus === "no"
+      ? "What is one small step you can realistically finish today?"
+      : "What small step could you take today?";
+
   const normalized: DailyJourneyPackage = {
     reflectionThought: cleanText(source.reflectionThought, 240),
     scriptureReference: normalizeReference(cleanText(source.scriptureReference, 80)),
     scriptureParaphrase: cleanText(source.scriptureParaphrase, 320),
-    prayer: cleanText(source.prayer, 360),
-    smallStepQuestion: cleanText(source.smallStepQuestion, 120) || "What small step could you take today?",
+    prayer: normalizeFirstPersonPrayer(source.prayer),
+    smallStepQuestion: cleanText(source.smallStepQuestion, 120) || defaultQuestion,
     suggestedSteps: suggested,
     completionSuggestion: {
       shouldPrompt: completionRaw.shouldPrompt === true,

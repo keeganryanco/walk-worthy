@@ -73,12 +73,28 @@ struct DailyJourneyPackage: Codable, Equatable {
 
 enum DailyJourneyPackageValidation {
     static let defaultSmallStepQuestion = "What small step could you take today?"
+    static let defaultFirstPersonPrayer = "Lord, I place this journey in Your hands today. Give me wisdom, courage, and steady faith for my next step. Amen."
     private static let danglingEndings: Set<String> = [
         "a", "an", "and", "at", "because", "for", "from", "in", "into", "of", "on", "or",
         "that", "the", "to", "toward", "towards", "with"
     ]
+    private static let firstPersonRegex = try? NSRegularExpression(
+        pattern: #"\b(i|i'm|i've|i'd|i'll|me|my|mine|myself|we|we're|we've|we'd|we'll|us|our|ours|ourselves)\b"#,
+        options: [.caseInsensitive]
+    )
+    private static let disallowedThirdPersonPhrases = [
+        "the user",
+        "this user",
+        "for the user",
+        "their journey",
+        "his journey",
+        "her journey"
+    ]
 
-    static func validated(_ package: DailyJourneyPackage) -> DailyJourneyPackage {
+    static func validated(
+        _ package: DailyJourneyPackage,
+        followThroughStatus: FollowThroughStatus? = nil
+    ) -> DailyJourneyPackage {
         let normalizedReference = ScriptureReferenceValidator.isApproved(package.scriptureReference)
             ? package.scriptureReference
             : "Philippians 4:6-7"
@@ -93,6 +109,12 @@ enum DailyJourneyPackageValidation {
         }
 
         let normalizedSuggestedSteps = normalizedChipSteps(package.suggestedSteps)
+        let fallbackChips = contextualFallbackChips(
+            reflectionThought: package.reflectionThought,
+            smallStepQuestion: normalizedQuestion,
+            followThroughStatus: followThroughStatus
+        )
+        let mergedSuggestedSteps = mergedChips(primary: normalizedSuggestedSteps, fallback: fallbackChips)
 
         let normalizedConfidence = min(1.0, max(0.0, package.completionSuggestion.confidence))
         let normalizedCompletionSuggestion = CompletionSuggestion(
@@ -105,15 +127,9 @@ enum DailyJourneyPackageValidation {
             reflectionThought: package.reflectionThought.trimmingCharacters(in: .whitespacesAndNewlines),
             scriptureReference: normalizedReference,
             scriptureParaphrase: normalizedParaphrase,
-            prayer: package.prayer.trimmingCharacters(in: .whitespacesAndNewlines),
+            prayer: normalizedFirstPersonPrayer(package.prayer),
             smallStepQuestion: normalizedQuestion,
-            suggestedSteps: normalizedSuggestedSteps.isEmpty
-                ? [
-                    "Take one faithful action today.",
-                    "Pray over one next step.",
-                    "Finish one delayed task."
-                ]
-                : Array(normalizedSuggestedSteps),
+            suggestedSteps: mergedSuggestedSteps,
             completionSuggestion: normalizedCompletionSuggestion,
             generatedAt: package.generatedAt
         )
@@ -149,6 +165,85 @@ enum DailyJourneyPackageValidation {
         }
 
         return chips
+    }
+
+    private static func normalizedFirstPersonPrayer(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return defaultFirstPersonPrayer }
+
+        let normalized = trimmed
+            .lowercased()
+            .replacingOccurrences(of: "’", with: "'")
+
+        let mentionsThirdPersonTemplate = disallowedThirdPersonPhrases.contains { normalized.contains($0) }
+        guard !mentionsThirdPersonTemplate else { return defaultFirstPersonPrayer }
+
+        guard let firstPersonRegex else { return defaultFirstPersonPrayer }
+        let range = NSRange(normalized.startIndex..<normalized.endIndex, in: normalized)
+        let hasFirstPerson = firstPersonRegex.firstMatch(in: normalized, options: [], range: range) != nil
+        return hasFirstPerson ? trimmed : defaultFirstPersonPrayer
+    }
+
+    private static func contextualFallbackChips(
+        reflectionThought: String,
+        smallStepQuestion: String,
+        followThroughStatus: FollowThroughStatus?
+    ) -> [String] {
+        let signal = "\(reflectionThought) \(smallStepQuestion)".lowercased()
+        var chips: [String]
+        if followThroughStatus == .partial || followThroughStatus == .no {
+            chips = [
+                "Take one tiny step",
+                "Do a two minute task",
+                "Choose one easier action"
+            ]
+        } else {
+            chips = [
+                "Pray over one next step",
+                "Take one faithful action",
+                "Finish one delayed task"
+            ]
+        }
+
+        if signal.contains("worry") || signal.contains("anx") || signal.contains("peace") || signal.contains("fear") {
+            chips.insert(contentsOf: ["Take five calm breaths", "Pray through this specific worry"], at: 0)
+        }
+        if signal.contains("focus") || signal.contains("discipline") || signal.contains("habit") || signal.contains("consisten") {
+            chips.insert(contentsOf: ["Start one focused work block", "Remove one clear distraction"], at: 0)
+        }
+        if signal.contains("relationship") || signal.contains("family") || signal.contains("friend") || signal.contains("community") {
+            chips.insert(contentsOf: ["Send one encouragement text", "Pray for one specific person"], at: 0)
+        }
+        if signal.contains("work") || signal.contains("career") || signal.contains("money") || signal.contains("business") {
+            chips.insert(contentsOf: ["Complete one important work task", "Review one key decision today"], at: 0)
+        }
+
+        return normalizedChipSteps(chips)
+    }
+
+    private static func mergedChips(primary: [String], fallback: [String]) -> [String] {
+        var seen: Set<String> = []
+        var merged: [String] = []
+
+        for value in (primary + fallback) {
+            let key = value.lowercased()
+            guard !seen.contains(key) else { continue }
+            seen.insert(key)
+            merged.append(value)
+            if merged.count == 4 {
+                break
+            }
+        }
+
+        if merged.isEmpty {
+            return [
+                "Pray over one next step",
+                "Take one faithful action",
+                "Finish one delayed task"
+            ]
+        }
+
+        return merged
     }
 }
 
