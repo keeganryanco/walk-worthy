@@ -1,7 +1,22 @@
 import { DailyJourneyPackage, JourneyPackageRequest } from "./types";
 import { deterministicReference } from "./scripture";
 
+type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
+
+function followThroughStatus(input: JourneyPackageRequest): FollowThroughStatus | undefined {
+  const context = (input as JourneyPackageRequest & {
+    followThroughContext?: { previousFollowThroughStatus?: FollowThroughStatus };
+  }).followThroughContext;
+
+  return context?.previousFollowThroughStatus;
+}
+
 function fallbackChips(input: JourneyPackageRequest): string[] {
+  const status = followThroughStatus(input);
+  if (status === "partial" || status === "no") {
+    return ["Take a two minute step", "Choose one easier action", "Pray then start small"];
+  }
+
   const theme = input.journey.themeKey ?? "basic";
   const byTheme: Record<string, string[]> = {
     basic: ["Pray over one task", "Take one faithful action", "Write today's next step"],
@@ -28,7 +43,11 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
     scriptureParaphrase: "Keep moving forward in what is good. Faithful effort bears fruit in time.",
     prayer:
       "Lord, steady my heart and align my next action with the growth I am asking You for.",
-    smallStepQuestion: "What small step could you take today?",
+    smallStepQuestion:
+      followThroughStatus(input) === "partial" ||
+      followThroughStatus(input) === "no"
+        ? "What is one small step you can realistically finish today?"
+        : "What small step could you take today?",
     suggestedSteps: fallbackChips(input),
     completionSuggestion: {
       shouldPrompt: false,

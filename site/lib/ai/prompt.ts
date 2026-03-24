@@ -2,6 +2,9 @@ import { JourneyPackageRequest } from "./types";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 
 export function buildPrompt(input: JourneyPackageRequest): { system: string; user: string } {
+  const followThroughContext =
+    (input as JourneyPackageRequest & { followThroughContext?: Record<string, unknown> }).followThroughContext ?? {};
+
   const system = [
     "You generate one daily Christian prayer-action package for an iOS app.",
     "Respond with strict JSON only, no markdown, no prose outside JSON.",
@@ -51,7 +54,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         journey: input.journey,
         profile: input.profile,
         memory: input.memory ?? {},
-        followThroughContext: input.followThroughContext ?? {},
+        followThroughContext,
         recentEntries: recent,
         cycleCount: input.cycleCount ?? 0,
         completionCount: input.completionCount ?? 0,

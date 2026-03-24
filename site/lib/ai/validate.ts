@@ -74,6 +74,15 @@ const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES = [
   "his journey",
   "her journey"
 ];
+type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
+
+function followThroughStatus(input?: JourneyPackageRequest): FollowThroughStatus | undefined {
+  const context = (input as (JourneyPackageRequest & {
+    followThroughContext?: { previousFollowThroughStatus?: FollowThroughStatus };
+  }) | undefined)?.followThroughContext;
+
+  return context?.previousFollowThroughStatus;
+}
 
 function cleanText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") {
@@ -128,8 +137,8 @@ function contextSignals(input?: JourneyPackageRequest): string {
 }
 
 function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
-  const followThroughStatus = input?.followThroughContext?.previousFollowThroughStatus;
-  if (followThroughStatus === "partial" || followThroughStatus === "no") {
+  const status = followThroughStatus(input);
+  if (status === "partial" || status === "no") {
     return [
       "Take a two minute step",
       "Choose one easier action",
@@ -228,9 +237,9 @@ export function normalizePackageFromObject(
   const confidenceRaw = typeof completionRaw.confidence === "number" ? completionRaw.confidence : 0;
   const confidence = Math.min(1, Math.max(0, confidenceRaw));
 
-  const followThroughStatus = input?.followThroughContext?.previousFollowThroughStatus;
+  const status = followThroughStatus(input);
   const defaultQuestion =
-    followThroughStatus === "partial" || followThroughStatus === "no"
+    status === "partial" || status === "no"
       ? "What is one small step you can realistically finish today?"
       : "What small step could you take today?";
 
