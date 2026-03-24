@@ -231,6 +231,30 @@ struct JourneyGrowthPage: View {
         max(journey.cycleCount, completedCount / Self.tendsPerCycle)
     }
 
+    private var currentStreakCount: Int {
+        TendingFlowView.calculateGlobalStreakCount(for: entries)
+    }
+
+    private var orderedWeekDays: [Date] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
+
+        return (0..<7).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: monday)
+        }
+    }
+
+    private var completedDaysInJourney: Set<Date> {
+        let calendar = Calendar.current
+        return Set(entries.compactMap { entry in
+            guard let completedAt = entry.completedAt else { return nil }
+            return calendar.startOfDay(for: completedAt)
+        })
+    }
+
     private var followThroughMeaningLine: String? {
         guard
             let recentClosure = entries
@@ -619,6 +643,8 @@ struct JourneyGrowthPage: View {
                     }
                 }
                 .padding(.top, 8)
+
+                streakSection
                 
                 // Action or Completed State
                 if let entry = todaysEntry {
@@ -628,13 +654,15 @@ struct JourneyGrowthPage: View {
                         } label: {
                             VStack(spacing: 16) {
                                 HStack(spacing: 8) {
-                                    if let img = resolveUIImage(named: "sun_streak_icon") {
+                                    if let img = resolveUIImage(named: "dew_drop_icon") {
                                         Image(uiImage: img)
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 24, height: 24)
                                     } else {
-                                        Text("☀️")
+                                        Image(systemName: "drop.fill")
+                                            .font(.system(size: 20, weight: .semibold))
+                                            .foregroundStyle(WWColor.growGreen)
                                     }
                                     Text("Today's Tend")
                                         .font(WWTypography.caption(14).weight(.bold))
@@ -665,15 +693,17 @@ struct JourneyGrowthPage: View {
                     } else {
                         VStack(spacing: 16) {
                             HStack(spacing: 8) {
-                                if let img = resolveUIImage(named: "sun_streak_icon") {
+                                if let img = resolveUIImage(named: "dew_drop_icon") {
                                     Image(uiImage: img)
                                         .resizable()
                                         .scaledToFit()
                                         .frame(width: 24, height: 24)
-                                        .grayscale(1.0)
-                                        .opacity(0.3)
+                                        .opacity(0.35)
                                 } else {
-                                    Text("☀️").grayscale(1.0).opacity(0.3)
+                                    Image(systemName: "drop.fill")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundStyle(WWColor.growGreen)
+                                        .opacity(0.35)
                                 }
                                 Text("Today's Tend")
                                     .font(WWTypography.caption(14).weight(.bold))
@@ -729,6 +759,73 @@ struct JourneyGrowthPage: View {
                 .fill(WWColor.surface)
                 .shadow(color: .black.opacity(0.2), radius: 40, y: -10)
         )
+    }
+
+    private var streakSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Streak")
+                    .font(WWTypography.caption(13).weight(.heavy))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(1.4)
+
+                Spacer()
+
+                Text("\(currentStreakCount) day\(currentStreakCount == 1 ? "" : "s")")
+                    .font(WWTypography.caption(12).weight(.bold))
+                    .foregroundStyle(WWColor.growGreen)
+            }
+
+            HStack(spacing: 10) {
+                ForEach(Array(orderedWeekDays.enumerated()), id: \.offset) { index, day in
+                    let isCompleted = completedDaysInJourney.contains(day)
+                    let dayLabel = weekdayLabel(for: index)
+
+                    VStack(spacing: 6) {
+                        if let img = resolveUIImage(named: "sun_streak_icon") {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 18, height: 18)
+                                .opacity(isCompleted ? 1.0 : 0.22)
+                                .grayscale(isCompleted ? 0.0 : 1.0)
+                        } else {
+                            Image(systemName: "sun.max.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(WWColor.growGreen)
+                                .opacity(isCompleted ? 1.0 : 0.22)
+                        }
+
+                        Text(dayLabel)
+                            .font(WWTypography.caption(10).weight(.semibold))
+                            .foregroundStyle(isCompleted ? WWColor.nearBlack : WWColor.muted)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(WWColor.darkBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+        )
+        .padding(.horizontal, 32)
+    }
+
+    private func weekdayLabel(for index: Int) -> String {
+        switch index {
+        case 0: return "M"
+        case 1: return "T"
+        case 2: return "W"
+        case 3: return "Th"
+        case 4: return "F"
+        case 5: return "Sa"
+        case 6: return "Su"
+        default: return ""
+        }
     }
 
     private func dampedSheetTranslation(_ translation: CGFloat) -> CGFloat {
