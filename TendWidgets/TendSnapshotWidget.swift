@@ -114,10 +114,10 @@ private struct TendSnapshotWidgetView: View {
             if family != .systemSmall {
                 LinearGradient(
                     stops: [
-                        .init(color: Color.black.opacity(0.00), location: 0.18),
-                        .init(color: Color.black.opacity(0.12), location: 0.36),
-                        .init(color: Color.black.opacity(0.34), location: 0.53),
-                        .init(color: Color.black.opacity(0.62), location: 0.72),
+                        .init(color: Color.black.opacity(0.00), location: 0.08),
+                        .init(color: Color.black.opacity(0.16), location: 0.24),
+                        .init(color: Color.black.opacity(0.40), location: 0.44),
+                        .init(color: Color.black.opacity(0.68), location: 0.66),
                         .init(color: Color.black.opacity(0.90), location: 1.00)
                     ],
                     startPoint: .leading,
@@ -129,10 +129,10 @@ private struct TendSnapshotWidgetView: View {
 
     private var smallBody: some View {
         GeometryReader { proxy in
-            ZStack(alignment: .topTrailing) {
+            ZStack(alignment: .center) {
                 if entry.state == .active {
-                    let panelWidth = proxy.size.width * 0.72
-                    let panelHeight = proxy.size.height * 0.72
+                    let panelWidth = proxy.size.width * 0.84
+                    let panelHeight = proxy.size.height * 0.84
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 0) {
@@ -149,7 +149,7 @@ private struct TendSnapshotWidgetView: View {
                             .font(WWTypography.caption(14).weight(.semibold))
                             .foregroundStyle(primaryTextColor)
                             .multilineTextAlignment(.leading)
-                            .lineLimit(4)
+                            .lineLimit(5)
                             .minimumScaleFactor(0.88)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -171,8 +171,8 @@ private struct TendSnapshotWidgetView: View {
                                     .fill(
                                         RadialGradient(
                                             colors: colorScheme == .dark
-                                                ? [Color.black.opacity(0.48), Color.black.opacity(0.18), Color.clear]
-                                                : [Color.black.opacity(0.34), Color.black.opacity(0.12), Color.clear],
+                                                ? [Color.black.opacity(0.56), Color.black.opacity(0.22), Color.clear]
+                                                : [Color.black.opacity(0.40), Color.black.opacity(0.14), Color.clear],
                                             center: .center,
                                             startRadius: 8,
                                             endRadius: 120
@@ -180,10 +180,10 @@ private struct TendSnapshotWidgetView: View {
                                     )
                             )
                     )
-                    .padding(8)
+                    .padding(10)
                 } else {
                     fallbackStack
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
             }
         }
@@ -192,7 +192,7 @@ private struct TendSnapshotWidgetView: View {
     private var mediumBody: some View {
         GeometryReader { proxy in
             HStack(spacing: 0) {
-                Spacer(minLength: proxy.size.width * 0.25)
+                Spacer(minLength: proxy.size.width * 0.17)
 
                 if entry.state == .active {
                     VStack(alignment: .leading, spacing: 5) {
