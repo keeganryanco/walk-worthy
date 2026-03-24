@@ -144,48 +144,45 @@ struct CreateJourneyTerminalPage: View {
     @State private var isCreating = false
 
     var body: some View {
-        GeometryReader { proxy in
-            VStack(spacing: 24) {
-                Spacer()
-                
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(WWColor.growGreen)
-                    .shadow(color: WWColor.growGreen.opacity(0.3), radius: 20, y: 10)
-                
-                Text(profile.name.isEmpty ? "Start a New Journey" : "\(profile.name), start a new journey")
-                    .font(WWTypography.heading(28))
-                    .foregroundStyle(WWColor.nearBlack)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                
-                Text("What area of your life needs tending next?")
-                    .font(WWTypography.body(18))
-                    .foregroundStyle(WWColor.muted)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                
-                Spacer()
-                
-                Button {
-                    isCreating = true
-                } label: {
-                    Text("Begin New Journey")
-                        .frame(maxWidth: .infinity)
+        GeometryReader { _ in
+            ZStack {
+                WWColor.surface
+                    .ignoresSafeArea()
+
+                VStack(spacing: 22) {
+                    Spacer()
+
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 96))
+                        .foregroundStyle(WWColor.growGreen)
+                        .shadow(color: WWColor.growGreen.opacity(0.32), radius: 22, y: 10)
+
+                    Text(profile.name.isEmpty ? "Start a New Journey" : "\(profile.name), start a new journey")
+                        .font(WWTypography.heading(30))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
+
+                    Text("What area of your life needs tending next?")
+                        .font(WWTypography.body(19))
+                        .foregroundStyle(WWColor.muted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 34)
+
+                    Text("Tap anywhere to begin")
+                        .font(WWTypography.caption(14).weight(.medium))
+                        .foregroundStyle(WWColor.growGreen.opacity(0.88))
+                        .padding(.top, 8)
+
+                    Spacer()
+                    Spacer().frame(height: 108)
                 }
-                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
-                .padding(.horizontal, 32)
-                
-                Spacer().frame(height: 60)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .fill(WWColor.surface)
-                    .shadow(color: .black.opacity(0.2), radius: 40, y: -10)
-            )
         }
-        .padding(.horizontal, 8)
         .contentShape(Rectangle())
+        .onTapGesture {
+            isCreating = true
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 24)
                 .onEnded { value in
