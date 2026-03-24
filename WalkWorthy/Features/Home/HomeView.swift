@@ -9,7 +9,6 @@ struct HomeView: View {
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
     let onNavigateToJournal: () -> Void
-    let onNavigateToSettings: () -> Void
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -83,8 +82,6 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .accessibilityIdentifier("HomeView")
-            .contentShape(Rectangle())
-            .simultaneousGesture(homeHorizontalSwipeGesture, including: .all)
         }
     }
 
@@ -137,40 +134,6 @@ struct HomeView: View {
         )
     }
 
-    private var homeHorizontalSwipeGesture: some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onEnded { value in
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-                guard abs(horizontal) > abs(vertical) + 18 else { return }
-
-                let ids = pageIDs
-                guard !ids.isEmpty else { return }
-
-                let currentID = selectedJourneyID ?? ids.first!
-                let currentIndex = ids.firstIndex(of: currentID) ?? 0
-
-                if horizontal < -56 {
-                    // Left: advance journey pages, then jump to Journal from create page.
-                    if currentIndex < ids.count - 1 {
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                            selectedJourneyID = ids[currentIndex + 1]
-                        }
-                    } else {
-                        onNavigateToJournal()
-                    }
-                } else if horizontal > 56 {
-                    // Right: go back journey pages, then jump to Settings from first page.
-                    if currentIndex > 0 {
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                            selectedJourneyID = ids[currentIndex - 1]
-                        }
-                    } else {
-                        onNavigateToSettings()
-                    }
-                }
-            }
-    }
 }
 
 struct CreateJourneyTerminalPage: View {
@@ -914,11 +877,17 @@ struct JourneyGrowthPage: View {
     private var bottomSheetDragGesture: some Gesture {
         DragGesture(minimumDistance: 10)
             .updating($bottomSheetDragOffset) { value, state, _ in
+                // Ignore mostly-horizontal drags so journey page swipes stay smooth.
+                guard abs(value.translation.height) > abs(value.translation.width) + 20 else {
+                    state = 0
+                    return
+                }
                 state = dampedSheetTranslation(value.translation.height)
             }
             .onEnded { value in
                 let translation = value.translation.height
                 let predicted = value.predictedEndTranslation.height
+                guard abs(translation) > abs(value.translation.width) + 20 else { return }
 
                 let shouldExpand: Bool
                 if isBottomSheetExpanded {
@@ -940,13 +909,14 @@ struct JourneyGrowthPage: View {
             .onEnded { value in
                 let horizontal = value.translation.width
                 let vertical = value.translation.height
-                guard abs(vertical) > abs(horizontal) + 18 else { return }
+                // Require strongly vertical intent so horizontal journey swipes don't trigger reveal.
+                guard abs(vertical) > abs(horizontal) + 42 else { return }
 
-                if vertical < -52 && !isBottomSheetExpanded {
+                if vertical < -100 && !isBottomSheetExpanded {
                     withAnimation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
                         isBottomSheetExpanded = true
                     }
-                } else if vertical > 72 && isBottomSheetExpanded {
+                } else if vertical > 120 && isBottomSheetExpanded {
                     withAnimation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
                         isBottomSheetExpanded = false
                     }

@@ -19,11 +19,6 @@ struct MainTabView: View {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             selectedTab = .journal
                         }
-                    },
-                    onNavigateToSettings: {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedTab = .settings
-                        }
                     }
                 )
                     .tag(RootTab.home)
