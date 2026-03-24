@@ -52,8 +52,15 @@ struct HomeView: View {
                         )
                             .tag(createJourneyTabID as UUID?)
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .tabViewStyle(.page(indexDisplayMode: .never))
                     .ignoresSafeArea(edges: .top)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if !activeJourneys.isEmpty {
+                    homePageIndicator
+                        .padding(.bottom, 108)
+                        .allowsHitTesting(false)
                 }
             }
             .onAppear {
@@ -99,6 +106,32 @@ struct HomeView: View {
 
     private func entries(for journeyID: UUID) -> [PrayerEntry] {
         allEntries.filter { $0.journey?.id == journeyID }
+    }
+
+    private var pageIDs: [UUID] {
+        activeJourneys.map(\.id) + [createJourneyTabID]
+    }
+
+    private var selectedPageIndex: Int {
+        guard let selectedJourneyID else { return 0 }
+        return pageIDs.firstIndex(of: selectedJourneyID) ?? 0
+    }
+
+    private var homePageIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(pageIDs.enumerated()), id: \.offset) { index, _ in
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: index == selectedPageIndex ? 8 : 6, height: index == selectedPageIndex ? 8 : 6)
+                    .opacity(index == selectedPageIndex ? 0.95 : 0.38)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(Color.black.opacity(0.22))
+        )
     }
 }
 
