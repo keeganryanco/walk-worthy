@@ -3,12 +3,19 @@ import Foundation
 enum AppConstants {
     static let appName = "Tend"
     static let subtitle = "pray. act. grow."
-    static let supportEmail = "keegan.ryan@keeganryan.co"
+    static let supportEmail = "tend@keeganryan.co"
+    static let termsURL = "https://walk-worthy-kohl.vercel.app/terms"
+    static let privacyURL = "https://walk-worthy-kohl.vercel.app/privacy"
+    static let supportURL = "https://walk-worthy-kohl.vercel.app/support"
     static let appGroupID = "group.co.keeganryan.tend"
 
     enum DeepLink {
         static let scheme = "tend"
         static let homeHost = "home"
+    }
+
+    enum Widget {
+        static let snapshotKind = "TendSnapshotWidget"
     }
 
     enum Subscription {

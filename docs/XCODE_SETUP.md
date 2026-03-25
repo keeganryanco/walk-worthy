@@ -46,7 +46,7 @@ Or in Xcode:
 Use the local xcconfig (recommended, one-time):
 1. Copy `Config/LocalSecrets.example.xcconfig` to `Config/LocalSecrets.xcconfig`.
 2. Fill in:
-   - `TENDAI_BASE_URL` = your Vercel domain, e.g. `https://<your-vercel-domain>`.
+   - `TENDAI_BASE_URL` = `walk-worthy-kohl.vercel.app`.
    - `TENDAI_APP_KEY` = same value as Vercel `TEND_APP_SHARED_SECRET`.
    - `POSTHOG_API_KEY` = PostHog project key (`phc_...`).
    - `POSTHOG_HOST` = `https://us.i.posthog.com` (US cloud).
