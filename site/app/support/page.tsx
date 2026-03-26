@@ -11,7 +11,7 @@ export default function SupportPage() {
       <section className="panel legal">
         <article>
           <h1>Support</h1>
-          <p className="meta">Support email: keegan.ryan@keeganryan.co</p>
+          <p className="meta">Support email: tend@keeganryan.co</p>
 
           <p>
             For help with Tend, send us an email and we will assist with troubleshooting, subscription issues, restore
@@ -23,8 +23,8 @@ export default function SupportPage() {
               <h3 id="support-contact-heading">Contact</h3>
               <p>
                 Email:{" "}
-                <a className="inline-link" href="mailto:keegan.ryan@keeganryan.co">
-                  keegan.ryan@keeganryan.co
+                <a className="inline-link" href="mailto:tend@keeganryan.co">
+                  tend@keeganryan.co
                 </a>
               </p>
               <p className="support-subline">Typical response window: 1-3 business days.</p>
@@ -53,8 +53,8 @@ export default function SupportPage() {
           <h2>Privacy and Data Requests</h2>
           <p>
             For privacy questions or requests related to your data, email{" "}
-            <a className="inline-link" href="mailto:keegan.ryan@keeganryan.co">
-              keegan.ryan@keeganryan.co
+            <a className="inline-link" href="mailto:tend@keeganryan.co">
+              tend@keeganryan.co
             </a>{" "}
             with subject line "Tend Privacy Request."
           </p>

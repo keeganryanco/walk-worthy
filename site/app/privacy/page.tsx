@@ -182,7 +182,7 @@ export default function PrivacyPage() {
 
           <h2>13. Contact</h2>
           <p>
-            Privacy questions or requests: <a className="inline-link" href="mailto:keegan.ryan@keeganryan.co">keegan.ryan@keeganryan.co</a>
+            Privacy questions or requests: <a className="inline-link" href="mailto:tend@keeganryan.co">tend@keeganryan.co</a>
           </p>
 
           <p className="footer-note">

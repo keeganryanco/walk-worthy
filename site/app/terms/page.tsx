@@ -150,7 +150,7 @@ export default function TermsPage() {
 
           <h2>16. Contact</h2>
           <p>
-            Legal and terms inquiries: <a className="inline-link" href="mailto:keegan.ryan@keeganryan.co">keegan.ryan@keeganryan.co</a>
+            Legal and terms inquiries: <a className="inline-link" href="mailto:tend@keeganryan.co">tend@keeganryan.co</a>
           </p>
 
           <p className="footer-note">
