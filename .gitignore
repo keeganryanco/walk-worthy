@@ -14,6 +14,7 @@ build/
 .build/
 .swiftpm/
 Package.resolved
+!WalkWorthy.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Fastlane
 test_output/
