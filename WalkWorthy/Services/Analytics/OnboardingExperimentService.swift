@@ -38,7 +38,8 @@ private final class PostHogOnboardingExperimentService: OnboardingExperimentConf
     private let decideURL: URL
     private let distinctID: String
     private let defaults: UserDefaults
-    private let cacheKey = "onboarding.experiment.config.v1"
+    private let cacheKeyPrefix = "onboarding.experiment.config.v2"
+    private let legacyCacheKey = "onboarding.experiment.config.v1"
 
     init?(projectKey: String, host: String, defaults: UserDefaults = .standard) {
         guard var baseURL = URL(string: host) else { return nil }
@@ -59,7 +60,8 @@ private final class PostHogOnboardingExperimentService: OnboardingExperimentConf
     }
 
     func fetchConfig() async -> OnboardingExperimentConfig {
-        let cached = loadCachedConfig() ?? .default
+        let languageCode = AppLanguage.aiLanguageCode(defaults: defaults)
+        let cached = loadCachedConfig(languageCode: languageCode) ?? .default
         var request = URLRequest(url: decideURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -87,8 +89,15 @@ private final class PostHogOnboardingExperimentService: OnboardingExperimentConf
             }
 
             let merged = mergeConfig(from: object, fallback: cached)
-            saveCachedConfig(merged)
-            return merged
+            let localizedCopyOverrides = await localizeCopyOverrides(merged.copyOverrides, languageCode: languageCode)
+            let localized = OnboardingExperimentConfig(
+                variant: merged.variant,
+                preJourneyOrder: merged.preJourneyOrder,
+                postJourneyOrder: merged.postJourneyOrder,
+                copyOverrides: normalizeCopyOverrides(localizedCopyOverrides)
+            )
+            saveCachedConfig(localized, languageCode: languageCode)
+            return localized
         } catch {
             return cached
         }
@@ -147,14 +156,38 @@ private final class PostHogOnboardingExperimentService: OnboardingExperimentConf
         )
     }
 
-    private func loadCachedConfig() -> OnboardingExperimentConfig? {
-        guard let data = defaults.data(forKey: cacheKey) else { return nil }
-        return try? JSONDecoder().decode(OnboardingExperimentConfig.self, from: data)
+    private func loadCachedConfig(languageCode: String) -> OnboardingExperimentConfig? {
+        let key = cacheKey(languageCode: languageCode)
+        if let data = defaults.data(forKey: key) {
+            return try? JSONDecoder().decode(OnboardingExperimentConfig.self, from: data)
+        }
+
+        // Preserve prior cache continuity for English users after cache key migration.
+        if languageCode == "en", let legacyData = defaults.data(forKey: legacyCacheKey) {
+            return try? JSONDecoder().decode(OnboardingExperimentConfig.self, from: legacyData)
+        }
+
+        return nil
     }
 
-    private func saveCachedConfig(_ config: OnboardingExperimentConfig) {
+    private func saveCachedConfig(_ config: OnboardingExperimentConfig, languageCode: String) {
         guard let data = try? JSONEncoder().encode(config) else { return }
-        defaults.set(data, forKey: cacheKey)
+        defaults.set(data, forKey: cacheKey(languageCode: languageCode))
+    }
+
+    private func cacheKey(languageCode: String) -> String {
+        "\(cacheKeyPrefix).\(languageCode)"
+    }
+
+    private func localizeCopyOverrides(_ overrides: [String: String], languageCode: String) async -> [String: String] {
+        guard !overrides.isEmpty else { return overrides }
+        guard languageCode != "en" else { return overrides }
+
+        return await RemoteLocalizationClient.translate(
+            overrides,
+            domain: .posthogOnboarding,
+            languageCode: languageCode
+        )
     }
 
     private func parsePayload(_ value: Any?) -> [String: Any]? {

@@ -116,7 +116,7 @@ final class SubscriptionService: NSObject, ObservableObject {
             let filtered = filteredByKnownIDs.isEmpty ? deduped : filteredByKnownIDs
 
             storeProductsByID = Dictionary(uniqueKeysWithValues: filtered.map { ($0.productIdentifier, $0) })
-            paywallConfig = resolvePaywallConfig(from: currentOffering)
+            paywallConfig = await resolvePaywallConfig(from: currentOffering)
 
             let order = Dictionary(uniqueKeysWithValues: productIDs.enumerated().map { ($1, $0) })
             products = filtered
@@ -385,33 +385,94 @@ final class SubscriptionService: NSObject, ObservableObject {
         return "\(offering.metadata)"
     }
 
-    private func resolvePaywallConfig(from offering: Offering?) -> PaywallRemoteConfig {
+    private func resolvePaywallConfig(from offering: Offering?) async -> PaywallRemoteConfig {
         guard let offering else { return .default }
 
-        let headline = firstNonEmptyMetadataString(
+        let languageCode = AppLanguage.aiLanguageCode()
+        let headlineBase = firstNonEmptyMetadataString(
             offering,
             keys: ["paywall_headline", "headline"]
         ) ?? PaywallRemoteConfig.default.headline
+        let headlineOverride = firstNonEmptyMetadataString(
+            offering,
+            keys: localizedMetadataKeys(baseKeys: ["paywall_headline", "headline"], languageCode: languageCode)
+        )
 
-        let subheadline = firstNonEmptyMetadataString(
+        let subheadlineBase = firstNonEmptyMetadataString(
             offering,
             keys: ["paywall_subheadline", "subheadline"]
         ) ?? PaywallRemoteConfig.default.subheadline
+        let subheadlineOverride = firstNonEmptyMetadataString(
+            offering,
+            keys: localizedMetadataKeys(baseKeys: ["paywall_subheadline", "subheadline"], languageCode: languageCode)
+        )
 
-        let ctaTitle = firstNonEmptyMetadataString(
+        let ctaBase = firstNonEmptyMetadataString(
             offering,
             keys: ["paywall_cta", "cta"]
         ) ?? PaywallRemoteConfig.default.ctaTitle
+        let ctaOverride = firstNonEmptyMetadataString(
+            offering,
+            keys: localizedMetadataKeys(baseKeys: ["paywall_cta", "cta"], languageCode: languageCode)
+        )
 
-        let annualBadgeText = firstNonEmptyMetadataString(
+        let annualBadgeBase = firstNonEmptyMetadataString(
             offering,
             keys: ["paywall_annual_badge", "annual_badge", "annual_badge_text"]
         ) ?? PaywallRemoteConfig.default.annualBadgeText
+        let annualBadgeOverride = firstNonEmptyMetadataString(
+            offering,
+            keys: localizedMetadataKeys(
+                baseKeys: ["paywall_annual_badge", "annual_badge", "annual_badge_text"],
+                languageCode: languageCode
+            )
+        )
 
-        let footnote = firstNonEmptyMetadataString(
+        let footnoteBase = firstNonEmptyMetadataString(
             offering,
             keys: ["paywall_footnote", "footnote"]
         ) ?? PaywallRemoteConfig.default.footnote
+        let footnoteOverride = firstNonEmptyMetadataString(
+            offering,
+            keys: localizedMetadataKeys(baseKeys: ["paywall_footnote", "footnote"], languageCode: languageCode)
+        )
+
+        var headline = headlineOverride ?? headlineBase
+        var subheadline = subheadlineOverride ?? subheadlineBase
+        var annualBadgeText = annualBadgeOverride ?? annualBadgeBase
+        let ctaTitle = ctaOverride ?? ctaBase // Legal-sensitive: English fallback when locale override is missing.
+        let footnote = footnoteOverride ?? footnoteBase // Legal-sensitive: English fallback when locale override is missing.
+
+        if languageCode != "en" {
+            var translatable: [String: String] = [:]
+            if headlineOverride == nil {
+                translatable["headline"] = headlineBase
+            }
+            if subheadlineOverride == nil {
+                translatable["subheadline"] = subheadlineBase
+            }
+            if annualBadgeOverride == nil, let annualBadgeBase {
+                translatable["annual_badge"] = annualBadgeBase
+            }
+
+            if !translatable.isEmpty {
+                let translated = await RemoteLocalizationClient.translate(
+                    translatable,
+                    domain: .revenueCatPaywall,
+                    languageCode: languageCode
+                )
+
+                if headlineOverride == nil {
+                    headline = translated["headline"] ?? headlineBase
+                }
+                if subheadlineOverride == nil {
+                    subheadline = translated["subheadline"] ?? subheadlineBase
+                }
+                if annualBadgeOverride == nil {
+                    annualBadgeText = translated["annual_badge"] ?? annualBadgeBase
+                }
+            }
+        }
 
         let defaultPackageToken = firstNonEmptyMetadataString(
             offering,
@@ -432,6 +493,11 @@ final class SubscriptionService: NSObject, ObservableObject {
             defaultPackageToken: defaultPackageToken,
             isDismissable: isDismissable
         )
+    }
+
+    private func localizedMetadataKeys(baseKeys: [String], languageCode: String) -> [String] {
+        guard languageCode != "en" else { return [] }
+        return baseKeys.map { "\($0)_\(languageCode)" }
     }
 
     private func firstNonEmptyMetadataString(_ offering: Offering, keys: [String]) -> String? {

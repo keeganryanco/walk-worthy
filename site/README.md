@@ -7,6 +7,7 @@ Minimal Next.js site for App Store-required URLs.
 - `/support`
 - `/api/v1/journey-bootstrap` (POST)
 - `/api/v1/journey-package` (POST)
+- `/api/v1/localize` (POST)
 
 ## Local development
 ```bash
@@ -45,6 +46,9 @@ Optional:
 - `OPENAI_PRIMARY_MODEL` (default `gpt-5-mini`)
 - `OPENAI_ESCALATION_MODEL` (default `gpt-5.1`)
 - `GEMINI_PRIMARY_MODEL` (default `gemini-2.5-flash`)
+- `OPENAI_TRANSLATION_MODEL` (default: `OPENAI_PRIMARY_MODEL`)
+- `GEMINI_TRANSLATION_MODEL` (default: `GEMINI_PRIMARY_MODEL`)
+- `LOCALIZATION_CACHE_TTL_SECONDS` (default `604800`)
 
 ## API contract (MVP)
 
@@ -80,6 +84,7 @@ Body:
 - `journey` (supports `themeKey`)
 - optional `memory`
 - optional `recentEntries`
+- optional `followThroughContext`
 - optional `cycleCount`
 - optional `completionCount`
 - optional `recentJourneySignals`
@@ -88,6 +93,21 @@ Body:
 Response:
 - `package` (reflection/scripture/prayer/step payload)
 - `meta` (`provider`, `model`, `escalated`, `fallbackUsed`, `generatedAt`)
+
+### `POST /api/v1/localize`
+
+Headers:
+- `Content-Type: application/json`
+- `x-tend-app-key: <TEND_APP_SHARED_SECRET>` (if configured)
+
+Body:
+- `domain` (`posthog_onboarding | revenuecat_paywall`)
+- `targetLocale` (Phase B currently expects `es` for non-English)
+- `strings` (key-value map of source English text)
+
+Response:
+- `translated` (key-value map with best-effort localized values)
+- `meta` (`provider`, `model`, `cached`, `fallbackUsed`)
 
 After deploy, set App Store URLs to:
 - Privacy Policy URL: `https://<vercel-domain>/privacy`

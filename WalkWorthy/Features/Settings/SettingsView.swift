@@ -31,6 +31,10 @@ struct SettingsView: View {
         UIDevice.current.userInterfaceIdiom != .pad
     }
 
+    private var selectedAppLanguage: AppLanguage {
+        AppLanguage(rawValue: appLanguageRawValue) ?? .system
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -132,7 +136,7 @@ struct SettingsView: View {
                 Section(L10n.string("settings.appearance.section", default: "Appearance")) {
                     Picker(L10n.string("settings.language.title", default: "App Language"), selection: $appLanguageRawValue) {
                         ForEach(AppLanguage.allCases) { language in
-                            Text(language.displayName).tag(language.rawValue)
+                            Text(language.displayName(localizedIn: selectedAppLanguage)).tag(language.rawValue)
                         }
                     }
                     .foregroundStyle(WWColor.nearBlack)

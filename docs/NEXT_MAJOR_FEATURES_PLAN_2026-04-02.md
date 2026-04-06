@@ -17,7 +17,7 @@ Capture the next major feature tracks after launch, with implementation-first pl
 
 ## 1) Multilingual support (highest priority)
 
-### Progress tracker (updated 2026-04-06)
+### Progress tracker (updated 2026-04-06, Phase B pass)
 
 #### Phase A (ship now)
 - [x] App language setting added (`System Default`, `English`, `Español`) with persisted selection.
@@ -29,10 +29,10 @@ Capture the next major feature tracks after launch, with implementation-first pl
 - [x] Validation/fallback logic now has Spanish-aware first-person prayer and localized fallback copy/chips.
 
 #### Phase B (next)
-- [ ] Translation endpoint in `site/` with cache (`/api/v1/localize` or equivalent).
-- [ ] Route PostHog onboarding copy through translation path when locale is non-English.
-- [ ] Route RevenueCat metadata copy through translation path when locale is non-English.
-- [ ] Manual per-locale override map for legal/brand-sensitive paywall copy.
+- [x] Translation endpoint in `site/` with cache (`/api/v1/localize` or equivalent).
+- [x] Route PostHog onboarding copy through translation path when locale is non-English.
+- [x] Route RevenueCat metadata copy through translation path when locale is non-English.
+- [x] Manual per-locale override map for legal/brand-sensitive paywall copy (`*_es` suffix keys).
 
 #### Phase C (quality + scale)
 - [ ] Glossary and terminology guardrails for devotional/Bible-adjacent phrasing by language.

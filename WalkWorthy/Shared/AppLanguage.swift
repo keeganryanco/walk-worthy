@@ -10,13 +10,19 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var displayName: String {
+        displayName(localizedIn: AppLanguage.selected())
+    }
+
+    func displayName(localizedIn interfaceLanguage: AppLanguage) -> String {
+        let languageOverride: AppLanguage = interfaceLanguage == .system ? .system : interfaceLanguage
+
         switch self {
         case .system:
-            return L10n.string("settings.language.system", default: "System Default")
+            return L10n.string("settings.language.system", default: "System Default", languageOverride: languageOverride)
         case .english:
-            return L10n.string("settings.language.english", default: "English")
+            return L10n.string("settings.language.english", default: "English", languageOverride: languageOverride)
         case .spanish:
-            return L10n.string("settings.language.spanish", default: "Español")
+            return L10n.string("settings.language.spanish", default: "Español", languageOverride: languageOverride)
         }
     }
 
