@@ -5,6 +5,13 @@ private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.kee
 
 struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     private struct RequestBody: Encodable {
+        struct Telemetry: Encodable {
+            let distinctID: String
+            let appVersion: String
+            let buildNumber: String
+            let platform: String
+        }
+
         struct Profile: Encodable {
             let prayerFocus: String
             let growthGoal: String
@@ -31,17 +38,30 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             let createdAt: String
             let actionStep: String
             let userReflection: String
+            let scriptureReference: String
             let completedAt: String?
+            let followThroughStatus: String?
+        }
+
+        struct FollowThroughContext: Encodable {
+            let previousCommitmentText: String
+            let previousFollowThroughStatus: String
+            let daysSinceCommitment: Int?
         }
 
         let profile: Profile
         let journey: Journey
         let memory: Memory?
         let recentEntries: [RecentEntry]
+        let usedScriptureReferences: [String]
+        let followThroughContext: FollowThroughContext?
         let cycleCount: Int
         let completionCount: Int
         let recentJourneySignals: [String]
         let dateISO: String
+        let languageCode: String
+        let localeIdentifier: String
+        let telemetry: Telemetry
     }
 
     private struct ResponseBody: Decodable {
@@ -142,7 +162,13 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             aiLogger.error("journey-package decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
             throw ProviderError.decodeFailure(bodySnippet: String(snippet))
         }
-        return DailyJourneyPackageValidation.validated(decoded.package)
+        let followThroughStatus = FollowThroughService
+            .latestAnsweredContext(from: recentEntries)?
+            .previousFollowThroughStatus
+        return DailyJourneyPackageValidation.validated(
+            decoded.package,
+            followThroughStatus: followThroughStatus
+        )
     }
 
     private func buildBody(
@@ -187,11 +213,29 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
                     createdAt: dateFormatter.string(from: entry.createdAt),
                     actionStep: entry.actionStep,
                     userReflection: entry.userReflection,
-                    completedAt: entry.completedAt.map { dateFormatter.string(from: $0) }
+                    scriptureReference: entry.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines),
+                    completedAt: entry.completedAt.map { dateFormatter.string(from: $0) },
+                    followThroughStatus: entry.followThroughStatus == .unanswered ? nil : entry.followThroughStatus.rawValue
                 )
             }
 
-        let completionCount = journey.completedTends > 0 ? journey.completedTends : recentEntries.filter { $0.completedAt != nil }.count
+        let usedScriptureReferences = Array(
+            Set(
+                recentEntries
+                    .map { $0.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        ).sorted()
+
+        let completionCount = recentEntries.filter { $0.completedAt != nil }.count
+        let followThroughContext = FollowThroughService.latestAnsweredContext(from: recentEntries)
+        let followThroughPayload = followThroughContext.map {
+            RequestBody.FollowThroughContext(
+                previousCommitmentText: $0.previousCommitmentText,
+                previousFollowThroughStatus: $0.previousFollowThroughStatus.rawValue,
+                daysSinceCommitment: $0.daysSinceCommitment
+            )
+        }
         let recentSignals = recentEntries
             .sorted(by: { $0.createdAt > $1.createdAt })
             .prefix(6)
@@ -206,10 +250,20 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             journey: journeyPayload,
             memory: memoryPayload,
             recentEntries: recent,
+            usedScriptureReferences: usedScriptureReferences,
+            followThroughContext: followThroughPayload,
             cycleCount: journey.cycleCount,
             completionCount: completionCount,
             recentJourneySignals: Array(recentSignals),
-            dateISO: dateFormatter.string(from: .now)
+            dateISO: dateFormatter.string(from: .now),
+            languageCode: AppLanguage.aiLanguageCode(),
+            localeIdentifier: AppLanguage.aiLocaleIdentifier(),
+            telemetry: RequestBody.Telemetry(
+                distinctID: analyticsDistinctID(),
+                appVersion: appVersion(),
+                buildNumber: buildNumber(),
+                platform: "ios"
+            )
         )
     }
 }
@@ -231,10 +285,20 @@ struct JourneyBootstrapPayload: Decodable {
 
 struct BackendJourneyBootstrapProvider {
     private struct RequestBody: Encodable {
+        struct Telemetry: Encodable {
+            let distinctID: String
+            let appVersion: String
+            let buildNumber: String
+            let platform: String
+        }
+
         let name: String
         let prayerIntentText: String
         let goalIntentText: String
         let reminderWindow: String
+        let languageCode: String
+        let localeIdentifier: String
+        let telemetry: Telemetry
     }
 
     private struct ResponseBody: Decodable {
@@ -299,7 +363,15 @@ struct BackendJourneyBootstrapProvider {
             name: name,
             prayerIntentText: prayerIntentText,
             goalIntentText: goalIntentText,
-            reminderWindow: reminderWindow
+            reminderWindow: reminderWindow,
+            languageCode: AppLanguage.aiLanguageCode(),
+            localeIdentifier: AppLanguage.aiLocaleIdentifier(),
+            telemetry: RequestBody.Telemetry(
+                distinctID: analyticsDistinctID(),
+                appVersion: appVersion(),
+                buildNumber: buildNumber(),
+                platform: "ios"
+            )
         )
         request.httpBody = try JSONEncoder().encode(payload)
 
@@ -331,4 +403,23 @@ struct BackendJourneyBootstrapProvider {
         }
         return decoded.bootstrap
     }
+}
+
+private func analyticsDistinctID() -> String {
+    let defaults = UserDefaults.standard
+    let key = "analytics.distinct_id"
+    if let existing = defaults.string(forKey: key), !existing.isEmpty {
+        return existing
+    }
+    let generated = UUID().uuidString.lowercased()
+    defaults.set(generated, forKey: key)
+    return generated
+}
+
+private func appVersion() -> String {
+    Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+}
+
+private func buildNumber() -> String {
+    Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
 }

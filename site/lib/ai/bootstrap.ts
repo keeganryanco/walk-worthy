@@ -9,6 +9,8 @@ import {
   JourneyThemeKey
 } from "./types";
 import { normalizePackageFromObject } from "./validate";
+import { estimateCostUSD } from "./cost";
+import type { ProviderGenerationResult } from "./providers/openai";
 
 const THEME_KEYS: JourneyThemeKey[] = [
   "basic",
@@ -23,9 +25,39 @@ const THEME_KEYS: JourneyThemeKey[] = [
   "wisdom"
 ];
 
+function targetLanguage(
+  request: JourneyBootstrapRequest
+): { code: "en" | "es"; label: string; localeIdentifier: string } {
+  const languageCode = (request.languageCode ?? "").trim().toLowerCase();
+  const localeIdentifier = (request.localeIdentifier ?? "").trim() || "en-US";
+  if (languageCode.startsWith("es") || localeIdentifier.toLowerCase().startsWith("es")) {
+    return { code: "es", label: "Spanish", localeIdentifier };
+  }
+  return { code: "en", label: "English", localeIdentifier };
+}
+
 function cleanText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
-  return value.trim().slice(0, maxLength);
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= maxLength) return trimmed;
+
+  const hard = trimmed.slice(0, maxLength);
+  const sentenceBoundary = Math.max(
+    hard.lastIndexOf("."),
+    hard.lastIndexOf("!"),
+    hard.lastIndexOf("?")
+  );
+  if (sentenceBoundary >= Math.floor(maxLength * 0.55)) {
+    return hard.slice(0, sentenceBoundary + 1).trim();
+  }
+
+  const wordBoundary = hard.lastIndexOf(" ");
+  if (wordBoundary >= Math.floor(maxLength * 0.55)) {
+    return hard.slice(0, wordBoundary).trim();
+  }
+
+  // Preserve full model output if we cannot trim naturally.
+  return trimmed;
 }
 
 function extractJSON(raw: string): unknown {
@@ -63,6 +95,7 @@ function fallbackTheme(request: JourneyBootstrapRequest): JourneyThemeKey {
 }
 
 function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapResponse {
+  const language = targetLanguage(request);
   const themeKey = fallbackTheme(request);
   const titleSeed = cleanText(request.goalIntentText, 48) || cleanText(request.prayerIntentText, 48) || "First Journey";
   const journeyTitle = titleSeed.length < 4 ? "First Journey" : titleSeed;
@@ -78,7 +111,9 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
       title: journeyTitle,
       category: journeyCategory,
       themeKey
-    }
+    },
+    languageCode: request.languageCode,
+    localeIdentifier: request.localeIdentifier
   });
 
   return {
@@ -86,9 +121,15 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
     journeyCategory,
     themeKey,
     initialMemory: {
-      summary: `${journeyTitle}: ${journeyCategory}.`,
-      winsSummary: "No completed tends yet.",
-      blockersSummary: "No blocker pattern identified yet.",
+      summary:
+        language.code === "es"
+          ? `${journeyTitle}: ${journeyCategory}.`
+          : `${journeyTitle}: ${journeyCategory}.`,
+      winsSummary: language.code === "es" ? "Aún no hay tends completados." : "No completed tends yet.",
+      blockersSummary:
+        language.code === "es"
+          ? "Aún no se detecta un patrón de bloqueo."
+          : "No blocker pattern identified yet.",
       preferredTone: "grounded-encouraging"
     },
     initialPackage: pkg
@@ -96,17 +137,31 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
 }
 
 function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: string; user: string } {
+  const language = targetLanguage(request);
   const system = [
     "You are generating initial journey setup for a Christian prayer-and-action app.",
     "Return strict JSON only.",
     "Classify the journey into one themeKey from:",
     THEME_KEYS.join(", "),
     "Create concise, practical initial memory and a daily package.",
+    "Do not include inflammatory denominational commentary, sectarian attacks, or arguments about which Christian tradition is superior.",
+    "Keep religious language respectful, invitational, and non-coercive. Do not shame, threaten, or pressure the user spiritually.",
+    "reflectionThought should be a natural concise reflection statement or gentle directive, not a question.",
+    "Do not force a fixed opening phrase for reflectionThought.",
+    "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
+    "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
+    "Keep reflectionThought to 2-4 sentences.",
+    "Keep scriptureParaphrase to 1-3 sentences and faithful to the cited verse’s central meaning.",
+    "Do not blend ideas from unrelated verses into one paraphrase.",
+    "Keep prayer to 1-3 sentences.",
+    "Keep smallStepQuestion to one sentence (ideally under 24 words).",
     "Suggested step chips must be complete actionable phrases, not fragments.",
     "Prayer must be strict first-person voice (I/me/my/we/us/our).",
     "Never refer to the user in third person (for example: 'the user', 'they', or by name).",
     "Use scripture paraphrase only. No translation labels. No copyright-protected direct verse quoting.",
-    "Keep tone grounded, sincere, practical, and hopeful."
+    "Keep tone grounded, sincere, practical, and hopeful.",
+    `Write all user-facing generated text in ${language.label} (${language.code}).`,
+    "Do not include translation notes, bilingual output, or language labels."
   ].join(" ");
 
   const user = JSON.stringify(
@@ -165,7 +220,9 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
       category: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
       themeKey
     },
-    recentJourneySignals: [request.prayerIntentText, request.goalIntentText]
+    recentJourneySignals: [request.prayerIntentText, request.goalIntentText],
+    languageCode: request.languageCode,
+    localeIdentifier: request.localeIdentifier
   };
 
   const packageSource =
@@ -208,7 +265,7 @@ export async function generateJourneyBootstrap(
     provider: "openai" | "gemini";
     model: string;
     escalated: boolean;
-    call: () => Promise<string>;
+    call: () => Promise<ProviderGenerationResult>;
   }> = [];
 
   if (openAIKey) {
@@ -243,15 +300,21 @@ export async function generateJourneyBootstrap(
 
   for (const candidate of candidates) {
     try {
-      const raw = await candidate.call();
-      const parsed = parseBootstrap(raw, request);
+      const generated = await candidate.call();
+      const parsed = parseBootstrap(generated.text, request);
       if (!parsed) continue;
       return {
         bootstrap: parsed,
         provider: candidate.provider,
         model: candidate.model,
         escalated: candidate.escalated,
-        fallbackUsed: false
+        fallbackUsed: false,
+        usage: generated.usage
+          ? {
+              ...generated.usage,
+              estimatedCostUSD: estimateCostUSD(candidate.provider, candidate.model, generated.usage)
+            }
+          : undefined
       };
     } catch {
       continue;
@@ -263,6 +326,12 @@ export async function generateJourneyBootstrap(
     provider: "template",
     model: "local-template",
     escalated: true,
-    fallbackUsed: true
+    fallbackUsed: true,
+    usage: {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostUSD: 0
+    }
   };
 }

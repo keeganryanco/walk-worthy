@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJourneyBootstrap } from "../../../../lib/ai/bootstrap";
 import { JourneyBootstrapRequest } from "../../../../lib/ai/types";
+import { capturePostHogEvent } from "../../../../lib/analytics/posthog";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,9 @@ function isValidPayload(payload: unknown): payload is JourneyBootstrapRequest {
     typeof source.name === "string" &&
     typeof source.prayerIntentText === "string" &&
     typeof source.goalIntentText === "string" &&
-    typeof source.reminderWindow === "string"
+    typeof source.reminderWindow === "string" &&
+    (source.languageCode === undefined || typeof source.languageCode === "string") &&
+    (source.localeIdentifier === undefined || typeof source.localeIdentifier === "string")
   );
 }
 
@@ -59,8 +62,31 @@ export async function POST(request: NextRequest) {
   try {
     const result = await generateJourneyBootstrap(typedPayload);
     console.info(
-      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey}`
+      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1}`
     );
+
+    const distinctID = typedPayload.telemetry?.distinctID?.trim() || `anon_bootstrap_${typedPayload.name || "unknown"}`;
+    const estimatedCostUSD =
+      typeof result.usage?.estimatedCostUSD === "number"
+        ? result.usage.estimatedCostUSD
+        : 0;
+
+    void capturePostHogEvent("ai_generation_usage", distinctID, {
+      endpoint: "journey_bootstrap",
+      request_id: rid,
+      provider: result.provider,
+      model: result.model,
+      escalated: result.escalated,
+      fallback_used: result.fallbackUsed,
+      input_tokens: result.usage?.inputTokens ?? 0,
+      output_tokens: result.usage?.outputTokens ?? 0,
+      total_tokens: result.usage?.totalTokens ?? 0,
+      estimated_cost_usd: estimatedCostUSD,
+      theme_key: result.bootstrap.themeKey,
+      app_platform: typedPayload.telemetry?.platform ?? "ios",
+      app_version: typedPayload.telemetry?.appVersion ?? "",
+      app_build_number: typedPayload.telemetry?.buildNumber ?? ""
+    });
 
     return NextResponse.json({
       bootstrap: result.bootstrap,
@@ -69,7 +95,8 @@ export async function POST(request: NextRequest) {
         model: result.model,
         escalated: result.escalated,
         fallbackUsed: result.fallbackUsed,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
+        usage: result.usage ?? null
       }
     });
   } catch (error) {

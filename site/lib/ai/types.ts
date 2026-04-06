@@ -17,6 +17,23 @@ export interface CompletionSuggestion {
   confidence: number;
 }
 
+export interface ClientTelemetry {
+  distinctID?: string;
+  appVersion?: string;
+  buildNumber?: string;
+  platform?: string;
+}
+
+export interface AITokenUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+}
+
+export interface AIUsageMetrics extends AITokenUsage {
+  estimatedCostUSD?: number;
+}
+
 export interface JourneyPackageRequest {
   profile: {
     prayerFocus: string;
@@ -41,12 +58,23 @@ export interface JourneyPackageRequest {
     createdAt?: string;
     actionStep?: string;
     userReflection?: string;
+    scriptureReference?: string;
     completedAt?: string | null;
+    followThroughStatus?: "yes" | "partial" | "no";
   }>;
+  usedScriptureReferences?: string[];
+  followThroughContext?: {
+    previousCommitmentText?: string;
+    previousFollowThroughStatus?: "yes" | "partial" | "no" | "unanswered";
+    daysSinceCommitment?: number;
+  };
   cycleCount?: number;
   completionCount?: number;
   recentJourneySignals?: string[];
   dateISO?: string;
+  languageCode?: string;
+  localeIdentifier?: string;
+  telemetry?: ClientTelemetry;
 }
 
 export interface DailyJourneyPackage {
@@ -65,6 +93,7 @@ export interface OrchestratedResult {
   model: string;
   escalated: boolean;
   fallbackUsed: boolean;
+  usage?: AIUsageMetrics;
 }
 
 export interface JourneyBootstrapRequest {
@@ -72,6 +101,9 @@ export interface JourneyBootstrapRequest {
   prayerIntentText: string;
   goalIntentText: string;
   reminderWindow: string;
+  languageCode?: string;
+  localeIdentifier?: string;
+  telemetry?: ClientTelemetry;
 }
 
 export interface JourneyBootstrapResponse {
@@ -93,4 +125,5 @@ export interface BootstrapOrchestratedResult {
   model: string;
   escalated: boolean;
   fallbackUsed: boolean;
+  usage?: AIUsageMetrics;
 }
