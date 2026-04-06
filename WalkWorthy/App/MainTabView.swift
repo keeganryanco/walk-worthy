@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("homeOverlayActive") private var homeOverlayActive = false
     @Binding var selectedTab: RootTab
 
     let profile: OnboardingProfile
@@ -16,9 +18,7 @@ struct MainTabView: View {
                     isPremium: isPremium,
                     onRequirePaywall: onRequirePaywall,
                     onNavigateToJournal: {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedTab = .journal
-                        }
+                        selectTab(.journal)
                     }
                 )
                     .tag(RootTab.home)
@@ -34,35 +34,55 @@ struct MainTabView: View {
             }
             
             // Custom Tab Bar
-            HStack(spacing: 0) {
-                tabButton(title: "Home", systemImage: "leaf.fill", tab: .home)
-                tabButton(title: "Journal", systemImage: "book.fill", tab: .journal)
-                tabButton(title: "Settings", systemImage: "gearshape.fill", tab: .settings)
+            if !(selectedTab == .home && homeOverlayActive) {
+                HStack(spacing: 0) {
+                    tabButton(
+                        title: L10n.string("tab.home", default: "Home"),
+                        accessibilityHint: L10n.string("tab.home.hint", default: "Switches to the home tab."),
+                        systemImage: "leaf.fill",
+                        tab: .home
+                    )
+                    tabButton(
+                        title: L10n.string("tab.journal", default: "Journal"),
+                        accessibilityHint: L10n.string("tab.journal.hint", default: "Switches to the journal tab."),
+                        systemImage: "book.fill",
+                        tab: .journal
+                    )
+                    tabButton(
+                        title: L10n.string("tab.settings", default: "Settings"),
+                        accessibilityHint: L10n.string("tab.settings.hint", default: "Switches to the settings tab."),
+                        systemImage: "gearshape.fill",
+                        tab: .settings
+                    )
+                }
+                .accessibilityElement(children: .contain)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(WWColor.tabBarBackground.opacity(colorScheme == .dark ? 0.95 : 0.98))
+                        .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.14), radius: 30, y: 15)
+                )
+                .overlay(
+                    Capsule().stroke(
+                        WWColor.nearBlack.opacity(colorScheme == .dark ? 0.12 : 0.1),
+                        lineWidth: 1
+                    )
+                )
+                .padding(.horizontal, 48)
+                .padding(.bottom, 24)
+                .transition(.opacity)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(WWColor.darkBackground.opacity(0.95))
-                    .shadow(color: .black.opacity(0.4), radius: 30, y: 15)
-            )
-            .overlay(
-                Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
-            .padding(.horizontal, 48)
-            .padding(.bottom, 24)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .simultaneousGesture(horizontalTabSwipeGesture, including: .all)
     }
     
-    private func tabButton(title: String, systemImage: String, tab: RootTab) -> some View {
+    private func tabButton(title: String, accessibilityHint: String, systemImage: String, tab: RootTab) -> some View {
         let isSelected = selectedTab == tab
         let inactiveColor: Color = colorScheme == .dark ? .white : WWColor.nearBlack
         return Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedTab = tab
-            }
+            selectTab(tab)
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: systemImage)
@@ -73,9 +93,14 @@ struct MainTabView: View {
             }
             .foregroundStyle(isSelected ? WWColor.growGreen : inactiveColor.opacity(0.92))
             .frame(maxWidth: .infinity)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isSelected ? L10n.string("tab.selected", default: "Selected") : "")
+        .accessibilityHint(accessibilityHint)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var horizontalTabSwipeGesture: some Gesture {
@@ -91,26 +116,30 @@ struct MainTabView: View {
                 if horizontal < -56 {
                     switch selectedTab {
                     case .journal:
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedTab = .settings
-                        }
+                        selectTab(.settings)
                     case .settings, .home:
                         break
                     }
                 } else if horizontal > 56 {
                     switch selectedTab {
                     case .settings:
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedTab = .journal
-                        }
+                        selectTab(.journal)
                     case .journal:
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedTab = .home
-                        }
+                        selectTab(.home)
                     case .home:
                         break
                     }
                 }
             }
+    }
+
+    private func selectTab(_ tab: RootTab) {
+        if reduceMotion {
+            selectedTab = tab
+        } else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                selectedTab = tab
+            }
+        }
     }
 }

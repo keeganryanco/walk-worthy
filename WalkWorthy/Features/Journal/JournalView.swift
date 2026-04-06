@@ -16,12 +16,12 @@ struct JournalView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WWColor.darkBackground.ignoresSafeArea()
+                WWColor.white.ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         HStack {
-                            Text("Journal")
+                            Text(L10n.string("journal.title", default: "Journal"))
                                 .font(WWTypography.heading(32))
                                 .foregroundStyle(WWColor.nearBlack)
                             Spacer()
@@ -43,12 +43,11 @@ struct JournalView: View {
 
                         if !active.isEmpty {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("ACTIVE JOURNEYS")
+                                Text(L10n.string("journal.active_journeys", default: "ACTIVE JOURNEYS"))
                                     .font(WWTypography.caption(12).weight(.heavy))
                                     .foregroundStyle(WWColor.muted)
                                     .tracking(2.0)
                                     .padding(.horizontal, 24)
-
                                 ForEach(active) { journey in
                                     NavigationLink(destination: JourneyDetailView(journey: journey)) {
                                         journeyCard(journey)
@@ -59,7 +58,7 @@ struct JournalView: View {
 
                         if !memories.isEmpty {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("MEMORIES")
+                                Text(L10n.string("journal.memories", default: "MEMORIES"))
                                     .font(WWTypography.caption(12).weight(.heavy))
                                     .foregroundStyle(WWColor.muted)
                                     .tracking(2.0)
@@ -93,7 +92,7 @@ struct JournalView: View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(WWColor.darkBackground)
+                    .fill(WWColor.contrastCard)
                     .frame(width: 56, height: 56)
                 
                 if let image = getPlantUIImage(for: journey) {
@@ -103,7 +102,7 @@ struct JournalView: View {
                         .frame(width: 44, height: 44)
                         .shadow(color: .black.opacity(0.2), radius: 5, y: 5)
                 } else {
-                    Text(stageEmoji(for: journey.completedTends))
+                    Text(stageEmoji(for: effectiveCompletedTends(for: journey)))
                         .font(.system(size: 24))
                 }
             }
@@ -122,7 +121,7 @@ struct JournalView: View {
             
             Image(systemName: "chevron.right")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(WWColor.white.opacity(0.2))
+                .foregroundStyle(WWColor.muted)
         }
         .padding(16)
         .background(WWColor.surface)
@@ -140,9 +139,17 @@ struct JournalView: View {
         default: return "🌳"
         }
     }
+
+    private func effectiveCompletedTends(for journey: PrayerJourney) -> Int {
+        let stored = journey.completedTends
+        if stored > 0 {
+            return stored
+        }
+        return journey.entries.filter { $0.completedAt != nil }.count
+    }
     
     private func getPlantUIImage(for journey: PrayerJourney) -> UIImage? {
-        let count = journey.completedTends
+        let count = effectiveCompletedTends(for: journey)
         let stageNum = max(1, min(5, (count % 15) / 3 + 1))
         let stageToken: String
         switch stageNum {
@@ -152,21 +159,8 @@ struct JournalView: View {
         case 4: stageToken = "mature"
         default: stageToken = "full_bloom"
         }
-        
-        let cat = journey.category.lowercased()
-        let theme: String
-        switch cat {
-        case _ where cat.contains("patien") || cat.contains("wait") || cat.contains("endur") || cat.contains("persevere"): theme = "patience"
-        case _ where cat.contains("peace") || cat.contains("anxi") || cat.contains("worry") || cat.contains("calm"): theme = "peace"
-        case _ where cat.contains("resilien") || cat.contains("strength") || cat.contains("overcom") || cat.contains("hardship") || cat.contains("stress"): theme = "resilience"
-        case _ where cat.contains("faith") || cat.contains("trust") || cat.contains("believ") || cat.contains("doubt"): theme = "faith"
-        case _ where cat.contains("joy") || cat.contains("celebrat") || cat.contains("happi") || cat.contains("praise") || cat.contains("gratitude"): theme = "joy"
-        case _ where cat.contains("wisdom") || cat.contains("clarity") || cat.contains("decision"): theme = "wisdom"
-        case _ where cat.contains("heal") || cat.contains("health") || cat.contains("sick"): theme = "healing"
-        case _ where cat.contains("disciplin") || cat.contains("focus") || cat.contains("habit"): theme = "discipline"
-        case _ where cat.contains("communit") || cat.contains("fellowship") || cat.contains("marriage") || cat.contains("family"): theme = "community"
-        default: theme = "basic"
-        }
+
+        let theme = journey.themeKey.rawValue
         
         let desired = "growth_stage_\(stageNum)_\(stageToken)_\(theme)"
         let fallback = "growth_stage_\(stageNum)_\(stageToken)_basic"
@@ -220,15 +214,15 @@ struct CreateJourneyView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WWColor.darkBackground.ignoresSafeArea()
+                WWColor.white.ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("What do you want to pray about right now?")
+                            Text(L10n.string("create_journey.prayer_title", default: "What do you want to pray about right now?"))
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
-                            TextField("Share what's on your heart...", text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
+                            TextField(L10n.string("create_journey.prayer_placeholder", default: "Share what's on your heart..."), text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
                                 .focused($focusedField, equals: .prayer)
                                 .textInputAutocapitalization(.sentences)
                                 .submitLabel(.done)
@@ -241,15 +235,15 @@ struct CreateJourneyView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(WWColor.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
                                 )
                         }
 
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("What goal are you moving toward with God right now?")
+                            Text(L10n.string("create_journey.goal_title", default: "What goal are you moving toward with God right now?"))
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
-                            TextField("Describe your goal...", text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
+                            TextField(L10n.string("create_journey.goal_placeholder", default: "Describe your goal..."), text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
                                 .focused($focusedField, equals: .goal)
                                 .textInputAutocapitalization(.sentences)
                                 .submitLabel(.done)
@@ -262,7 +256,7 @@ struct CreateJourneyView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(WWColor.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
                                 )
                         }
                         .padding(.bottom, 24)
@@ -272,17 +266,17 @@ struct CreateJourneyView: View {
                     .padding(.top, 20)
                 }
             }
-            .navigationTitle("New Journey")
+            .navigationTitle(L10n.string("create_journey.title", default: "New Journey"))
             .navigationBarTitleDisplayMode(.inline)
             .onTapGesture {
                 focusedField = nil
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.string("common.cancel", default: "Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button(L10n.string("create_journey.create_button", default: "Create")) {
                         createJourneyFromIntents()
                     }
                     .disabled(
@@ -296,18 +290,18 @@ struct CreateJourneyView: View {
                 if isSubmitting {
                     ZStack {
                         Color.black.opacity(0.2).ignoresSafeArea()
-                        ProgressView("Creating journey...")
+                        ProgressView(L10n.string("create_journey.creating", default: "Creating journey..."))
                             .padding(20)
                             .background(WWColor.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                 }
             }
-            .alert("Unable to Create Journey", isPresented: Binding(
+            .alert(L10n.string("journey.error.create_title", default: "Unable to Create Journey"), isPresented: Binding(
                 get: { alertMessage != nil },
                 set: { if !$0 { alertMessage = nil } }
             )) {
-                Button("OK", role: .cancel) {}
+                Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
             } message: {
                 Text(alertMessage ?? "")
             }
@@ -331,10 +325,16 @@ struct CreateJourneyView: View {
         case .blocked(let reason):
             switch reason {
             case .noInternet:
-                alertMessage = "You need an internet connection to start a new journey. You can still continue your existing journeys offline."
+                alertMessage = L10n.string(
+                    "journey.error.offline_create",
+                    default: "You need an internet connection to start a new journey. You can still continue your existing journeys offline."
+                )
             case .paywallRequired, .freeTierLimitReached:
                 // Journey creation is no longer paywalled in-app.
-                alertMessage = "Journey creation is currently unavailable. Please try again."
+                alertMessage = L10n.string(
+                    "journey.error.unavailable_create",
+                    default: "Journey creation is currently unavailable. Please try again."
+                )
             }
             return
         }
@@ -463,7 +463,7 @@ struct JourneyDetailView: View {
 
     var body: some View {
         ZStack {
-            WWColor.darkBackground.ignoresSafeArea()
+            WWColor.white.ignoresSafeArea()
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
@@ -515,7 +515,7 @@ struct JourneyDetailView: View {
                                                     .foregroundStyle(WWColor.muted)
                                                     .padding(12)
                                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                                    .background(WWColor.darkBackground)
+                                                    .background(WWColor.contrastCard)
                                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                             }
                                         }
@@ -565,6 +565,7 @@ struct JourneyDetailView: View {
 
 struct HistoricalTendDetailView: View {
     let entry: PrayerEntry
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @Query private var packages: [DailyJourneyPackageRecord]
     
@@ -576,18 +577,26 @@ struct HistoricalTendDetailView: View {
     
     var body: some View {
         ZStack {
-            WWColor.surface.ignoresSafeArea()
+            (colorScheme == .dark ? WWColor.surface : Color.white).ignoresSafeArea()
             let package = packages.first
             
             ScrollView {
                 VStack(spacing: 32) {
-                    Text(package?.reflectionThought ?? "Continue stepping faithfully.")
-                        .font(WWTypography.heading(26))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .lineSpacing(4)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 32)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("REFLECT")
+                            .font(WWTypography.caption(14).weight(.heavy))
+                            .foregroundStyle(WWColor.muted)
+                            .tracking(2.0)
+
+                        Text(package?.reflectionThought ?? "Continue stepping faithfully.")
+                            .font(WWTypography.heading(22))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .lineSpacing(4)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 32)
 
                     VStack(spacing: 24) {
                         Text(entry.scriptureText)
@@ -604,43 +613,52 @@ struct HistoricalTendDetailView: View {
                     .padding(.vertical, 32)
                     .padding(.horizontal, 16)
                     .frame(maxWidth: .infinity)
-                    .background(WWColor.darkBackground)
+                    .background(WWColor.contrastCard)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
-                            .stroke(WWColor.white.opacity(0.05), lineWidth: 1)
+                            .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
                     )
                     .padding(.horizontal, 24)
-                
-                    Text(package?.prayer ?? entry.prompt)
-                        .font(WWTypography.body(18))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .lineSpacing(6)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
 
-                    VStack(spacing: 20) {
-                        Text("THE TEND")
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("PRAY")
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
-                        
+
+                        Text(package?.prayer ?? entry.prompt)
+                            .font(WWTypography.body(18))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .lineSpacing(6)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("TEND")
+                            .font(WWTypography.caption(14).weight(.heavy))
+                            .foregroundStyle(WWColor.muted)
+                            .tracking(2.0)
+
                         Text(package?.smallStepQuestion ?? DailyJourneyPackageValidation.defaultSmallStepQuestion)
                             .font(WWTypography.heading(22))
                             .foregroundStyle(WWColor.nearBlack)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 16)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text(entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "(Step skipped)" : entry.actionStep)
                             .font(WWTypography.body(18))
                             .padding(.horizontal, 20)
                             .padding(.vertical, 18)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(WWColor.darkBackground)
+                            .background(WWColor.contrastCard)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(WWColor.white.opacity(0.05), lineWidth: 1))
-                            .padding(.horizontal, 24)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1))
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
                     .padding(.bottom, 124)
                 }
             }

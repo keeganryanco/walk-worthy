@@ -6,12 +6,14 @@ private let rootLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.k
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var subscriptionService: SubscriptionService
     @EnvironmentObject private var notificationService: NotificationService
     @EnvironmentObject private var connectivityService: ConnectivityService
 
     @Query(sort: \OnboardingProfile.createdAt) private var profiles: [OnboardingProfile]
     @Query(sort: \AppSettings.lastSessionDate, order: .reverse) private var settingsRows: [AppSettings]
+    @Query(sort: \ReminderSchedule.sortOrder) private var reminderSchedules: [ReminderSchedule]
     @Query(sort: \PrayerJourney.createdAt, order: .reverse) private var allJourneys: [PrayerJourney]
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -23,10 +25,12 @@ struct RootView: View {
     @State private var trackedOnboardingStart = false
     @State private var onboardingErrorMessage: String?
     @State private var isBootstrappingJourney = false
+    @State private var onboardingExperimentConfig: OnboardingExperimentConfig = .default
 
     private let journeyContentService = JourneyContentService()
     private let bootstrapProvider = BackendJourneyBootstrapProvider()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
+    private let onboardingExperimentProvider: OnboardingExperimentConfigProviding = OnboardingExperimentServiceFactory.makeDefault()
 
     private var profile: OnboardingProfile? {
         profiles.first
@@ -48,17 +52,35 @@ struct RootView: View {
                     onRequirePaywall: triggerPaywall
                 )
             } else {
-                ExperimentalOnboardingFlowView { completedProfile in
-                    Task { await seedInitialExperience(with: completedProfile) }
-                }
+                ExperimentalOnboardingFlowView(
+                    onGenerate: { name, prayer, goal in
+                        return await generateJourneyInline(name: name, prayer: prayer, goal: goal, reminderWindow: "System")
+                    },
+                    onComplete: { completedProfile in
+                        Task { await completeOnboarding(with: completedProfile) }
+                    },
+                    onRequirePaywall: triggerPaywall,
+                    experimentConfig: onboardingExperimentConfig
+                )
             }
         }
         .task {
+            onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
+            analytics.track(
+                .onboardingExperimentAssigned,
+                properties: [
+                    "variant": onboardingExperimentConfig.variant,
+                    "pre_count": String(onboardingExperimentConfig.preJourneyOrder.count),
+                    "post_count": String(onboardingExperimentConfig.postJourneyOrder.count),
+                    "pre_steps": onboardingExperimentConfig.preJourneyOrder.joined(separator: ","),
+                    "post_steps": onboardingExperimentConfig.postJourneyOrder.joined(separator: ",")
+                ]
+            )
             await subscriptionService.initialize()
             await notificationService.refreshAuthorizationStatus()
             bootstrapSettingsIfNeeded()
             registerSessionIfNeeded()
-            showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: subscriptionService.isPremium, settings: settings)
+            syncPaywallPresentationState()
             await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
             syncWidgetSnapshot()
@@ -66,10 +88,15 @@ struct RootView: View {
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
             if isPremium {
                 settings?.pendingPaywallReason = nil
+                settings?.clearPaywallDismissed()
+                try? modelContext.save()
                 showPaywall = false
             } else {
-                showPaywall = MonetizationPolicy.requiresPaywall(hasPremium: false, settings: settings)
+                syncPaywallPresentationState()
             }
+        }
+        .onChange(of: subscriptionService.paywallMode) { _, _ in
+            syncPaywallPresentationState()
         }
         .onChange(of: connectivityService.isOnline) { _, isOnline in
             guard isOnline else { return }
@@ -83,35 +110,49 @@ struct RootView: View {
             syncWidgetSnapshot()
             Task { await prefetchDailyPackagesIfPossible() }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            syncPaywallPresentationState()
+        }
         .onOpenURL(perform: handleDeepLink)
         .onAppear {
             trackOnboardingStartedIfNeeded()
         }
         .onChange(of: showPaywall) { _, isShown in
             guard isShown else { return }
+            if subscriptionService.paywallMode == .firstTendReviewThenPaywall {
+                FirstTendMilestoneService.markPaywallShownAfterFirstTend(settings: settings)
+                try? modelContext.save()
+            }
             analytics.track(
                 .paywallShown,
                 properties: [
                     "trigger_reason": settings?.pendingPaywallReason ?? "unspecified",
+                    "paywall_mode": subscriptionService.paywallMode.rawValue,
                     "has_premium": subscriptionService.isPremium ? "true" : "false"
                 ]
             )
         }
-        .fullScreenCover(isPresented: $showPaywall) {
+        .fullScreenCover(isPresented: $showPaywall, onDismiss: {
+            handlePaywallDismissed()
+        }) {
+            let config = paywallConfigForCurrentState()
             PaywallView(
                 triggerReason: settings?.pendingPaywallReason,
-                isPremium: subscriptionService.isPremium
+                isPremium: subscriptionService.isPremium,
+                copyOverride: config
             )
+            .interactiveDismissDisabled(!config.isDismissable)
             .environmentObject(subscriptionService)
         }
         .alert(
-            "Unable to Create Journey",
+            L10n.string("journey.error.create_title", default: "Unable to Create Journey"),
             isPresented: Binding(
                 get: { onboardingErrorMessage != nil },
                 set: { if !$0 { onboardingErrorMessage = nil } }
             )
         ) {
-            Button("OK", role: .cancel) {}
+            Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
         } message: {
             Text(onboardingErrorMessage ?? "")
         }
@@ -136,37 +177,137 @@ struct RootView: View {
         settings.lastSessionDate = today
         settings.totalSessions += 1
 
-        if settings.totalSessions >= MonetizationPolicy.sessionPaywallThreshold {
-            settings.pendingPaywallReason = PaywallTriggerReason.sessionCount.rawValue
-        }
-
         try? modelContext.save()
     }
 
     private func triggerPaywall(_ reason: PaywallTriggerReason) {
+        guard !AppConstants.Debug.bypassPaywall else { return }
+        // Paywall should only be presented during onboarding flow.
+        guard profile == nil else { return }
         settings?.pendingPaywallReason = reason.rawValue
         try? modelContext.save()
         showPaywall = true
     }
 
-    private func seedInitialExperience(with completedProfile: OnboardingProfile) async {
+    private func completeOnboarding(with completedProfile: OnboardingProfile) async {
         modelContext.insert(completedProfile)
-        try? modelContext.save()
-
-        await bootstrapFirstJourneyIfNeeded()
-
+        
         if settings == nil {
             modelContext.insert(AppSettings())
         }
+        ensureDefaultReminderScheduleIfNeeded(from: completedProfile.reminderWindow)
 
         try? modelContext.save()
-        analytics.track(.onboardingCompleted, properties: [:])
+        analytics.track(
+            .onboardingCompleted,
+            properties: [
+                "variant": onboardingExperimentConfig.variant,
+                "pre_count": String(onboardingExperimentConfig.preJourneyOrder.count),
+                "post_count": String(onboardingExperimentConfig.postJourneyOrder.count),
+                "pre_steps": onboardingExperimentConfig.preJourneyOrder.joined(separator: ","),
+                "post_steps": onboardingExperimentConfig.postJourneyOrder.joined(separator: ",")
+            ]
+        )
 
         Task {
-            let granted = await notificationService.requestAuthorization()
-            guard granted else { return }
-            let reminder = hourForReminderWindow(completedProfile.reminderWindow)
-            await notificationService.scheduleDailyReminder(hour: reminder, minute: 0)
+            await notificationService.refreshAuthorizationStatus()
+            guard notificationService.authorizationStatus == .authorized else { return }
+            let reminders = fetchReminderSchedules()
+            if reminders.isEmpty {
+                let reminder = hourForReminderWindow(completedProfile.reminderWindow)
+                await notificationService.scheduleDailyReminder(hour: reminder, minute: 0)
+            } else {
+                await notificationService.scheduleReminderSchedules(reminders, modelContext: modelContext)
+            }
+        }
+    }
+
+    private func generateJourneyInline(name: String, prayer: String, goal: String, reminderWindow: String) async -> DailyJourneyPackageRecord? {
+        guard connectivityService.isOnline else {
+            rootLogger.log("inline bootstrap skipped: offline")
+            return nil
+        }
+        guard !isBootstrappingJourney else {
+            rootLogger.log("inline bootstrap skipped: already running")
+            return nil
+        }
+
+        isBootstrappingJourney = true
+        defer { isBootstrappingJourney = false }
+        rootLogger.log("inline bootstrap started")
+
+        do {
+            let payload = try await bootstrapProvider.bootstrap(
+                name: name,
+                prayerIntentText: prayer,
+                goalIntentText: goal,
+                reminderWindow: reminderWindow
+            )
+            let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
+
+            let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
+            let firstJourney = PrayerJourney(
+                title: payload.journeyTitle,
+                category: payload.journeyCategory,
+                themeKey: theme,
+                status: .active
+            )
+            modelContext.insert(firstJourney)
+
+            let entry = PrayerEntry(
+                prompt: initialPackage.prayer,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureText: initialPackage.scriptureParaphrase,
+                actionStep: "",
+                journey: firstJourney
+            )
+            modelContext.insert(entry)
+
+            let dayKey = JourneyContentService.dayKey(for: .now)
+            let record = DailyJourneyPackageRecord(
+                journeyID: firstJourney.id,
+                dayKey: dayKey,
+                reflectionThought: initialPackage.reflectionThought,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureParaphrase: initialPackage.scriptureParaphrase,
+                prayer: initialPackage.prayer,
+                smallStepQuestion: initialPackage.smallStepQuestion,
+                suggestedSteps: initialPackage.suggestedSteps,
+                completionSuggestion: initialPackage.completionSuggestion,
+                generatedAt: initialPackage.generatedAt,
+                source: .remote,
+                linkedEntryID: entry.id
+            )
+            modelContext.insert(record)
+
+            let snapshot = JourneyMemorySnapshot(
+                journeyID: firstJourney.id,
+                summary: payload.initialMemory.summary,
+                winsSummary: payload.initialMemory.winsSummary,
+                blockersSummary: payload.initialMemory.blockersSummary,
+                preferredTone: payload.initialMemory.preferredTone
+            )
+            modelContext.insert(snapshot)
+
+            JourneyProgressService.logEvent(
+                journeyID: firstJourney.id,
+                type: .packageGenerated,
+                notes: "Initial onboarding package seeded from inline endpoint.",
+                modelContext: modelContext
+            )
+
+            try? modelContext.save()
+            syncWidgetSnapshot()
+            rootLogger.log("inline bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public)")
+            analytics.track(.journeyCreated, properties: ["source": "inline_bootstrap"])
+            return record
+        } catch {
+            let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            rootLogger.error("inline bootstrap failed error=\(details, privacy: .public)")
+            onboardingErrorMessage = details.isEmpty
+                ? "We couldn't create your first journey right now. Connect to the internet and try again."
+                : "We couldn't create your first journey: \(details)"
+            return nil
         }
     }
 
@@ -231,6 +372,7 @@ struct RootView: View {
                 goalIntentText: profile.growthGoal,
                 reminderWindow: profile.reminderWindow
             )
+            let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
 
             let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
             let firstJourney = PrayerJourney(
@@ -242,9 +384,9 @@ struct RootView: View {
             modelContext.insert(firstJourney)
 
             let entry = PrayerEntry(
-                prompt: payload.initialPackage.prayer,
-                scriptureReference: payload.initialPackage.scriptureReference,
-                scriptureText: payload.initialPackage.scriptureParaphrase,
+                prompt: initialPackage.prayer,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureText: initialPackage.scriptureParaphrase,
                 actionStep: "",
                 journey: firstJourney
             )
@@ -254,14 +396,14 @@ struct RootView: View {
             let record = DailyJourneyPackageRecord(
                 journeyID: firstJourney.id,
                 dayKey: dayKey,
-                reflectionThought: payload.initialPackage.reflectionThought,
-                scriptureReference: payload.initialPackage.scriptureReference,
-                scriptureParaphrase: payload.initialPackage.scriptureParaphrase,
-                prayer: payload.initialPackage.prayer,
-                smallStepQuestion: payload.initialPackage.smallStepQuestion,
-                suggestedSteps: payload.initialPackage.suggestedSteps,
-                completionSuggestion: payload.initialPackage.completionSuggestion,
-                generatedAt: payload.initialPackage.generatedAt,
+                reflectionThought: initialPackage.reflectionThought,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureParaphrase: initialPackage.scriptureParaphrase,
+                prayer: initialPackage.prayer,
+                smallStepQuestion: initialPackage.smallStepQuestion,
+                suggestedSteps: initialPackage.suggestedSteps,
+                completionSuggestion: initialPackage.completionSuggestion,
+                generatedAt: initialPackage.generatedAt,
                 source: .remote,
                 linkedEntryID: entry.id
             )
@@ -307,6 +449,82 @@ struct RootView: View {
         default:
             return 8
         }
+    }
+
+    private func ensureDefaultReminderScheduleIfNeeded(from reminderWindow: String) {
+        guard reminderSchedules.isEmpty else { return }
+        let reminder = ReminderSchedule(
+            hour: hourForReminderWindow(reminderWindow),
+            minute: 0,
+            isEnabled: true,
+            sortOrder: 0
+        )
+        modelContext.insert(reminder)
+    }
+
+    private func syncPaywallPresentationState(now: Date = .now) {
+        if AppConstants.Debug.bypassPaywall {
+            settings?.pendingPaywallReason = nil
+            showPaywall = false
+            return
+        }
+
+        let hardPaywallRequired = MonetizationPolicy.requiresHardPaywallAfterDismiss(
+            settings: settings,
+            paywallMode: subscriptionService.paywallMode,
+            now: now
+        )
+        let onboardingPaywallPending =
+            settings?.pendingPaywallReason == PaywallTriggerReason.onboardingCompletion.rawValue
+            && settings?.paywallDismissedAt == nil
+
+        guard profile == nil || hardPaywallRequired || onboardingPaywallPending else {
+            showPaywall = false
+            return
+        }
+        showPaywall = onboardingPaywallPending || MonetizationPolicy.requiresPaywall(
+            hasPremium: subscriptionService.isPremium,
+            settings: settings,
+            paywallMode: subscriptionService.paywallMode,
+            now: now
+        )
+    }
+
+    private func paywallConfigForCurrentState(now: Date = .now) -> PaywallRemoteConfig {
+        let base = subscriptionService.paywallConfig
+        let hardPaywallRequired = MonetizationPolicy.requiresHardPaywallAfterDismiss(
+            settings: settings,
+            paywallMode: subscriptionService.paywallMode,
+            now: now
+        )
+
+        guard hardPaywallRequired else { return base }
+
+        return PaywallRemoteConfig(
+            headline: base.headline,
+            subheadline: "Unlock Tend Premium to continue your journey.",
+            ctaTitle: "Continue with Premium",
+            annualBadgeText: base.annualBadgeText,
+            footnote: "Auto-renews unless canceled in Settings.",
+            defaultPackageToken: base.defaultPackageToken,
+            isDismissable: false
+        )
+    }
+
+    private func handlePaywallDismissed(now: Date = .now) {
+        guard !subscriptionService.isPremium else { return }
+        let config = paywallConfigForCurrentState(now: now)
+        guard config.isDismissable else { return }
+        guard let settings else { return }
+
+        settings.markPaywallDismissed(now: now)
+        settings.pendingPaywallReason = nil
+        try? modelContext.save()
+    }
+
+    private func fetchReminderSchedules() -> [ReminderSchedule] {
+        let descriptor = FetchDescriptor<ReminderSchedule>(sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.createdAt)])
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func handleDeepLink(_ url: URL) {

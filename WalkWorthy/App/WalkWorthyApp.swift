@@ -3,6 +3,7 @@ import SwiftData
 
 @main
 struct TendApp: App {
+    @AppStorage(AppLanguage.storageKey) private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @StateObject private var subscriptionService = SubscriptionService()
     @StateObject private var notificationService = NotificationService()
     @StateObject private var connectivityService = ConnectivityService()
@@ -16,6 +17,7 @@ struct TendApp: App {
                 AnsweredPrayer.self,
                 OnboardingProfile.self,
                 AppSettings.self,
+                ReminderSchedule.self,
                 JourneyMemorySnapshot.self,
                 GlobalLightMemory.self,
                 JourneyProgressEvent.self,
@@ -29,11 +31,15 @@ struct TendApp: App {
     }
 
     var body: some Scene {
+        let selectedLanguage = AppLanguage(rawValue: appLanguageRawValue) ?? .system
+        let locale = AppLanguage.resolvedLocale(for: selectedLanguage)
+
         WindowGroup {
             RootView()
                 .environmentObject(subscriptionService)
                 .environmentObject(notificationService)
                 .environmentObject(connectivityService)
+                .environment(\.locale, locale)
         }
         .modelContainer(modelContainer)
     }

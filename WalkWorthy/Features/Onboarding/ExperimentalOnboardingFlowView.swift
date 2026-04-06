@@ -18,6 +18,7 @@ struct ExperimentalOnboardingFlowView: View {
         case tendPrayer
         case tendNextStep
         case creationSprout
+        case backgroundSelection
         case review
         case reminder
         case widget
@@ -25,7 +26,11 @@ struct ExperimentalOnboardingFlowView: View {
 
     let onGenerate: (String, String, String) async -> DailyJourneyPackageRecord?
     let onComplete: (OnboardingProfile) -> Void
+    let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let experimentConfig: OnboardingExperimentConfig
 
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.requestReview) private var requestReview
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var notificationService: NotificationService
@@ -45,11 +50,34 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var actionStepText = ""
     @State private var generatedPackage: DailyJourneyPackageRecord?
 
+    @AppStorage("homeBackgroundTheme") private var backgroundTheme: HomeBackgroundTheme = .morningGarden
+
     @State private var reviewActionTaken = false
+    @State private var resolvedExperimentConfig: OnboardingExperimentConfig = .default
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
     private let reminderOptions = ["Morning", "Afternoon", "Evening"]
+
+    private var firstJourneyThemeSuffix: String {
+        guard let entryID = generatedPackage?.linkedEntryID else { return "basic" }
+        let descriptor = FetchDescriptor<PrayerEntry>(
+            predicate: #Predicate<PrayerEntry> { $0.id == entryID }
+        )
+        guard let entry = try? modelContext.fetch(descriptor).first,
+              let journey = entry.journey else {
+            return "basic"
+        }
+        return journey.themeKey.rawValue
+    }
+
+    private var firstStagePlantImageName: String {
+        "growth_stage_1_seed_\(firstJourneyThemeSuffix)"
+    }
+
+    private var supportsWidgetsOnCurrentDevice: Bool {
+        UIDevice.current.userInterfaceIdiom != .pad
+    }
 
     // MARK: - Body
     var body: some View {
@@ -96,7 +124,7 @@ struct ExperimentalOnboardingFlowView: View {
                         .padding(.top, 12)
                 }
             }
-            .animation(.easeInOut(duration: 0.35), value: step)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: step)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if step != .creationSprout && step != .generating {
                     ctaRow
@@ -107,7 +135,7 @@ struct ExperimentalOnboardingFlowView: View {
                 }
             }
         }
-        .onChange(of: step, initial: false) { _, newStep in
+        .onChange(of: step) { _, newStep in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 switch newStep {
                 case .name: focusedField = .name
@@ -132,13 +160,23 @@ struct ExperimentalOnboardingFlowView: View {
                 analytics.track(.reviewPromptShown, properties: ["source": "onboarding_step"])
             }
         }
+        .onAppear {
+            resolvedExperimentConfig = experimentConfig
+            ensureCurrentStepIsValidForSequence()
+        }
+        .onChange(of: experimentConfig) { _, newConfig in
+            guard step == .intro else { return }
+            resolvedExperimentConfig = newConfig
+            ensureCurrentStepIsValidForSequence()
+        }
     }
     
     // MARK: - Layout Areas
     
     private var progressBar: some View {
-        let totalSteps = Step.allCases.count - 4 // Ignore intro, sprout, review, etc
-        let currentIndex = max(0, step.rawValue - 1)
+        let trackedSteps = onboardingFlowSequence.filter { ![.intro, .generating, .creationSprout, .widget].contains($0) }
+        let currentIndex = max(0, trackedSteps.firstIndex(of: step) ?? 0)
+        let totalSteps = max(1, trackedSteps.count)
         
         return HStack(spacing: 6) {
             ForEach(0..<totalSteps, id: \.self) { index in
@@ -180,25 +218,86 @@ struct ExperimentalOnboardingFlowView: View {
                     .scaledToFit()
                     .frame(width: min(height * 0.48, 132))
             case .widget:
-                Image("OnboardingNotificationsPhone")
+                Image("OnboardingWidgetScreenshot")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: min(height * 0.92, 340))
+                    .frame(height: min(height * 0.98, 560))
             case .creationSprout:
-                ZStack {
-                    Circle()
-                        .fill(WWColor.growGreen.opacity(0.15))
-                        .frame(width: 180, height: 180)
-                        .scaleEffect(1.0 + sproutGlow)
-                        .opacity(sproutOpacity)
-                        .blur(radius: 20)
+                ZStack(alignment: .bottom) {
+                    // Halo (Evolution style)
+                    if sproutGlow > 0 {
+                        Circle()
+                            .fill(WWColor.morningGold.opacity(0.4))
+                            .frame(width: 250, height: 250)
+                            .blur(radius: 40)
+                            .scaleEffect(haloScale)
+                            .offset(y: -40)
+                    }
 
-                    Image("TendMark")
+                    // Soil
+                    Image("generic_soil")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .scaleEffect(sproutScale)
-                        .opacity(sproutOpacity)
+                        .frame(width: 160)
+                        .opacity(soilOpacity)
+                        .colorMultiply(isSilhouette ? .black : Color(white: 1.0 - soilDarkness * 0.4))
+                        .brightness(isSilhouette ? -1 : 0)
+                        .zIndex(0)
+
+                    // Seed
+                    if !revealPlant {
+                        Image("generic_seed")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 50)
+                            .offset(y: seedOffset)
+                            .opacity(seedOpacity)
+                            .colorMultiply(isSilhouette ? .black : .white)
+                            .brightness(isSilhouette ? -1 : 0)
+                            .zIndex(1)
+                    } else {
+                        // Evolved Plant Reveal
+                        Image(firstStagePlantImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120)
+                            .offset(y: -20)
+                            .opacity(plantOpacity)
+                            .colorMultiply(isSilhouette ? .black : .white)
+                            .brightness(isSilhouette ? -1 : 0)
+                            .shadow(color: isSilhouette ? .clear : .black.opacity(0.3), radius: 10, y: 5)
+                            .scaleEffect(isSilhouette ? 0.9 : 1.1)
+                            .zIndex(2)
+                    }
+                }
+                .frame(height: 180)
+            case .backgroundSelection:
+                ZStack(alignment: .bottom) {
+                    if let assetName = backgroundTheme.assetName {
+                        Image(assetName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: metrics.size.width - 40, height: height)
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .overlay(
+                                LinearGradient(
+                                    colors: [.clear, WWColor.nearBlack.opacity(0.4)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    } else {
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(solidThemeBackgroundColor)
+                            .frame(width: metrics.size.width - 40, height: height)
+                    }
+
+                    Image(firstStagePlantImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120)
+                        .offset(y: -20)
+                        .shadow(color: .black.opacity(0.4), radius: 15, y: 10)
                 }
             case .review, .bannerName, .bannerTruth, .bannerChange:
                 EmptyView() // Text-heavy screens might use the full space or just bottom
@@ -248,6 +347,8 @@ struct ExperimentalOnboardingFlowView: View {
                     widgetContent
                 case .creationSprout:
                     creationSproutContent
+                case .backgroundSelection:
+                    backgroundSelectionContent
                 }
             }
             .frame(maxWidth: .infinity, alignment: step == .intro || isBannerStep ? .center : .leading)
@@ -268,16 +369,16 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var introContent: some View {
         VStack(spacing: 12) {
-            Text("Welcome to Tend")
+            Text(copy("intro_title", fallback: "Welcome to Tend"))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
             
-            Text("pray. act. grow.")
+            Text(copy("intro_subtitle", fallback: "pray. act. grow."))
                 .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.growGreen)
             
-            Text("turn your prayers into small\nsteps of real growth")
+            Text(copy("intro_tagline", fallback: "turn your prayers into small\nsteps of real growth"))
                 .font(WWTypography.heading(18).italic())
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
@@ -287,11 +388,11 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var nameContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("What's your name?")
+            Text(copy("name_title", fallback: "What's your name?"))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
             
-            TextField("Enter your name", text: $name)
+            TextField(copy("name_placeholder", fallback: "Enter your name"), text: $name)
                 .focused($focusedField, equals: .name)
                 .font(WWTypography.heading(22))
                 .foregroundStyle(WWColor.nearBlack)
@@ -306,12 +407,12 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var prayerIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("What do you want to pray about right now?")
+            Text(copy("prayer_intent_title", fallback: "What do you want to pray about right now?"))
                 .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
 
-            TextField("My prayer is...", text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
+            TextField(copy("prayer_intent_placeholder", fallback: "My prayer is..."), text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
                 .focused($focusedField, equals: .prayer)
                 .submitLabel(.done)
                 .onSubmit { focusedField = nil }
@@ -332,12 +433,12 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var goalIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("What goal are you moving toward with God right now?")
+            Text(copy("goal_intent_title", fallback: "What goal are you moving toward with God right now?"))
                 .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
 
-            TextField("My goal is...", text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
+            TextField(copy("goal_intent_placeholder", fallback: "My goal is..."), text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
                 .focused($focusedField, equals: .goal)
                 .submitLabel(.done)
                 .onSubmit { focusedField = nil }
@@ -361,7 +462,7 @@ struct ExperimentalOnboardingFlowView: View {
             ProgressView()
                 .tint(WWColor.growGreen)
                 .scaleEffect(1.5)
-            Text("Designing your journey...")
+            Text(copy("generating_title", fallback: "Designing your journey..."))
                 .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.nearBlack)
         }
@@ -370,14 +471,14 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var tendReflectionContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Your first step is ready.")
+            Text(copy("tend_reflection_title", fallback: "Your first step is ready."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
             
             WWCard {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(generatedPackage?.scriptureReference ?? "Scripture")
+                    Text(generatedPackage?.scriptureReference ?? copy("tend_scripture_label", fallback: "Scripture"))
                         .font(WWTypography.caption(12).weight(.bold))
                         .foregroundStyle(WWColor.growGreen)
                         .tracking(1.0)
@@ -405,12 +506,12 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var tendPrayerContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Take a moment to pray.")
+            Text(copy("tend_prayer_title", fallback: "Take a moment to pray."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
             
-            Text("Read this prayer drawn from your intent and scripture.")
+            Text(copy("tend_prayer_subtitle", fallback: "Read a personal prayer shaped by your journey and today's scripture."))
                 .font(WWTypography.heading(19))
                 .foregroundStyle(WWColor.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -430,15 +531,15 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var tendNextStepContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Choose your first step.")
+            Text(copy("tend_step_title", fallback: "Choose your first step."))
                 .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text(generatedPackage?.smallStepQuestion ?? "What is one small step you can take today?")
+            Text(generatedPackage?.smallStepQuestion ?? copy("tend_step_question_fallback", fallback: "What is one small step you can take today?"))
                 .font(WWTypography.heading(20))
                 .foregroundStyle(WWColor.nearBlack)
             
-            TextField("My next step is...", text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
+            TextField(copy("tend_step_placeholder", fallback: "My next step is..."), text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
                 .focused($focusedField, equals: .action)
                 .submitLabel(.done)
                 .onSubmit { focusedField = nil }
@@ -459,31 +560,26 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var bannerNameContent: some View {
         VStack(spacing: 16) {
-            Text("\(firstNameDisplay), your prayers matter.")
+            Text(applyFirstNamePlaceholder(copy("banner_name_title", fallback: "\(firstNameDisplay), your prayers matter.")))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
 
-            (
-                Text("so does your ")
-                    .font(WWTypography.display(32))
-                    .foregroundStyle(WWColor.nearBlack)
-                + Text("next step.")
-                    .font(WWTypography.display(32))
-                    .foregroundStyle(WWColor.growGreen)
-            )
-            .multilineTextAlignment(.center)
+            Text(copy("banner_name_subtitle", fallback: "so does your next step."))
+                .font(WWTypography.display(32))
+                .foregroundStyle(WWColor.growGreen)
+                .multilineTextAlignment(.center)
         }
     }
     
     private var bannerTruthContent: some View {
         VStack(spacing: 20) {
-            Text("What you pray can shape\nhow you live.")
+            Text(copy("banner_truth_title", fallback: "What you pray can shape\nhow you live."))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
 
-            Text("Tend helps you turn\nyour prayers into your habits,\ndecisions, and daily life.")
+            Text(copy("banner_truth_subtitle", fallback: "Tend helps you turn\nyour prayers into your habits,\ndecisions, and daily life."))
                 .font(WWTypography.heading(22))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
@@ -492,7 +588,7 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var bannerChangeContent: some View {
         VStack(spacing: 20) {
-            Text("What if prayer became\nthe start of real change?")
+            Text(copy("banner_change_title", fallback: "What if prayer became\nthe start of real change?"))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
@@ -501,38 +597,41 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var methodContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Here’s how Tend works")
+            Text(copy("method_title", fallback: "Here’s how Tend works"))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
                 .padding(.bottom, 8)
             
             VStack(alignment: .leading, spacing: 14) {
-                featureBullet(lead: "Pray", text: "about what matters")
-                featureBullet(lead: "Reflect", text: "with Scripture")
-                featureBullet(lead: "Choose", text: "one small step")
-                featureBullet(lead: "Grow", text: "through daily faithfulness")
+                featureBullet(
+                    lead: copy("method_bullet_pray_lead", fallback: "Pray"),
+                    text: copy("method_bullet_pray_text", fallback: "about what matters")
+                )
+                featureBullet(
+                    lead: copy("method_bullet_reflect_lead", fallback: "Reflect"),
+                    text: copy("method_bullet_reflect_text", fallback: "with Scripture")
+                )
+                featureBullet(
+                    lead: copy("method_bullet_choose_lead", fallback: "Choose"),
+                    text: copy("method_bullet_choose_text", fallback: "one small step")
+                )
+                featureBullet(
+                    lead: copy("method_bullet_grow_lead", fallback: "Grow"),
+                    text: copy("method_bullet_grow_text", fallback: "through daily faithfulness")
+                )
             }
         }
     }
     
     private var groundingContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Faith grows when it’s lived.")
+            Text(copy("grounding_title", fallback: "Faith grows when it’s lived."))
                 .font(WWTypography.heading(28).italic())
                 .foregroundStyle(WWColor.nearBlack)
             
             WWCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    (
-                        Text("what ").foregroundStyle(WWColor.growGreen)
-                        + Text("you pray can shape ")
-                        + Text("how ").foregroundStyle(WWColor.growGreen)
-                        + Text("you live, and small ")
-                        + Text("faithful steps ").foregroundStyle(WWColor.growGreen)
-                        + Text("can bear ")
-                        + Text("real fruit").foregroundStyle(WWColor.growGreen)
-                        + Text(" over time.")
-                    )
+                    Text(copy("grounding_body", fallback: "What you pray can shape how you live, and small faithful steps can bear real fruit over time."))
                     .font(WWTypography.heading(18))
                     .foregroundStyle(WWColor.nearBlack)
                 }
@@ -542,11 +641,11 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var reminderContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Growth is easier when it stays in front of you.")
+            Text(copy("reminder_title", fallback: "Growth is easier when it stays in front of you."))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text("Set a reminder to return to your prayer journey and take your next small step.")
+            Text(copy("reminder_subtitle", fallback: "Set a reminder to return to your prayer journey and take your next small step."))
                 .font(WWTypography.heading(18))
                 .foregroundStyle(WWColor.nearBlack.opacity(0.8))
 
@@ -590,7 +689,7 @@ struct ExperimentalOnboardingFlowView: View {
                     modelContext.insert(newReminder)
                     try? modelContext.save()
                 } label: {
-                    Label("Add Reminder", systemImage: "plus.circle.fill")
+                    Label(copy("reminder_add_button", fallback: "Add Reminder"), systemImage: "plus.circle.fill")
                         .foregroundStyle(WWColor.growGreen)
                         .font(WWTypography.heading(16))
                 }
@@ -606,51 +705,177 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var widgetContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Keep your journey close.")
+            Text(copy("widget_title", fallback: "Keep your journey close."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text("See your current prayer, verse, and next step right from your home screen.")
+            Text(copy("widget_subtitle", fallback: "See your current prayer, verse, and next step right from your home screen."))
                 .font(WWTypography.heading(20))
                 .foregroundStyle(WWColor.nearBlack.opacity(0.8))
         }
     }
     
-    @State private var sproutOpacity: Double = 0.0
-    @State private var sproutScale: Double = 0.4
+    // Seed Animation States
+    @State private var soilOpacity: Double = 0.0
+    @State private var seedOffset: CGFloat = -180
+    @State private var seedOpacity: Double = 0.0
+    @State private var soilDarkness: Double = 0.0
+    @State private var plantOpacity: Double = 0.0
     @State private var sproutGlow: Double = 0.0
+    @State private var isSilhouette: Bool = false
+    @State private var revealPlant: Bool = false
+    @State private var haloScale: Double = 0.8
     
     private var creationSproutContent: some View {
         VStack {
-            Text("Creating your first journey...")
+            Text(copy("creation_sprout_title", fallback: "Planting your seed..."))
                 .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.white)
-                .opacity(sproutOpacity)
+                .opacity(soilOpacity > 0 ? 1.0 : 0.0)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 40)
         .onAppear {
-            withAnimation(.easeOut(duration: 1.2)) {
-                sproutOpacity = 1.0
-                sproutScale = 1.0
+            runSeedSequence()
+        }
+    }
+    
+    private func runSeedSequence() {
+        if reduceMotion {
+            soilOpacity = 1.0
+            seedOffset = -30
+            seedOpacity = 0.0
+            soilDarkness = 0.0
+            plantOpacity = 1.0
+            sproutGlow = 0.0
+            isSilhouette = false
+            revealPlant = true
+            haloScale = 1.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                step = .backgroundSelection
             }
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                sproutGlow = 0.3
+            return
+        }
+
+        // Reset so revisiting this step always replays cleanly.
+        soilOpacity = 0.0
+        seedOffset = -180
+        seedOpacity = 0.0
+        soilDarkness = 0.0
+        plantOpacity = 0.0
+        sproutGlow = 0.0
+        isSilhouette = false
+        revealPlant = false
+        haloScale = 0.8
+
+        // 1. Soil appears
+        withAnimation(.easeOut(duration: 0.6)) {
+            soilOpacity = 1.0
+            seedOffset = -180 // reset seed high up
+        }
+        
+        // 2. Seed drops
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                seedOpacity = 1.0
+                seedOffset = -30 // drops into soil
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                withAnimation { step = .review }
+        }
+        
+        // 3. Darken into Silhouette & Glow
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            withAnimation(.easeInOut(duration: 0.6)) {
+                isSilhouette = true
+                soilDarkness = 1.0
+                sproutGlow = 1.0
+            }
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                haloScale = 1.2
+            }
+        }
+        
+        // 4. Swap seed shadow for plant shadow
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                revealPlant = true
+                plantOpacity = 1.0
+            }
+        }
+        
+        // 5. Bright Reveal!
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+            withAnimation(.easeOut(duration: 0.8)) {
+                isSilhouette = false
+            }
+        }
+        
+        // 6. Advance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.5) {
+            withAnimation { step = .backgroundSelection }
+        }
+    }
+    
+    private var backgroundSelectionContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(copy("background_selection_title", fallback: "Set your scene."))
+                .font(WWTypography.display(36))
+                .foregroundStyle(WWColor.nearBlack)
+            
+            Text(copy("background_selection_subtitle", fallback: "Choose a background theme for your home screen."))
+                .font(WWTypography.heading(20))
+                .foregroundStyle(WWColor.muted)
+                
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(HomeBackgroundTheme.allCases) { theme in
+                        Button {
+                            withAnimation { backgroundTheme = theme }
+                        } label: {
+                            VStack(spacing: 8) {
+                                if let assetName = theme.assetName {
+                                    Image(assetName)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 80, height: 100)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(backgroundTheme == theme ? WWColor.growGreen : Color.clear, lineWidth: 3)
+                                        )
+                                } else {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(solidThemeBackgroundColor)
+                                        .frame(width: 80, height: 100)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(backgroundTheme == theme ? WWColor.growGreen : Color.clear, lineWidth: 3)
+                                        )
+                                }
+                                Text(theme.rawValue)
+                                    .font(WWTypography.caption(12).weight(.medium))
+                                    .foregroundStyle(backgroundTheme == theme ? WWColor.nearBlack : WWColor.muted)
+                                    .lineLimit(1)
+                                    .frame(width: 80)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
             }
         }
     }
     
     private var reviewContent: some View {
         VStack(spacing: 24) {
-            Text("Enjoying Tend so far?")
+            Text(copy("review_title", fallback: "Enjoying Tend so far?"))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
 
-            Text("A quick App Store review helps more people discover Tend.")
+            Text(copy("review_subtitle", fallback: "A quick App Store review helps more people discover Tend."))
                 .font(WWTypography.heading(18))
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
@@ -661,7 +886,7 @@ struct ExperimentalOnboardingFlowView: View {
                     reviewActionTaken = true
                     analytics.track(.reviewPromptShown, properties: ["action": "request_review"])
                 } label: {
-                    Label("Rate Tend", systemImage: "star.fill")
+                    Label(copy("review_primary_button", fallback: "Rate Tend"), systemImage: "star.fill")
                         .font(WWTypography.heading(18))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -675,7 +900,7 @@ struct ExperimentalOnboardingFlowView: View {
                     reviewActionTaken = true
                     analytics.track(.reviewPromptShown, properties: ["action": "dismiss"])
                 } label: {
-                    Text("Not now")
+                    Text(copy("review_secondary_button", fallback: "Not now"))
                         .font(WWTypography.heading(18))
                         .foregroundStyle(WWColor.nearBlack)
                         .frame(maxWidth: .infinity)
@@ -687,7 +912,7 @@ struct ExperimentalOnboardingFlowView: View {
             }
             
             if reviewActionTaken {
-                Text("Thanks for helping Tend grow.")
+                Text(copy("review_thanks_note", fallback: "Thanks for helping Tend grow."))
                     .font(WWTypography.caption(15))
                     .foregroundStyle(WWColor.muted)
             }
@@ -733,11 +958,11 @@ struct ExperimentalOnboardingFlowView: View {
     private var primaryCTAButtonTitle: String {
         switch step {
         case .intro:
-            return "Get started"
-        case .widget:
-            return "Enter Tend"
+            return copy("intro_primary_cta", fallback: "Get started")
         default:
-            return "Next"
+            return isFinalStep
+                ? copy("final_primary_cta", fallback: "Enter Tend")
+                : copy("default_next_cta", fallback: "Next")
         }
     }
     
@@ -785,6 +1010,110 @@ struct ExperimentalOnboardingFlowView: View {
         }
     }
 
+    private var defaultPreJourneySteps: [Step] {
+        [.name, .bannerName, .bannerTruth, .bannerChange, .method, .grounding, .prayerIntent, .goalIntent]
+    }
+
+    private var requiredPreJourneySteps: [Step] {
+        [.name, .prayerIntent, .goalIntent]
+    }
+
+    private var fixedFirstJourneySteps: [Step] {
+        [.generating, .tendReflection, .tendPrayer, .tendNextStep, .creationSprout]
+    }
+
+    private var defaultPostJourneySteps: [Step] {
+        supportsWidgetsOnCurrentDevice
+            ? [.backgroundSelection, .widget, .reminder, .review]
+            : [.backgroundSelection, .reminder, .review]
+    }
+
+    private var requiredPostJourneySteps: [Step] {
+        supportsWidgetsOnCurrentDevice
+            ? [.backgroundSelection, .widget, .reminder, .review]
+            : [.backgroundSelection, .reminder, .review]
+    }
+
+    private var onboardingFlowSequence: [Step] {
+        let pre = mergeConfiguredSteps(
+            configured: resolvedExperimentConfig.preJourneyOrder,
+            defaults: defaultPreJourneySteps,
+            required: requiredPreJourneySteps
+        )
+        let post = mergeConfiguredSteps(
+            configured: resolvedExperimentConfig.postJourneyOrder,
+            defaults: defaultPostJourneySteps,
+            required: requiredPostJourneySteps
+        )
+        return [.intro] + pre + fixedFirstJourneySteps + enforceReviewAsLastPostStep(post)
+    }
+
+    private var isFinalStep: Bool {
+        guard let index = onboardingFlowSequence.firstIndex(of: step) else { return false }
+        return index == onboardingFlowSequence.count - 1
+    }
+
+    private func mergeConfiguredSteps(configured tokens: [String], defaults: [Step], required: [Step]) -> [Step] {
+        guard !tokens.isEmpty else { return defaults }
+
+        var result: [Step] = []
+        for token in tokens {
+            guard let mapped = stepFromToken(token), defaults.contains(mapped), !result.contains(mapped) else { continue }
+            result.append(mapped)
+        }
+
+        guard !result.isEmpty else { return defaults }
+
+        for requiredStep in required where !result.contains(requiredStep) {
+            result.append(requiredStep)
+        }
+
+        return result
+    }
+
+    private func enforceReviewAsLastPostStep(_ steps: [Step]) -> [Step] {
+        var reordered = steps.filter { $0 != .review }
+        reordered.append(.review)
+        return reordered
+    }
+
+    private func stepFromToken(_ token: String) -> Step? {
+        let normalized = token.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "name": return .name
+        case "banner_name", "bannername": return .bannerName
+        case "banner_truth", "bannertruth": return .bannerTruth
+        case "banner_change", "bannerchange": return .bannerChange
+        case "method": return .method
+        case "grounding": return .grounding
+        case "prayer_intent", "prayerintent": return .prayerIntent
+        case "goal_intent", "goalintent": return .goalIntent
+        case "background_selection", "backgroundselection": return .backgroundSelection
+        case "review": return .review
+        case "reminder": return .reminder
+        case "widget": return .widget
+        default: return nil
+        }
+    }
+
+    private func ensureCurrentStepIsValidForSequence() {
+        if !onboardingFlowSequence.contains(step), let first = onboardingFlowSequence.first {
+            step = first
+        }
+    }
+
+    private func copy(_ key: String, fallback: String) -> String {
+        let normalizedKey = key.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let localizedFallback = L10n.string("onboarding.\(normalizedKey)", default: fallback)
+        return resolvedExperimentConfig.copyOverrides[normalizedKey] ?? localizedFallback
+    }
+
+    private func applyFirstNamePlaceholder(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "{{firstName}}", with: firstNameDisplay)
+            .replacingOccurrences(of: "{{firstname}}", with: firstNameDisplay)
+    }
+
     private func topHalfRatio(for step: Step, availableHeight: CGFloat) -> CGFloat {
         let compact = availableHeight < 760
 
@@ -794,9 +1123,11 @@ struct ExperimentalOnboardingFlowView: View {
         case .tendReflection, .tendPrayer, .tendNextStep:
             return compact ? 0.16 : 0.21
         case .widget:
-            return compact ? 0.36 : 0.44
+            return compact ? 0.58 : 0.65
         case .name:
             return compact ? 0.24 : 0.30
+        case .backgroundSelection:
+            return compact ? 0.45 : 0.52
         case .method, .grounding, .reminder, .generating:
             return compact ? 0.30 : 0.36
         case .bannerName, .bannerTruth, .bannerChange, .review:
@@ -840,7 +1171,11 @@ struct ExperimentalOnboardingFlowView: View {
         case .creationSprout, .generating:
             return 24
         case .tendReflection, .tendPrayer, .tendNextStep:
-            return 196
+            // Reserve more space for the persistent CTA row so long generated text
+            // can scroll fully above it without appearing truncated.
+            return 260
+        case .backgroundSelection:
+            return 140
         default:
             return 132
         }
@@ -854,9 +1189,14 @@ struct ExperimentalOnboardingFlowView: View {
         switch step {
         case .reminder: return WWColor.morningGold
         case .widget: return WWColor.surface
-        case .creationSprout: return WWColor.darkBackground
+        case .creationSprout:
+            return colorScheme == .dark ? WWColor.darkBackground : WWColor.white
         default: return WWColor.white
         }
+    }
+
+    private var solidThemeBackgroundColor: Color {
+        colorScheme == .dark ? WWColor.darkBackground : WWColor.white
     }
     
     private var canAdvance: Bool {
@@ -892,8 +1232,9 @@ struct ExperimentalOnboardingFlowView: View {
     
     private func advance() {
         guard canAdvance else { return }
+        let nextStep = nextStepInFlow()
 
-        if step == .goalIntent {
+        if nextStep == .generating {
             withAnimation(.default) { step = .generating }
             Task {
                 if let pkg = await onGenerate(firstNameDisplay, prayerIntentText, goalIntentText) {
@@ -918,6 +1259,14 @@ struct ExperimentalOnboardingFlowView: View {
                     if let journey = entry.journey {
                         journey.completedTends += 1
                         JourneyProgressService.logEvent(journeyID: journey.id, type: .stepCompleted, notes: "Onboarding first tend completed.", modelContext: modelContext)
+                        analytics.track(
+                            .smallStepCompleted,
+                            properties: [
+                                "source": "onboarding_first_tend",
+                                "journey_id": journey.id.uuidString,
+                                "is_first_tend": "true"
+                            ]
+                        )
                     }
                     try? modelContext.save()
                     WidgetSyncService.publishFromModelContext(modelContext)
@@ -928,7 +1277,7 @@ struct ExperimentalOnboardingFlowView: View {
         if step == .reminder {
             Task {
                 _ = await notificationService.requestAuthorization()
-                await notificationService.scheduleReminderSchedules(reminderRows)
+                await notificationService.scheduleReminderSchedules(reminderRows, modelContext: modelContext)
                 await MainActor.run { proceedToNextStep() }
             }
             return
@@ -938,7 +1287,14 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private func proceedToNextStep() {
-        if step == .widget {
+        guard let currentIndex = onboardingFlowSequence.firstIndex(of: step) else {
+            if let first = onboardingFlowSequence.first {
+                step = first
+            }
+            return
+        }
+
+        if currentIndex == onboardingFlowSequence.count - 1 {
             let profile = OnboardingProfile(
                 name: firstNameDisplay,
                 ageRange: "",
@@ -948,24 +1304,32 @@ struct ExperimentalOnboardingFlowView: View {
                 blocker: "",
                 supportCadence: ""
             )
+            onRequirePaywall(.onboardingCompletion)
             onComplete(profile)
             return
         }
 
-        if let next = Step(rawValue: step.rawValue + 1) {
-            withAnimation(.default) { step = next }
-        }
+        let next = onboardingFlowSequence[currentIndex + 1]
+        withAnimation(.default) { step = next }
     }
     
     private func goBack() {
-        if let prev = Step(rawValue: step.rawValue - 1) {
-            withAnimation(.default) { step = prev }
-        }
+        guard let currentIndex = onboardingFlowSequence.firstIndex(of: step), currentIndex > 0 else { return }
+        let previous = onboardingFlowSequence[currentIndex - 1]
+        withAnimation(.default) { step = previous }
+    }
+
+    private func nextStepInFlow() -> Step? {
+        guard let currentIndex = onboardingFlowSequence.firstIndex(of: step) else { return nil }
+        let nextIndex = currentIndex + 1
+        guard onboardingFlowSequence.indices.contains(nextIndex) else { return nil }
+        return onboardingFlowSequence[nextIndex]
     }
 }
 
 // MARK: - Native Ambient Background
 private struct AmbientBannerBackground: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let step: ExperimentalOnboardingFlowView.Step
     
     @State private var animatePhase = false
@@ -1006,8 +1370,8 @@ private struct AmbientBannerBackground: View {
                         y: animatePhase ? h * 0.5 : h * 0.2
                     )
             }
-            .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true), value: animatePhase)
-            .animation(.easeInOut(duration: 1.5), value: step)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 8).repeatForever(autoreverses: true), value: animatePhase)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 1.5), value: step)
             .onAppear {
                 animatePhase = true
             }
