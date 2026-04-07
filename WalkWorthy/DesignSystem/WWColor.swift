@@ -8,7 +8,22 @@ enum WWColor {
     static let surface = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: "#1C1C1E") : UIColor(hex: "#F5F5F3") })
     static let nearBlack = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: "#F5F5F3") : UIColor(hex: "#1A1A1A") })
     static let darkBackground = Color(hex: "#0F0F0F")
-    static let muted = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: "#A0A09C") : UIColor(hex: "#888884") })
+    static let muted = Color(uiColor: UIColor { traits in
+        let isDark = traits.userInterfaceStyle == .dark
+        let highContrast = traits.accessibilityContrast == .high
+
+        if highContrast {
+            return isDark ? UIColor(hex: "#D7D7D3") : UIColor(hex: "#3A3A37")
+        }
+
+        return isDark ? UIColor(hex: "#A0A09C") : UIColor(hex: "#888884")
+    })
+    static let contrastCard = Color(uiColor: UIColor {
+        $0.userInterfaceStyle == .dark ? UIColor(hex: "#0F0F0F") : UIColor(hex: "#ECECE8")
+    })
+    static let tabBarBackground = Color(uiColor: UIColor {
+        $0.userInterfaceStyle == .dark ? UIColor(hex: "#111214") : UIColor(hex: "#FFFFFF")
+    })
 
     static let cardBackground = surface
 

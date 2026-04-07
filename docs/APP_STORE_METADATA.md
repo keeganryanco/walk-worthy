@@ -85,7 +85,7 @@ For each subscription product:
 5. Keyword starter set (must fit 100 bytes):
 - `prayer,christian,faith,devotional,reflection,discipline`
 6. Support email contact (for support destination page):
-- `keegan.ryan@keeganryan.co`
+- `tend@keeganryan.co`
 
 ## F2. Subscription metadata draft
 1. Product strategy:

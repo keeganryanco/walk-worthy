@@ -50,6 +50,7 @@ struct OnboardingFlowView: View {
 
     let onComplete: (OnboardingProfile) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.requestReview) private var requestReview
 
     @State private var step: Step = .intro
@@ -76,6 +77,10 @@ struct OnboardingFlowView: View {
     ]
     private let supportOptions = ["daily check-ins", "few times a week", "when I need guidance most"]
 
+    private var supportsWidgetsOnCurrentDevice: Bool {
+        UIDevice.current.userInterfaceIdiom != .pad
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let metrics = LayoutMetrics(size: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
@@ -99,7 +104,7 @@ struct OnboardingFlowView: View {
                     }
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
-                .animation(.easeInOut(duration: 0.35), value: step)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: step)
             }
         }
     }
@@ -532,17 +537,26 @@ struct OnboardingFlowView: View {
             Spacer(minLength: 0)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 1.2)) {
+            if reduceMotion {
                 sproutOpacity = 1.0
                 sproutScale = 1.0
-            }
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                sproutGlow = 0.3
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                withAnimation {
+                sproutGlow = 0.0
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                     step = .review
+                }
+            } else {
+                withAnimation(.easeOut(duration: 1.2)) {
+                    sproutOpacity = 1.0
+                    sproutScale = 1.0
+                }
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    sproutGlow = 0.3
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation {
+                        step = .review
+                    }
                 }
             }
         }
@@ -738,7 +752,10 @@ struct OnboardingFlowView: View {
             return
         }
 
-        if let next = Step(rawValue: step.rawValue + 1) {
+        if var next = Step(rawValue: step.rawValue + 1) {
+            if !supportsWidgetsOnCurrentDevice, next == .widget {
+                next = .creationSprout
+            }
             withAnimation(.default) {
                 step = next
             }

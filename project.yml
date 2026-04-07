@@ -56,8 +56,8 @@ targets:
         group: WalkWorthy/DesignSystem
       - path: WalkWorthy/DesignSystem/WWTypography.swift
         group: WalkWorthy/DesignSystem
-      - path: WalkWorthy/Resources/Assets.xcassets
-        group: WalkWorthy/Resources
+      - path: TendWidgets/Assets.xcassets
+        group: TendWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.keeganryan.tend.widgets

@@ -19,10 +19,10 @@ enum AppConstants {
     }
 
     enum Subscription {
-        static let weeklyProductID = "co.keeganryan.tend.premium.weekly"
+        static let monthlyProductID = "co.keeganryan.tend.premium.monthly"
         static let annualProductID = "co.keeganryan.tend.premium.annual"
-        static let weeklyDisplayFallback = "$7.99 / week"
-        static let annualDisplayFallback = "$34.99 / year"
+        static let monthlyDisplayFallback = "$7.99 / month"
+        static let annualDisplayFallback = "$49.99 / year"
         static var revenueCatPublicSDKKey: String {
             Bundle.main.object(forInfoDictionaryKey: "RevenueCatPublicSDKKey") as? String ?? ""
         }
@@ -61,7 +61,50 @@ enum AppConstants {
         }
 
         static var posthogHost: String {
-            Bundle.main.object(forInfoDictionaryKey: "POSTHOGHost") as? String ?? ""
+            let raw = (Bundle.main.object(forInfoDictionaryKey: "POSTHOGHost") as? String ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if raw.isEmpty {
+                return "https://us.i.posthog.com"
+            }
+
+            if raw == "https:" || raw == "http:" {
+                // Common xcconfig pitfall when using https:// directly (// treated as comment).
+                return "https://us.i.posthog.com"
+            }
+
+            if raw.contains("://") {
+                return raw
+            }
+
+            return "https://\(raw)"
+        }
+    }
+
+    enum Debug {
+        static var bypassPaywall: Bool {
+#if DEBUG
+            let processInfo = ProcessInfo.processInfo
+            if processInfo.arguments.contains("-TEND_BYPASS_PAYWALL") {
+                return true
+            }
+
+            guard let raw = processInfo.environment["TEND_BYPASS_PAYWALL"]?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            else {
+                return false
+            }
+
+            switch raw {
+            case "1", "true", "yes", "on":
+                return true
+            default:
+                return false
+            }
+#else
+            return false
+#endif
         }
     }
 }
@@ -70,4 +113,5 @@ enum PaywallTriggerReason: String {
     case sessionCount
     case secondJourney
     case timelineAccess
+    case onboardingCompletion
 }

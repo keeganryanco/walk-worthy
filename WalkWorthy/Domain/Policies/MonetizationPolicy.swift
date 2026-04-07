@@ -1,32 +1,44 @@
 import Foundation
 
 enum MonetizationPolicy {
-    static let freeJourneyLimit = 1
-    static let sessionPaywallThreshold = 2
-    static let noPaywallWindowDays = 3
+    private static let dismissGracePeriodDays = 3
 
     static func requiresPaywall(
         hasPremium: Bool,
         settings: AppSettings?,
+        paywallMode: PaywallMode = .firstTendReviewThenPaywall,
         now: Date = .now
     ) -> Bool {
         guard !hasPremium else { return false }
         guard let settings else { return false }
-        guard !isInNoPaywallWindow(settings: settings, now: now) else { return false }
+        _ = now
 
-        if settings.totalSessions >= sessionPaywallThreshold {
-            return true
+        switch paywallMode {
+        case .disabled:
+            return false
+        case .firstTendReviewThenPaywall:
+            return settings.isPaywallEligibleAfterFirstTend
+                || requiresHardPaywallAfterDismiss(
+                    settings: settings,
+                    paywallMode: paywallMode,
+                    now: now
+                )
+        case .sessionGate:
+            // Session-gated paywall is disabled; onboarding-first flow is the only supported gate.
+            return false
         }
-
-        return settings.pendingPaywallReason != nil
     }
 
-    static func canCreateJourney(hasPremium: Bool, activeJourneyCount: Int) -> Bool {
-        hasPremium || activeJourneyCount < freeJourneyLimit
-    }
-
-    static func isInNoPaywallWindow(settings: AppSettings, now: Date = .now) -> Bool {
-        let cutoff = Calendar.current.date(byAdding: .day, value: noPaywallWindowDays, to: settings.firstLaunchAt) ?? settings.firstLaunchAt
-        return now < cutoff
+    static func requiresHardPaywallAfterDismiss(
+        settings: AppSettings?,
+        paywallMode: PaywallMode = .firstTendReviewThenPaywall,
+        now: Date = .now
+    ) -> Bool {
+        guard paywallMode != .disabled else { return false }
+        guard let settings, let dismissedAt = settings.paywallDismissedAt else { return false }
+        guard let hardGateAt = Calendar.current.date(byAdding: .day, value: dismissGracePeriodDays, to: dismissedAt) else {
+            return false
+        }
+        return now >= hardGateAt
     }
 }

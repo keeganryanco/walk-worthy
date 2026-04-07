@@ -106,7 +106,10 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
         )
 
         let approvedReference = ScriptureReferenceValidator.isApproved(scripture.reference) ? scripture.reference : "Philippians 4:6-7"
-        let approvedSnippet = ScriptureReferenceValidator.sanitizedSnippet(generatedSnippet)
+        let approvedSnippet = ScriptureReferenceValidator.enforceParaphraseFidelity(
+            reference: approvedReference,
+            paraphrase: generatedSnippet
+        )
 
         return TodayCard(
             prayerPrompt: prayerPrompt,

@@ -11,3 +11,6 @@ Implementation tracking tickets for incremental delivery.
 - PATCH-007: onboarding intro loop hook
 - PATCH-008: onboarding no-scroll + App Store review prompt intent
 - PATCH-009: widgets + chip quality + first-tend hooks
+- PATCH-010: widget reliability + readability fix pass
+- PATCH-011: core contracts first pass for UI weeds pass 2
+- PATCH-012: closure loop psychology pass

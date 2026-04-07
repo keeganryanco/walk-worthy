@@ -14,21 +14,15 @@ enum JourneyCreationDecision: Equatable {
 enum JourneyCreationPolicy {
     static func evaluate(
         isOnline: Bool,
-        hasPremium: Bool,
-        activeJourneyCount: Int,
-        settings: AppSettings?,
+        hasPremium _: Bool,
+        activeJourneyCount _: Int,
+        settings _: AppSettings?,
+        paywallMode _: PaywallMode = .firstTendReviewThenPaywall,
         now: Date = .now
     ) -> JourneyCreationDecision {
+        _ = now
         guard isOnline else {
             return .blocked(.noInternet)
-        }
-
-        if MonetizationPolicy.requiresPaywall(hasPremium: hasPremium, settings: settings, now: now) {
-            return .blocked(.paywallRequired)
-        }
-
-        if !MonetizationPolicy.canCreateJourney(hasPremium: hasPremium, activeJourneyCount: activeJourneyCount) {
-            return .blocked(.freeTierLimitReached)
         }
 
         return .allowed

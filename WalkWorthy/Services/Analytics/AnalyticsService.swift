@@ -3,6 +3,7 @@ import Foundation
 enum AnalyticsEvent: String {
     case onboardingStarted = "onboarding_started"
     case onboardingCompleted = "onboarding_completed"
+    case onboardingExperimentAssigned = "onboarding_experiment_assigned"
     case onboardingWowSeen = "onboarding_wow_seen"
     case reviewPromptShown = "review_prompt_shown"
     case journeyCreated = "journey_created"

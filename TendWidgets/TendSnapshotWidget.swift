@@ -114,11 +114,11 @@ private struct TendSnapshotWidgetView: View {
             if family != .systemSmall {
                 LinearGradient(
                     stops: [
-                        .init(color: Color.black.opacity(0.00), location: 0.08),
-                        .init(color: Color.black.opacity(0.16), location: 0.24),
-                        .init(color: Color.black.opacity(0.40), location: 0.44),
-                        .init(color: Color.black.opacity(0.68), location: 0.66),
-                        .init(color: Color.black.opacity(0.90), location: 1.00)
+                        .init(color: colorScheme == .dark ? Color.black.opacity(0.00) : Color.white.opacity(0.00), location: 0.08),
+                        .init(color: colorScheme == .dark ? Color.black.opacity(0.16) : Color.white.opacity(0.20), location: 0.24),
+                        .init(color: colorScheme == .dark ? Color.black.opacity(0.40) : Color.white.opacity(0.60), location: 0.44),
+                        .init(color: colorScheme == .dark ? Color.black.opacity(0.68) : Color.white.opacity(0.90), location: 0.66),
+                        .init(color: colorScheme == .dark ? Color.black.opacity(0.90) : Color.white.opacity(1.00), location: 1.00)
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
@@ -143,7 +143,7 @@ private struct TendSnapshotWidgetView: View {
                         Text("TODAY'S STEP")
                             .font(WWTypography.caption(9).weight(.heavy))
                             .tracking(1.0)
-                            .foregroundStyle(Color.white.opacity(0.78))
+                            .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.78) : Color.black.opacity(0.60))
 
                         Text(stepText)
                             .font(WWTypography.caption(14).weight(.semibold))
@@ -161,7 +161,7 @@ private struct TendSnapshotWidgetView: View {
                                 LinearGradient(
                                     colors: colorScheme == .dark
                                         ? [Color.black.opacity(0.80), Color.black.opacity(0.66)]
-                                        : [Color.black.opacity(0.62), Color.black.opacity(0.50)],
+                                        : [Color.white.opacity(0.85), Color.white.opacity(0.70)],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
@@ -172,7 +172,7 @@ private struct TendSnapshotWidgetView: View {
                                         RadialGradient(
                                             colors: colorScheme == .dark
                                                 ? [Color.black.opacity(0.56), Color.black.opacity(0.22), Color.clear]
-                                                : [Color.black.opacity(0.40), Color.black.opacity(0.14), Color.clear],
+                                                : [Color.white.opacity(0.60), Color.white.opacity(0.20), Color.clear],
                                             center: .center,
                                             startRadius: 8,
                                             endRadius: 120
@@ -198,19 +198,19 @@ private struct TendSnapshotWidgetView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(journeyTitle)
                             .font(WWTypography.caption(11).weight(.semibold))
-                            .foregroundStyle(Color.white.opacity(0.8))
+                            .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.6))
                             .lineLimit(1)
                             .truncationMode(.tail)
 
                         Text(scriptureText)
                             .font(WWTypography.body(14).weight(.semibold))
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(colorScheme == .dark ? Color.white : Color.black.opacity(0.85))
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
 
                         Text(stepText)
                             .font(WWTypography.caption(12).weight(.medium))
-                            .foregroundStyle(Color.white.opacity(0.85))
+                            .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.85) : Color.black.opacity(0.7))
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 

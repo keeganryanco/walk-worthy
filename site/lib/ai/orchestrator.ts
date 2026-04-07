@@ -3,11 +3,13 @@ import { parseAndNormalizePackage } from "./validate";
 import { JourneyPackageRequest, OrchestratedResult } from "./types";
 import { generateWithOpenAI } from "./providers/openai";
 import { generateWithGemini } from "./providers/gemini";
+import { estimateCostUSD } from "./cost";
+import type { ProviderGenerationResult } from "./providers/openai";
 
 type Candidate = {
   provider: "openai" | "gemini";
   model: string;
-  call: (input: JourneyPackageRequest) => Promise<string>;
+  call: (input: JourneyPackageRequest) => Promise<ProviderGenerationResult>;
   escalated: boolean;
 };
 
@@ -90,8 +92,8 @@ export async function generateJourneyPackage(input: JourneyPackageRequest): Prom
 
   for (const candidate of candidates) {
     try {
-      const raw = await candidate.call(input);
-      const parsed = parseAndNormalizePackage(raw, input);
+      const generated = await candidate.call(input);
+      const parsed = parseAndNormalizePackage(generated.text, input);
       if (!parsed) {
         continue;
       }
@@ -102,7 +104,13 @@ export async function generateJourneyPackage(input: JourneyPackageRequest): Prom
         provider: candidate.provider,
         model: candidate.model,
         escalated: candidate.escalated,
-        fallbackUsed: false
+        fallbackUsed: false,
+        usage: generated.usage
+          ? {
+              ...generated.usage,
+              estimatedCostUSD: estimateCostUSD(candidate.provider, candidate.model, generated.usage)
+            }
+          : undefined
       };
     } catch {
       continue;
@@ -114,6 +122,12 @@ export async function generateJourneyPackage(input: JourneyPackageRequest): Prom
     provider: "template",
     model: "local-template",
     escalated: true,
-    fallbackUsed: true
+    fallbackUsed: true,
+    usage: {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostUSD: 0
+    }
   };
 }

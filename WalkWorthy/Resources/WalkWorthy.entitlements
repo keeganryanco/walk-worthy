@@ -5,6 +5,7 @@
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.co.keeganryan.tend</string>
+		<string>group.com.rileytestut.AltStore.963UAMD46W</string>
 	</array>
 </dict>
 </plist>

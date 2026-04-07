@@ -11,8 +11,11 @@ final class AppSettings {
     var preferredReminderHour: Int
     var preferredReminderMinute: Int
     var scriptureSourcePolicy: String
+    var widgetJourneyIDRaw: String?
     var firstTendCompletedAt: Date?
     var reviewPromptShownAfterFirstTendAt: Date?
+    var paywallShownAfterFirstTendAt: Date?
+    var paywallDismissedAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -23,8 +26,11 @@ final class AppSettings {
         preferredReminderHour: Int = 8,
         preferredReminderMinute: Int = 0,
         scriptureSourcePolicy: String = "ai-generated-snippets-no-source-disclosure",
+        widgetJourneyIDRaw: String? = nil,
         firstTendCompletedAt: Date? = nil,
-        reviewPromptShownAfterFirstTendAt: Date? = nil
+        reviewPromptShownAfterFirstTendAt: Date? = nil,
+        paywallShownAfterFirstTendAt: Date? = nil,
+        paywallDismissedAt: Date? = nil
     ) {
         self.id = id
         self.firstLaunchAt = firstLaunchAt
@@ -34,8 +40,21 @@ final class AppSettings {
         self.preferredReminderHour = preferredReminderHour
         self.preferredReminderMinute = preferredReminderMinute
         self.scriptureSourcePolicy = scriptureSourcePolicy
+        self.widgetJourneyIDRaw = widgetJourneyIDRaw
         self.firstTendCompletedAt = firstTendCompletedAt
         self.reviewPromptShownAfterFirstTendAt = reviewPromptShownAfterFirstTendAt
+        self.paywallShownAfterFirstTendAt = paywallShownAfterFirstTendAt
+        self.paywallDismissedAt = paywallDismissedAt
+    }
+
+    var widgetJourneyID: UUID? {
+        get {
+            guard let widgetJourneyIDRaw, !widgetJourneyIDRaw.isEmpty else { return nil }
+            return UUID(uuidString: widgetJourneyIDRaw)
+        }
+        set {
+            widgetJourneyIDRaw = newValue?.uuidString
+        }
     }
 
     var isFirstTendCompleted: Bool {
@@ -46,6 +65,12 @@ final class AppSettings {
         isFirstTendCompleted && reviewPromptShownAfterFirstTendAt == nil
     }
 
+    var isPaywallEligibleAfterFirstTend: Bool {
+        isFirstTendCompleted &&
+        reviewPromptShownAfterFirstTendAt != nil &&
+        paywallShownAfterFirstTendAt == nil
+    }
+
     func markFirstTendCompleted(now: Date = .now) {
         guard firstTendCompletedAt == nil else { return }
         firstTendCompletedAt = now
@@ -53,5 +78,18 @@ final class AppSettings {
 
     func markReviewPromptShownAfterFirstTend(now: Date = .now) {
         reviewPromptShownAfterFirstTendAt = now
+    }
+
+    func markPaywallShownAfterFirstTend(now: Date = .now) {
+        guard paywallShownAfterFirstTendAt == nil else { return }
+        paywallShownAfterFirstTendAt = now
+    }
+
+    func markPaywallDismissed(now: Date = .now) {
+        paywallDismissedAt = now
+    }
+
+    func clearPaywallDismissed() {
+        paywallDismissedAt = nil
     }
 }

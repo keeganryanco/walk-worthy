@@ -33,6 +33,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>POSTHOGAPIKey</key>
 	<string>$(POSTHOG_API_KEY)</string>
 	<key>POSTHOGHost</key>

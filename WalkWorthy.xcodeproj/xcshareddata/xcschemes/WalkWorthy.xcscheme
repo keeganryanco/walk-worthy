@@ -116,8 +116,9 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.springboard">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
@@ -125,7 +126,14 @@
             BlueprintName = "TendWidgets"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </RemoteRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "TEND_BYPASS_PAYWALL"
+            value = "1"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

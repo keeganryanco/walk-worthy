@@ -5,7 +5,11 @@ import WidgetKit
 @MainActor
 enum WidgetSyncService {
     static func publishWidgetSnapshot(_ snapshot: TendWidgetSnapshot) {
+        let previous = TendWidgetSnapshotStore.load()
         TendWidgetSnapshotStore.save(snapshot)
+        if hasMaterialStateChange(previous: previous, next: snapshot) {
+            WidgetCenter.shared.reloadTimelines(ofKind: AppConstants.Widget.snapshotKind)
+        }
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -15,12 +19,21 @@ enum WidgetSyncService {
     }
 
     static func publishFromModelContext(_ modelContext: ModelContext, now: Date = .now) {
+        let settingsDescriptor = FetchDescriptor<AppSettings>(
+            sortBy: [SortDescriptor(\AppSettings.firstLaunchAt, order: .forward)]
+        )
+        let settings = try? modelContext.fetch(settingsDescriptor).first
+
         let journeyDescriptor = FetchDescriptor<PrayerJourney>(
             predicate: #Predicate<PrayerJourney> { !$0.isArchived },
             sortBy: [SortDescriptor(\PrayerJourney.createdAt, order: .reverse)]
         )
 
-        guard let activeJourney = try? modelContext.fetch(journeyDescriptor).first else {
+        let activeJourneys = (try? modelContext.fetch(journeyDescriptor)) ?? []
+        let selectedJourneyID = settings?.widgetJourneyID
+        let activeJourney = activeJourneys.first(where: { $0.id == selectedJourneyID }) ?? activeJourneys.first
+
+        guard let activeJourney else {
             clearWidgetSnapshot()
             return
         }
@@ -96,5 +109,14 @@ enum WidgetSyncService {
         }
 
         return streak
+    }
+
+    private static func hasMaterialStateChange(previous: TendWidgetSnapshot?, next: TendWidgetSnapshot) -> Bool {
+        guard let previous else { return true }
+        return previous.hasActiveJourney != next.hasActiveJourney ||
+            previous.activeJourneyTitle != next.activeJourneyTitle ||
+            previous.scriptureSnippet != next.scriptureSnippet ||
+            previous.todayStep != next.todayStep ||
+            previous.streakCount != next.streakCount
     }
 }

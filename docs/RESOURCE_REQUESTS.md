@@ -58,7 +58,7 @@
 
 ## App Store and legal assets needed
 1. Support email
-- Final for now: `keegan.ryan@keeganryan.co`
+- Final for now: `tend@keeganryan.co`
 
 2. Privacy Policy URL
 - Pending deploy: `site/` is ready; provide final deployed URL

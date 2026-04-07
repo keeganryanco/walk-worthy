@@ -26,6 +26,36 @@ Gemini should integrate against these existing services/contracts:
   - `isReviewEligibleAfterFirstTend(settings:)`
   - `markReviewPromptShownAfterFirstTend(settings:)`
 - `WidgetSyncService` + `TendWidgetSnapshotStore` for widget data publishing and clearing.
+- `FirstTendFlowOrchestrator` for deterministic post-first-tend sequence (`review` -> `paywall`).
+- `SubscriptionService.paywallMode` (`disabled`, `firstTendReviewThenPaywall`, `sessionGate`) for remote monetization mode handling.
+- `ReminderSchedule` + `NotificationService.scheduleReminderSchedules(_:)` for multi-reminder scheduling.
+
+### 1.1.2 Pass 2 integration notes
+- Reference `docs/GEMINI_WORKORDER_PASS2.md` as the active workorder for this pass.
+- Prayer text in package payloads is now contractually first-person and should be rendered as authored (no semantic rewrites in UI).
+- Settings/support UX must use:
+  - `AppConstants.supportEmail`
+  - `AppConstants.termsURL`
+  - `AppConstants.privacyURL`
+  - `AppConstants.supportURL`
+- RevenueCat diagnostics are debug-only in release builds; do not reintroduce production-facing debug blocks.
+
+### 1.1.3 Closure Loop Psychology (new, do not skip)
+- Tend now includes a closure loop at the start of the next tend:
+  - "Did you do the step you committed to yesterday?"
+  - options: `Yes`, `Partially`, `No`.
+- This is a core behavior contract, not a cosmetic toggle.
+- Product intent: plant growth is evidence of follow-through, not decoration.
+- Emotional framing to carry in UI copy:
+  - reinforce integrity ("This grew because you followed through.")
+  - never punish misses ("No shame. Start with one tiny step.")
+- Locked growth mapping:
+  - `Yes = +2`
+  - `Partially = +1`
+  - `No = +0`
+  - first tend without prior commitment keeps `+1` baseline.
+- Do not allow completion submission when closure answer is required but unanswered.
+- Keep this flow lightweight and non-judgmental; no guilt copy, no red-warning treatment.
 
 ## 1.2 Mandatory startup checklist for Gemini
 Before coding, review:

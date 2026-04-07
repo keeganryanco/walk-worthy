@@ -27,6 +27,13 @@ fastlane/Preview.html
 
 # Logs
 *.log
+LOGS.txt
+build_log*.txt
+*.tsbuildinfo
+
+# Local accidental Xcode project copies
+WalkWorthy [0-9]*.xcodeproj/
 
 # Local Xcode config secrets
 Config/LocalSecrets.xcconfig
+.vercel

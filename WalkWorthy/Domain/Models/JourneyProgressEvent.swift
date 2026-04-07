@@ -4,6 +4,7 @@ import SwiftData
 enum JourneyProgressEventType: String, Codable, CaseIterable {
     case packageGenerated
     case stepCompleted
+    case followThroughAnswered
     case firstTendCompleted
     case journeyCompleted
 }

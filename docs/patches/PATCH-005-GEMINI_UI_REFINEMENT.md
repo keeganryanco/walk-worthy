@@ -26,3 +26,19 @@ Implement Phase A-C from the `GEMINI_IMPLEMENTATION_BRIEF.md`, focusing purely o
 - Project builds cleanly under `xcodegen generate`
 - `xcodebuild test` continues to pass as standard logic wasn't modified
 - Safe integration with all `Codex` interfaces (`JourneyContentService`, `JourneyMemorySnapshot`).
+
+## Update: March 23, 2026 - Phase 5 Targeted Handoff Execution
+**Focus:** Onboarding Flow Orchestration, RootView Inline Generation, Home/Journal Enhancements, Streak Overlays.
+
+### Changes Included
+1. **Widget Scaling:** Fixed snapshot model constructor argument ordering and corrected image rendering layout dimensions so artwork scales full-canvas on small/medium sizes without letterboxing or text overlap.
+2. **Onboarding Typography & Inputs:** Streamlined the journey setup phase by dropping redundant keyboard submit toolbars. Styled the multi-line "What do you want to pray about?" inputs using native `TextField(axis: .vertical)` encapsulating premium dark-mode borders.
+3. **Onboarding Reminder List:** Translated the legacy DatePicker input to match Settings logic exactly, constructing a dynamic SwiftData `List` enabling limitless schedule additions, default 8:00 AM configurations, and swipe-to-delete behaviors securely.
+4. **Onboarding Inline Orchestration:** Restructured `RootView.swift` to pass `.generateJourneyInline` callbacks gracefully to `ExperimentalOnboardingFlowView`. This directly renders the First Tend components natively inline without abandoning the Onboarding sequence prematurely.
+5. **DuoLingo-Style Streak Overlay:** Hooked post-tend execution logic to a new immersive `StreakOverlayView`. Taps into global `WidgetSyncService` streak algorithms to populate consecutive milestone stats above an oversized Sun visual when users commit actions on the Home screen.
+6. **Immersive Journal List:** Added an internal navigation bar to `JournalView.swift`, placing Journey creation behind a trailing plus icon to strip out overbearing buttons. Seeded plant thumbnails elegantly back into the timeline layout constraint.
+7. **Journal Full-Day Tend History:** Appended a `HistoricalTendDetailView` module to `JournalView.swift` to recreate the beautiful dark-mode interface of the modal Tend interaction card, dynamically loading static action steps and reflection prayers generated during past records into an easily accessible list format.
+
+### Verification
+- Full app lifecycle compilation passes with strict typing requirements checked.
+- No `Codex` models or services were deleted or overridden.
