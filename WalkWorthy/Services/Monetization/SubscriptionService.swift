@@ -496,8 +496,15 @@ final class SubscriptionService: NSObject, ObservableObject {
     }
 
     private func localizedMetadataKeys(baseKeys: [String], languageCode: String) -> [String] {
-        guard languageCode != "en" else { return [] }
-        return baseKeys.map { "\($0)_\(languageCode)" }
+        let suffix: String
+        if languageCode.hasPrefix("es") {
+            suffix = "es"
+        } else if languageCode.hasPrefix("pt") {
+            suffix = "pt_br"
+        } else {
+            return []
+        }
+        return baseKeys.map { "\($0)_\(suffix)" }
     }
 
     private func firstNonEmptyMetadataString(_ offering: Offering, keys: [String]) -> String? {

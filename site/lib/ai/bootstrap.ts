@@ -27,11 +27,14 @@ const THEME_KEYS: JourneyThemeKey[] = [
 
 function targetLanguage(
   request: JourneyBootstrapRequest
-): { code: "en" | "es"; label: string; localeIdentifier: string } {
+): { code: "en" | "es" | "pt"; label: string; localeIdentifier: string } {
   const languageCode = (request.languageCode ?? "").trim().toLowerCase();
   const localeIdentifier = (request.localeIdentifier ?? "").trim() || "en-US";
   if (languageCode.startsWith("es") || localeIdentifier.toLowerCase().startsWith("es")) {
     return { code: "es", label: "Spanish", localeIdentifier };
+  }
+  if (languageCode.startsWith("pt") || localeIdentifier.toLowerCase().startsWith("pt")) {
+    return { code: "pt", label: "Portuguese (Brazil)", localeIdentifier };
   }
   return { code: "en", label: "English", localeIdentifier };
 }
@@ -124,11 +127,20 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
       summary:
         language.code === "es"
           ? `${journeyTitle}: ${journeyCategory}.`
+          : language.code === "pt"
+            ? `${journeyTitle}: ${journeyCategory}.`
           : `${journeyTitle}: ${journeyCategory}.`,
-      winsSummary: language.code === "es" ? "Aún no hay tends completados." : "No completed tends yet.",
+      winsSummary:
+        language.code === "es"
+          ? "Aún no hay tends completados."
+          : language.code === "pt"
+            ? "Ainda não há tends concluídos."
+            : "No completed tends yet.",
       blockersSummary:
         language.code === "es"
           ? "Aún no se detecta un patrón de bloqueo."
+          : language.code === "pt"
+            ? "Ainda não foi identificado um padrão de bloqueio."
           : "No blocker pattern identified yet.",
       preferredTone: "grounded-encouraging"
     },

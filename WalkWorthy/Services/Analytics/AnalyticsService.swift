@@ -11,6 +11,7 @@ enum AnalyticsEvent: String {
     case smallStepCompleted = "small_step_completed"
     case journeyCompleted = "journey_completed"
     case paywallShown = "paywall_shown"
+    case localizationRequest = "localization_request"
 }
 
 protocol AnalyticsTracking {

@@ -1,11 +1,14 @@
 import { JourneyPackageRequest } from "./types";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 
-function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es"; label: string; localeIdentifier: string } {
+function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt"; label: string; localeIdentifier: string } {
   const languageCode = (input.languageCode ?? "").trim().toLowerCase();
   const localeIdentifier = (input.localeIdentifier ?? "").trim() || "en-US";
   if (languageCode.startsWith("es") || localeIdentifier.toLowerCase().startsWith("es")) {
     return { code: "es", label: "Spanish", localeIdentifier };
+  }
+  if (languageCode.startsWith("pt") || localeIdentifier.toLowerCase().startsWith("pt")) {
+    return { code: "pt", label: "Portuguese (Brazil)", localeIdentifier };
   }
   return { code: "en", label: "English", localeIdentifier };
 }

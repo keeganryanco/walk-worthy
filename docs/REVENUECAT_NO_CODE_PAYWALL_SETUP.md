@@ -38,7 +38,7 @@ Set these on the active offering (RevenueCat -> Product catalog -> Offerings -> 
 - `weekly`
 - a full product ID (for example `co.keeganryan.tend.premium.annual`)
 
-### Locale-specific overrides (Phase B)
+### Locale-specific overrides (Phase B/C)
 
 For Spanish, the app supports explicit suffix overrides:
 
@@ -48,8 +48,17 @@ For Spanish, the app supports explicit suffix overrides:
 - `paywall_annual_badge_es`
 - `paywall_footnote_es`
 
-Resolution order for Spanish app locale:
+For Portuguese (Brazil), the app supports explicit suffix overrides:
+
+- `paywall_headline_pt_br`
+- `paywall_subheadline_pt_br`
+- `paywall_cta_pt_br`
+- `paywall_annual_badge_pt_br`
+- `paywall_footnote_pt_br`
+
+Resolution order for non-English app locales (`es`, `pt-BR`):
 1. Use explicit `*_es` key if present.
+   - For `pt-BR`, use explicit `*_pt_br` key if present.
 2. If missing and field is non-legal (`headline`, `subheadline`, `annual_badge`), app uses backend machine translation.
 3. If missing and field is legal-sensitive (`cta`, `footnote`), app keeps English source text (no machine translation).
 

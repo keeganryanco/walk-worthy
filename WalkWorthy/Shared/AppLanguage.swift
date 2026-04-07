@@ -4,6 +4,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     case system
     case english = "en"
     case spanish = "es"
+    case portugueseBrazil = "pt-BR"
 
     static let storageKey = "app.language"
 
@@ -20,9 +21,11 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .system:
             return L10n.string("settings.language.system", default: "System Default", languageOverride: languageOverride)
         case .english:
-            return L10n.string("settings.language.english", default: "English", languageOverride: languageOverride)
+            return "English"
         case .spanish:
-            return L10n.string("settings.language.spanish", default: "Español", languageOverride: languageOverride)
+            return "Español"
+        case .portugueseBrazil:
+            return "Português (Brasil)"
         }
     }
 
@@ -40,6 +43,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return Locale(identifier: "en")
         case .spanish:
             return Locale(identifier: "es")
+        case .portugueseBrazil:
+            return Locale(identifier: "pt-BR")
         }
     }
 
@@ -49,7 +54,24 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     static func aiLanguageCode(defaults: UserDefaults = .standard) -> String {
         let localeIdentifier = currentLocale(defaults: defaults).identifier.lowercased()
-        return localeIdentifier.hasPrefix("es") ? "es" : "en"
+        if localeIdentifier.hasPrefix("es") {
+            return "es"
+        }
+        if localeIdentifier.hasPrefix("pt") {
+            return "pt"
+        }
+        return "en"
+    }
+
+    static func remoteLocalizationLocaleCode(defaults: UserDefaults = .standard) -> String {
+        let localeIdentifier = currentLocale(defaults: defaults).identifier.lowercased()
+        if localeIdentifier.hasPrefix("es") {
+            return "es"
+        }
+        if localeIdentifier.hasPrefix("pt") {
+            return "pt-br"
+        }
+        return "en"
     }
 
     static func aiLocaleIdentifier(defaults: UserDefaults = .standard) -> String {

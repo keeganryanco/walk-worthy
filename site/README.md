@@ -102,8 +102,13 @@ Headers:
 
 Body:
 - `domain` (`posthog_onboarding | revenuecat_paywall`)
-- `targetLocale` (Phase B currently expects `es` for non-English)
+- `targetLocale` (`en | es | pt-br`; normalized server-side)
 - `strings` (key-value map of source English text)
+- optional `telemetry`:
+  - `distinctID`
+  - `appVersion`
+  - `buildNumber`
+  - `platform`
 
 Response:
 - `translated` (key-value map with best-effort localized values)

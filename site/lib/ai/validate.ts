@@ -8,7 +8,7 @@ const CHIP_MAX_LENGTH = 80;
 const CHIP_LIMIT = 4;
 const CHIP_FALLBACK_COUNT = 3;
 
-type SupportedLanguageCode = "en" | "es";
+type SupportedLanguageCode = "en" | "es" | "pt";
 
 const DANGLING_ENDINGS_EN = new Set([
   "a",
@@ -51,6 +51,27 @@ const DANGLING_ENDINGS_ES = new Set([
   "y"
 ]);
 
+const DANGLING_ENDINGS_PT = new Set([
+  "a",
+  "ao",
+  "com",
+  "da",
+  "das",
+  "de",
+  "do",
+  "dos",
+  "e",
+  "em",
+  "o",
+  "os",
+  "ou",
+  "para",
+  "por",
+  "que",
+  "um",
+  "uma"
+]);
+
 const LEADING_FRAGMENT_WORDS_EN = new Set([
   "and",
   "because",
@@ -75,6 +96,18 @@ const LEADING_FRAGMENT_WORDS_ES = new Set([
   "que",
   "si",
   "y"
+]);
+
+const LEADING_FRAGMENT_WORDS_PT = new Set([
+  "com",
+  "quando",
+  "e",
+  "enquanto",
+  "ou",
+  "para",
+  "porque",
+  "que",
+  "se"
 ]);
 
 const themeChipBankEn: Record<string, string[]> = {
@@ -103,6 +136,19 @@ const themeChipBankEs: Record<string, string[]> = {
   wisdom: ["Pausa y pide sabiduría", "Define un paso sabio", "Busca consejo confiable"]
 };
 
+const themeChipBankPt: Record<string, string[]> = {
+  basic: ["Ore por uma tarefa", "Dê um passo fiel", "Conclua uma tarefa pendente"],
+  faith: ["Ore com plena confiança", "Escreva uma verdade de fé", "Entregue uma área de controle"],
+  patience: ["Espere antes de reagir", "Escolha um passo calmo", "Avance uma tarefa atrasada"],
+  peace: ["Respire fundo cinco vezes", "Ore por uma preocupação", "Silencie uma distração"],
+  resilience: ["Faça algo difícil hoje", "Reenquadre um tropeço", "Peça força para hoje"],
+  community: ["Envie uma mensagem de incentivo", "Ore por um amigo", "Agende um acompanhamento"],
+  discipline: ["Defina um bloco de foco", "Remova uma distração", "Comece agora mesmo"],
+  healing: ["Nomeie uma emoção real", "Dê um passo de cuidado", "Peça apoio hoje"],
+  joy: ["Escreva três gratidões", "Celebre um pequeno avanço", "Compartilhe um louvor"],
+  wisdom: ["Pare e peça sabedoria", "Defina um passo sábio", "Busque conselho confiável"]
+};
+
 const contextualKeywordChipsEn: Array<{ pattern: RegExp; chips: string[] }> = [
   { pattern: /(anx|worr|fear|stress|panic|calm|rest|peace)/i, chips: ["Pray through this worry", "Take five calm breaths"] },
   { pattern: /(focus|disciplin|habit|procrastin|delay|consisten)/i, chips: ["Start one focused block", "Finish one delayed task"] },
@@ -119,10 +165,20 @@ const contextualKeywordChipsEs: Array<{ pattern: RegExp; chips: string[] }> = [
   { pattern: /(salud|sanidad|duelo|dolor|recuper)/i, chips: ["Da un paso de sanidad", "Descansa y ora diez minutos"] }
 ];
 
+const contextualKeywordChipsPt: Array<{ pattern: RegExp; chips: string[] }> = [
+  { pattern: /(ansied|preocup|medo|estresse|calma|descanso|paz)/i, chips: ["Ore por esta preocupação", "Respire e ore novamente"] },
+  { pattern: /(foco|disciplina|h[aá]bito|procrastin|const[aâ]ncia|atraso)/i, chips: ["Faça um bloco de foco", "Conclua uma tarefa pendente"] },
+  { pattern: /(fam[ií]lia|casamento|amig|relacionamento|comunidade)/i, chips: ["Envie uma mensagem sincera", "Ore por este relacionamento"] },
+  { pattern: /(dinheiro|financ|orçamento|d[ií]vida|carreira|trabalho|neg[oó]cio)/i, chips: ["Revise um número-chave", "Dê um passo no trabalho"] },
+  { pattern: /(sa[uú]de|cura|luto|dor|recuper)/i, chips: ["Dê um passo de cuidado", "Descanse e ore dez minutos"] }
+];
+
 const genericFallbackChipsEn = ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
 const genericFallbackChipsEs = ["Ora y elige un paso", "Da una acción fiel", "Escribe tu próximo paso"];
+const genericFallbackChipsPt = ["Ore e escolha um passo", "Dê uma ação fiel", "Escreva seu próximo passo"];
 const FIRST_PERSON_PRAYER_REGEX_EN = /\b(i|i'm|i’ve|i've|i’d|i'll|i’ll|me|my|mine|myself|we|we're|we’ve|we've|we’d|we'll|we’ll|us|our|ours|ourselves)\b/i;
 const FIRST_PERSON_PRAYER_REGEX_ES = /\b(yo|mi|m[ií]o|m[ií]a|m[ií]os|m[ií]as|m[ií]|me|conmigo|nosotros|nosotras|nuestro|nuestra|nuestros|nuestras|nos)\b/i;
+const FIRST_PERSON_PRAYER_REGEX_PT = /\b(eu|meu|minha|meus|minhas|mim|me|comigo|n[oó]s|nosso|nossa|nossos|nossas|nos)\b/i;
 const FIRST_PERSON_REFLECTION_REGEX = /\b(i|i'm|i’ve|i've|i’d|i'll|i’ll|me|my|mine|myself|we|we're|we’ve|we've|we’d|we'll|we’ll|us|our|ours|ourselves)\b/i;
 const PROSE_END_REGEX = /[.!?]["')\]]?$/;
 const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN = [
@@ -141,13 +197,24 @@ const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_ES = [
   "su camino",
   "su jornada"
 ];
+const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_PT = [
+  "o usuário",
+  "a usuária",
+  "este usuário",
+  "esta usuária",
+  "sua jornada",
+  "o caminho do usuário"
+];
 const QUESTION_START_REGEX_EN = /^(how|what|why|when|where|who|can|could|should|would|do|does|did|is|are|am|will|have|has|had)\b/i;
 const QUESTION_START_REGEX_ES = /^(c[oó]mo|qu[eé]|por qu[eé]|cu[aá]ndo|d[oó]nde|qui[eé]n|puedo|puedes|debo|deber[ií]a|es|son|est[aá]|est[aá]n|hay)\b/i;
+const QUESTION_START_REGEX_PT = /^(como|o que|por que|quando|onde|quem|posso|pode|devo|deveria|[ée]|s[aã]o|est[aá]|est[aã]o|h[aá])\b/i;
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
 
 function languageCode(input?: JourneyPackageRequest): SupportedLanguageCode {
   const raw = (input?.languageCode ?? input?.localeIdentifier ?? "").toLowerCase();
-  return raw.startsWith("es") ? "es" : "en";
+  if (raw.startsWith("es")) return "es";
+  if (raw.startsWith("pt")) return "pt";
+  return "en";
 }
 
 function followThroughStatus(input?: JourneyPackageRequest): FollowThroughStatus | undefined {
@@ -224,8 +291,10 @@ function normalizeChip(value: unknown, language: SupportedLanguageCode): string 
     return "";
   }
 
-  const leadingWords = language === "es" ? LEADING_FRAGMENT_WORDS_ES : LEADING_FRAGMENT_WORDS_EN;
-  const danglingEndings = language === "es" ? DANGLING_ENDINGS_ES : DANGLING_ENDINGS_EN;
+  const leadingWords =
+    language === "es" ? LEADING_FRAGMENT_WORDS_ES : language === "pt" ? LEADING_FRAGMENT_WORDS_PT : LEADING_FRAGMENT_WORDS_EN;
+  const danglingEndings =
+    language === "es" ? DANGLING_ENDINGS_ES : language === "pt" ? DANGLING_ENDINGS_PT : DANGLING_ENDINGS_EN;
   const firstWord = words[0]?.toLowerCase() ?? "";
   const lastWord = words[words.length - 1]?.toLowerCase() ?? "";
   if (leadingWords.has(firstWord) || danglingEndings.has(lastWord)) {
@@ -263,15 +332,22 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
   const language = languageCode(input);
   const status = followThroughStatus(input);
   if (status === "partial" || status === "no") {
-    return language === "es"
-      ? ["Haz un paso de dos minutos", "Elige una acción más fácil", "Ora y empieza pequeño"]
-      : ["Take a two minute step", "Choose one easier action", "Pray then start small"];
+    if (language === "es") {
+      return ["Haz un paso de dos minutos", "Elige una acción más fácil", "Ora y empieza pequeño"];
+    }
+    if (language === "pt") {
+      return ["Faça um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"];
+    }
+    return ["Take a two minute step", "Choose one easier action", "Pray then start small"];
   }
 
   const themeKey = input?.journey.themeKey ?? "basic";
-  const baseBank = language === "es" ? themeChipBankEs : themeChipBankEn;
-  const keywordSets = language === "es" ? contextualKeywordChipsEs : contextualKeywordChipsEn;
-  const genericFallback = language === "es" ? genericFallbackChipsEs : genericFallbackChipsEn;
+  const baseBank =
+    language === "es" ? themeChipBankEs : language === "pt" ? themeChipBankPt : themeChipBankEn;
+  const keywordSets =
+    language === "es" ? contextualKeywordChipsEs : language === "pt" ? contextualKeywordChipsPt : contextualKeywordChipsEn;
+  const genericFallback =
+    language === "es" ? genericFallbackChipsEs : language === "pt" ? genericFallbackChipsPt : genericFallbackChipsEn;
   const chips: string[] = [...(baseBank[themeKey] ?? baseBank.basic)];
 
   const signals = contextSignals(input);
@@ -288,7 +364,8 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
 
 function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): string[] {
   const language = languageCode(input);
-  const genericFallback = language === "es" ? genericFallbackChipsEs : genericFallbackChipsEn;
+  const genericFallback =
+    language === "es" ? genericFallbackChipsEs : language === "pt" ? genericFallbackChipsPt : genericFallbackChipsEn;
   const generated = dedupeChips(rawValues.map((item) => normalizeChip(item, language)).filter(Boolean)).slice(0, CHIP_LIMIT);
   const contextual = contextualFallbackChips(input);
 
@@ -305,9 +382,12 @@ function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): s
     return toppedUp;
   }
 
-  return (language === "es"
-    ? ["Ora y elige un paso", "Da una acción fiel", "Escribe tu próximo paso"]
-    : ["Pray and choose one step", "Take one faithful action", "Write today's next step"]
+  return (
+    language === "es"
+      ? ["Ora y elige un paso", "Da una acción fiel", "Escribe tu próximo paso"]
+      : language === "pt"
+        ? ["Ore e escolha um passo", "Dê uma ação fiel", "Escreva seu próximo passo"]
+        : ["Pray and choose one step", "Take one faithful action", "Write today's next step"]
   ).slice(0, CHIP_LIMIT);
 }
 
@@ -318,12 +398,17 @@ function normalizeFirstPersonPrayer(value: unknown, input?: JourneyPackageReques
   const normalized = trimmed.toLowerCase().replace(/[’`]/g, "'");
   const language = languageCode(input);
   const disallowedPhrases =
-    language === "es" ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_ES : DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN;
+    language === "es"
+      ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_ES
+      : language === "pt"
+        ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_PT
+        : DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN;
   if (disallowedPhrases.some((phrase) => normalized.includes(phrase))) {
     return "";
   }
 
-  const firstPersonRegex = language === "es" ? FIRST_PERSON_PRAYER_REGEX_ES : FIRST_PERSON_PRAYER_REGEX_EN;
+  const firstPersonRegex =
+    language === "es" ? FIRST_PERSON_PRAYER_REGEX_ES : language === "pt" ? FIRST_PERSON_PRAYER_REGEX_PT : FIRST_PERSON_PRAYER_REGEX_EN;
   return firstPersonRegex.test(normalized) ? trimmed : "";
 }
 
@@ -333,10 +418,14 @@ function fallbackReflectionThought(input?: JourneyPackageRequest): string {
   if (focus) {
     return language === "es"
       ? `La fe puede guiar tu camino en ${focus.replace(/[.!?]+$/g, "")}.`
+      : language === "pt"
+        ? `A fé pode guiar seu caminho em ${focus.replace(/[.!?]+$/g, "")}.`
       : `Faith can guide your path in ${focus.replace(/[.!?]+$/g, "")}.`;
   }
   return language === "es"
     ? "Una acción fiel hoy puede formar un crecimiento duradero."
+    : language === "pt"
+      ? "Uma ação fiel hoje pode formar um crescimento duradouro."
     : "Faithful action today can shape long-term growth.";
 }
 
@@ -347,7 +436,8 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
   if (!raw) return fallback;
 
   const alreadyDirective = /^take a moment to reflect on\b/i.test(raw) || /^reflect on\b/i.test(raw);
-  const questionStartRegex = language === "es" ? QUESTION_START_REGEX_ES : QUESTION_START_REGEX_EN;
+  const questionStartRegex =
+    language === "es" ? QUESTION_START_REGEX_ES : language === "pt" ? QUESTION_START_REGEX_PT : QUESTION_START_REGEX_EN;
   const originalLooksQuestion = questionStartRegex.test(raw) || raw.includes("?");
   const originalUsesFirstPerson = FIRST_PERSON_REFLECTION_REGEX.test(raw);
 
@@ -373,6 +463,12 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
     normalized = normalized
       .replace(/^t[oó]mate un momento para reflexionar sobre\s+/i, "")
       .replace(/^reflexiona sobre\s+/i, "")
+      .replace(/[.!?]+$/g, "")
+      .trim();
+  } else if (language === "pt") {
+    normalized = normalized
+      .replace(/^reserve um momento para refletir sobre\s+/i, "")
+      .replace(/^reflita sobre\s+/i, "")
       .replace(/[.!?]+$/g, "")
       .trim();
   } else {
@@ -531,9 +627,13 @@ export function normalizePackageFromObject(
     status === "partial" || status === "no"
       ? language === "es"
         ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
+        : language === "pt"
+          ? "Qual é um pequeno passo que você consegue concluir hoje?"
         : "What is one small step you can realistically finish today?"
       : language === "es"
         ? "¿Qué paso pequeño podrías dar hoy?"
+        : language === "pt"
+          ? "Qual pequeno passo você pode dar hoje?"
         : "What small step could you take today?";
 
   const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 120));

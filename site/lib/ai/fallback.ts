@@ -3,9 +3,11 @@ import { deterministicReference } from "./scripture";
 
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
 
-function languageCode(input: JourneyPackageRequest): "en" | "es" {
+function languageCode(input: JourneyPackageRequest): "en" | "es" | "pt" {
   const raw = (input.languageCode ?? input.localeIdentifier ?? "").toLowerCase();
-  return raw.startsWith("es") ? "es" : "en";
+  if (raw.startsWith("es")) return "es";
+  if (raw.startsWith("pt")) return "pt";
+  return "en";
 }
 
 function followThroughStatus(input: JourneyPackageRequest): FollowThroughStatus | undefined {
@@ -20,9 +22,13 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
   const language = languageCode(input);
   const status = followThroughStatus(input);
   if (status === "partial" || status === "no") {
-    return language === "es"
-      ? ["Haz un paso de dos minutos", "Elige una acción más fácil", "Ora y empieza pequeño"]
-      : ["Take a two minute step", "Choose one easier action", "Pray then start small"];
+    if (language === "es") {
+      return ["Haz un paso de dos minutos", "Elige una acción más fácil", "Ora y empieza pequeño"];
+    }
+    if (language === "pt") {
+      return ["Faça um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"];
+    }
+    return ["Take a two minute step", "Choose one easier action", "Pray then start small"];
   }
 
   const theme = input.journey.themeKey ?? "basic";
@@ -52,6 +58,22 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
       wisdom: ["Pausa y pide sabiduría", "Define un paso sabio", "Busca consejo confiable"]
     };
     return byThemeEs[theme] ?? byThemeEs.basic;
+  }
+
+  if (language === "pt") {
+    const byThemePt: Record<string, string[]> = {
+      basic: ["Ore por uma tarefa", "Dê uma ação fiel", "Escreva o próximo passo"],
+      faith: ["Ore com plena confiança", "Entregue uma área de controle", "Dê um passo de fé"],
+      patience: ["Escolha um passo calmo", "Espere antes de reagir", "Avance uma tarefa atrasada"],
+      peace: ["Respire fundo cinco vezes", "Ore por uma preocupação", "Silencie uma distração"],
+      resilience: ["Faça algo difícil hoje", "Reenquadre um tropeço", "Peça força para hoje"],
+      community: ["Envie uma mensagem de incentivo", "Ore por um amigo", "Agende um acompanhamento"],
+      discipline: ["Defina um bloco de foco", "Remova uma distração", "Comece agora mesmo"],
+      healing: ["Dê um passo de cuidado", "Nomeie uma emoção real", "Peça apoio hoje"],
+      joy: ["Escreva três gratidões", "Celebre um pequeno avanço", "Compartilhe um louvor"],
+      wisdom: ["Pare e peça sabedoria", "Defina um passo sábio", "Busque conselho confiável"]
+    };
+    return byThemePt[theme] ?? byThemePt.basic;
   }
 
   return byTheme[theme] ?? byTheme.basic;
@@ -91,27 +113,37 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
     referenceFallbackParaphrases[reference] ??
     (language === "es"
       ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
+      : language === "pt"
+        ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
       : "Bring your requests to God with trust, and take one faithful step today.");
 
   return {
     reflectionThought:
       language === "es"
         ? "Una decisión fiel hoy puede formar un crecimiento duradero."
+        : language === "pt"
+          ? "Uma decisão fiel hoje pode formar um crescimento duradouro."
         : "One faithful choice today can shape long-term growth.",
     scriptureReference: reference,
     scriptureParaphrase,
     prayer:
       language === "es"
         ? "Señor, afirma mi corazón y alinea mi próxima acción con el crecimiento que te estoy pidiendo."
+        : language === "pt"
+          ? "Senhor, firma meu coração e alinha minha próxima ação com o crescimento que estou Te pedindo."
         : "Lord, steady my heart and align my next action with the growth I am asking You for.",
     smallStepQuestion:
       followThroughStatus(input) === "partial" ||
       followThroughStatus(input) === "no"
         ? language === "es"
           ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
+          : language === "pt"
+            ? "Qual é um pequeno passo que você consegue concluir hoje?"
           : "What is one small step you can realistically finish today?"
         : language === "es"
           ? "¿Qué paso pequeño podrías dar hoy?"
+          : language === "pt"
+            ? "Qual pequeno passo você pode dar hoje?"
           : "What small step could you take today?",
     suggestedSteps: fallbackChips(input),
     completionSuggestion: {

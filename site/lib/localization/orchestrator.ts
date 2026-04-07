@@ -1,11 +1,18 @@
 import crypto from "node:crypto";
 import { generateWithGeminiPrompt } from "../ai/providers/gemini";
 import { generateWithOpenAIPrompt } from "../ai/providers/openai";
+import { applySoftGlossaryNormalization, glossaryPromptHints } from "./glossary";
 
 export type LocalizationDomain = "posthog_onboarding" | "revenuecat_paywall";
 export type LocalizationProvider = "openai" | "gemini" | "template";
 
 export interface LocalizeStringsInput {
+  telemetry?: {
+    distinctID?: string;
+    appVersion?: string;
+    buildNumber?: string;
+    platform?: string;
+  };
   domain: LocalizationDomain;
   targetLocale: string;
   strings: Record<string, string>;
@@ -34,6 +41,8 @@ type CandidateResult = {
   provider: Exclude<LocalizationProvider, "template">;
   model: string;
 };
+
+type NormalizedTargetLocale = "en" | "es" | "pt-br";
 
 const cache = new Map<string, CacheEntry>();
 
@@ -98,8 +107,13 @@ export async function localizeStrings(input: LocalizeStringsInput): Promise<Loca
       }
 
       const sanitized = sanitizeTranslatedMap(sourceStrings, result.translated);
+      const glossaryNormalized = applySoftGlossaryNormalization(
+        input.domain,
+        normalizedTargetLocale,
+        sanitized.translated
+      );
       const resolved: LocalizeStringsOutput = {
-        translated: sanitized.translated,
+        translated: glossaryNormalized,
         meta: {
           provider: result.provider,
           model: result.model,
@@ -162,9 +176,15 @@ function sanitizeStrings(input: Record<string, string>): Record<string, string> 
   return output;
 }
 
-function normalizeTargetLocale(targetLocale: string): "en" | "es" {
+function normalizeTargetLocale(targetLocale: string): NormalizedTargetLocale {
   const normalized = targetLocale.trim().toLowerCase();
-  return normalized.startsWith("es") ? "es" : "en";
+  if (normalized.startsWith("es")) {
+    return "es";
+  }
+  if (normalized.startsWith("pt")) {
+    return "pt-br";
+  }
+  return "en";
 }
 
 function buildCacheKey(
@@ -186,7 +206,7 @@ function stableStringify(value: Record<string, string>): string {
 
 async function translateWithOpenAI(
   domain: LocalizationDomain,
-  targetLocale: string,
+  targetLocale: NormalizedTargetLocale,
   strings: Record<string, string>
 ): Promise<CandidateResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -216,7 +236,7 @@ async function translateWithOpenAI(
 
 async function translateWithGemini(
   domain: LocalizationDomain,
-  targetLocale: string,
+  targetLocale: NormalizedTargetLocale,
   strings: Record<string, string>
 ): Promise<CandidateResult | null> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -246,10 +266,19 @@ async function translateWithGemini(
 
 function buildTranslationPrompt(
   domain: LocalizationDomain,
-  targetLocale: string,
+  targetLocale: NormalizedTargetLocale,
   strings: Record<string, string>
 ): { system: string; user: string } {
-  const localeName = targetLocale === "es" ? "Spanish" : "English";
+  const localeName =
+    targetLocale === "es"
+      ? "Spanish"
+      : targetLocale === "pt-br"
+        ? "Portuguese (Brazil)"
+        : "English";
+  const glossaryHints =
+    targetLocale === "en"
+      ? []
+      : glossaryPromptHints(domain, targetLocale);
 
   const system = [
     "You are a high-precision product copy localizer.",
@@ -260,7 +289,13 @@ function buildTranslationPrompt(
     "1) Keep exactly the same keys.",
     "2) Preserve placeholders exactly: mustache tokens ({{name}}) and printf tokens (%@, %d, %1$@, etc.).",
     "3) Do not add commentary or extra keys.",
-    "4) Keep concise app-UI tone."
+    "4) Keep concise app-UI tone.",
+    ...(glossaryHints.length > 0
+      ? [
+          "5) Soft glossary guidance (follow when contextually appropriate):",
+          ...glossaryHints.map((hint) => `   - ${hint.replace(/^- /, "")}`)
+        ]
+      : [])
   ].join("\n");
 
   const user = JSON.stringify(

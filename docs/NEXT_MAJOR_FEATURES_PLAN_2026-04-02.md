@@ -17,7 +17,7 @@ Capture the next major feature tracks after launch, with implementation-first pl
 
 ## 1) Multilingual support (highest priority)
 
-### Progress tracker (updated 2026-04-06, Phase B pass)
+### Progress tracker (updated 2026-04-07, Phase C pass)
 
 #### Phase A (ship now)
 - [x] App language setting added (`System Default`, `English`, `Español`) with persisted selection.
@@ -35,10 +35,10 @@ Capture the next major feature tracks after launch, with implementation-first pl
 - [x] Manual per-locale override map for legal/brand-sensitive paywall copy (`*_es` suffix keys).
 
 #### Phase C (quality + scale)
-- [ ] Glossary and terminology guardrails for devotional/Bible-adjacent phrasing by language.
-- [ ] QA matrix for top locales + dynamic type and clipping audits.
-- [ ] Telemetry for translation success/failure and fallback-to-English rate by locale.
-- [ ] Add second non-English language after Spanish stabilization.
+- [x] Glossary and terminology guardrails for devotional/Bible-adjacent phrasing by language.
+- [x] QA matrix for top locales + dynamic type and clipping audits.
+- [x] Telemetry for translation success/failure and fallback-to-English rate by locale.
+- [x] Add second non-English language after Spanish stabilization (`pt-BR`).
 
 ### Goals
 
@@ -101,11 +101,12 @@ Use **English as source-of-truth** + **automatic translation layer** + **manual 
 - Add optional manual per-locale override keys.
 
 #### Phase C (quality + scale)
-- Translation glossary for biblical/devotional terms.
-- QA matrix for top languages + dynamic type.
+- Translation glossary for biblical/devotional terms. ✅
+- QA matrix for top languages + dynamic type. ✅
 - Add telemetry:
-  - translation success/failure rate
-  - fallback-to-English rate by locale
+  - translation success/failure rate ✅
+  - fallback-to-English rate by locale ✅
+- Add second non-English language (`pt-BR`). ✅
 
 ### Acceptance criteria
 
@@ -221,7 +222,7 @@ Make journeys feel directional and transformational over time, not just daily is
 - Devotional depth scaffolding (journey arc fields + prompt wiring)
 
 ## Sprint 4
-- Multilingual Phase C quality pass
+- Multilingual Phase C quality pass ✅
 - Deeper theological progression experiment rollout
 
 ---
@@ -240,5 +241,6 @@ Make journeys feel directional and transformational over time, not just daily is
 1. Add RFC for localization architecture (`rfcs/RFC-0006-LOCALIZATION-AND-MULTILINGUAL-AI.md`). ✅
 2. Implement `languageCode` in journey package request and prompt. ✅
 3. Add app setting + persistence for selected language. ✅
-4. Add backend translation endpoint with cache and glossary hooks. ⏳ (Phase B)
-5. Wire PostHog/RevenueCat copy translation fallback path in iOS. ⏳ (Phase B)
+4. Add backend translation endpoint with cache and glossary hooks. ✅ (Phase B)
+5. Wire PostHog/RevenueCat copy translation fallback path in iOS. ✅ (Phase B)
+6. Add Phase C quality and scale pass (`pt-BR`, glossary guardrails, telemetry, QA matrix). ✅
