@@ -130,17 +130,57 @@ struct ScriptureReferenceValidator {
         approvedReferences.sorted()
     }
 
-    private static let paraphraseFallbacks: [String: String] = [
-        "Galatians 6:9": "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
-        "1 Corinthians 15:58": "Stand firm, let nothing move you, and keep giving yourself fully to the Lord's work, knowing your labor in Him is not in vain.",
-        "Joshua 1:9": "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
-        "2 Timothy 1:7": "God gives you a spirit of power, love, and self-control, not fear.",
-        "Philippians 4:6-7": "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
-        "Isaiah 26:3": "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
-        "Colossians 3:23": "Work wholeheartedly, as for the Lord and not for people.",
-        "1 Corinthians 9:27": "Practice disciplined self-control so your life stays aligned with what you proclaim.",
-        "Galatians 5:13": "Use your freedom to serve one another humbly in love.",
-        "Mark 10:45": "The Son of Man came not to be served but to serve and to give His life for many."
+    private static let paraphraseFallbacks: [String: [String: String]] = [
+        "Galatians 6:9": [
+            "en": "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
+            "es": "No te canses de hacer el bien, porque a su tiempo cosecharás si no te rindes.",
+            "pt": "Não se canse de fazer o bem, pois no tempo certo você colherá se não desistir."
+        ],
+        "1 Corinthians 15:58": [
+            "en": "Stand firm, let nothing move you, and keep giving yourself fully to the Lord's work, knowing your labor in Him is not in vain.",
+            "es": "Mantente firme, que nada te mueva, y sigue entregándote por completo a la obra del Señor, sabiendo que tu trabajo en Él no es en vano.",
+            "pt": "Permaneça firme, não deixe nada abalar você e continue se dedicando por completo à obra do Senhor, sabendo que seu trabalho nEle não é em vão."
+        ],
+        "Joshua 1:9": [
+            "en": "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
+            "es": "Sé fuerte y valiente, no tengas miedo, porque el Señor tu Dios está contigo dondequiera que vayas.",
+            "pt": "Seja forte e corajoso, não tenha medo, pois o Senhor seu Deus está com você por onde você for."
+        ],
+        "2 Timothy 1:7": [
+            "en": "God gives you a spirit of power, love, and self-control, not fear.",
+            "es": "Dios te da un espíritu de poder, amor y dominio propio, no de miedo.",
+            "pt": "Deus lhe dá um espírito de poder, amor e domínio próprio, e não de medo."
+        ],
+        "Philippians 4:6-7": [
+            "en": "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
+            "es": "Presenta a Dios cada preocupación y petición con gratitud, y su paz guardará tu corazón y tu mente en Cristo.",
+            "pt": "Apresente a Deus cada preocupação e pedido com gratidão, e a paz dEle guardará seu coração e sua mente em Cristo."
+        ],
+        "Isaiah 26:3": [
+            "en": "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
+            "es": "Dios guarda en perfecta paz a quien mantiene su mente firme y confía en Él.",
+            "pt": "Deus mantém em perfeita paz quem permanece firme e confia nEle."
+        ],
+        "Colossians 3:23": [
+            "en": "Work wholeheartedly, as for the Lord and not for people.",
+            "es": "Trabaja de todo corazón, como para el Señor y no para las personas.",
+            "pt": "Trabalhe de todo o coração, como para o Senhor e não para as pessoas."
+        ],
+        "1 Corinthians 9:27": [
+            "en": "Practice disciplined self-control so your life stays aligned with what you proclaim.",
+            "es": "Practica un dominio propio disciplinado para que tu vida permanezca alineada con lo que proclamas.",
+            "pt": "Pratique domínio próprio com disciplina para que sua vida permaneça alinhada ao que você proclama."
+        ],
+        "Galatians 5:13": [
+            "en": "Use your freedom to serve one another humbly in love.",
+            "es": "Usa tu libertad para servir a los demás con humildad y amor.",
+            "pt": "Use sua liberdade para servir uns aos outros com humildade e amor."
+        ],
+        "Mark 10:45": [
+            "en": "The Son of Man came not to be served but to serve and to give His life for many.",
+            "es": "El Hijo del Hombre no vino para ser servido, sino para servir y dar su vida por muchos.",
+            "pt": "O Filho do Homem não veio para ser servido, mas para servir e dar sua vida por muitos."
+        ]
     ]
 
     private static let paraphraseAnchors: [String: [String]] = [
@@ -188,14 +228,26 @@ struct ScriptureReferenceValidator {
         return trimmed
     }
 
-    static func enforceParaphraseFidelity(reference: String, paraphrase: String) -> String {
+    static func enforceParaphraseFidelity(reference: String, paraphrase: String, languageCode: String = AppLanguage.aiLanguageCode()) -> String {
         let normalizedReference = reference.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedParaphrase = sanitizedSnippet(paraphrase)
-        let fallback = paraphraseFallbacks[normalizedReference]
+        let normalizedLanguageCode = normalizedLanguage(languageCode)
+        let fallback = paraphraseFallback(for: normalizedReference, languageCode: normalizedLanguageCode)
         let anchors = paraphraseAnchors[normalizedReference]
 
-        guard let fallback, let anchors else {
-            return normalizedParaphrase.isEmpty ? paraphraseFallbacks["Philippians 4:6-7"]! : normalizedParaphrase
+        guard let fallback else {
+            return normalizedParaphrase
+        }
+
+        // Anchor keywords are English-only; avoid forcing English fidelity checks on non-English output.
+        guard normalizedLanguageCode == "en" else {
+            return normalizedParaphrase.isEmpty ? fallback : normalizedParaphrase
+        }
+
+        guard let anchors else {
+            return normalizedParaphrase.isEmpty
+                ? (paraphraseFallback(for: "Philippians 4:6-7", languageCode: normalizedLanguageCode) ?? fallback)
+                : normalizedParaphrase
         }
 
         guard !normalizedParaphrase.isEmpty else { return fallback }
@@ -219,8 +271,11 @@ struct ScriptureReferenceValidator {
         return normalizedParaphrase
     }
 
-    static func fallbackParaphrase(for reference: String) -> String? {
-        paraphraseFallbacks[reference.trimmingCharacters(in: .whitespacesAndNewlines)]
+    static func fallbackParaphrase(for reference: String, languageCode: String = AppLanguage.aiLanguageCode()) -> String? {
+        paraphraseFallback(
+            for: reference.trimmingCharacters(in: .whitespacesAndNewlines),
+            languageCode: normalizedLanguage(languageCode)
+        )
     }
 
     static func deterministicApprovedReference(seed: String, excluding: Set<String> = []) -> String {
@@ -239,5 +294,17 @@ struct ScriptureReferenceValidator {
             hash = (hash << 5) &- hash &+ Int(scalar.value)
         }
         return hash
+    }
+
+    private static func normalizedLanguage(_ languageCode: String) -> String {
+        let raw = languageCode.lowercased()
+        if raw.hasPrefix("es") { return "es" }
+        if raw.hasPrefix("pt") { return "pt" }
+        return "en"
+    }
+
+    private static func paraphraseFallback(for reference: String, languageCode: String) -> String? {
+        guard let localized = paraphraseFallbacks[reference] else { return nil }
+        return localized[languageCode] ?? localized["en"]
     }
 }

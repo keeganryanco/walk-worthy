@@ -485,31 +485,70 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
   return `${normalized.replace(/[.!?]+$/g, "").trim()}.`;
 }
 
-const referenceParaphraseFallbacks: Record<string, string> = {
-  "Philippians 4:6-7":
-    "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
-  "Proverbs 16:3":
-    "Commit your work to the Lord, and He will establish your plans.",
-  "Matthew 6:33":
-    "Seek God’s kingdom first, and trust Him to provide what you need.",
-  "Galatians 6:9":
-    "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
-  "1 Corinthians 15:58":
-    "Stand firm and keep giving yourself fully to the Lord’s work, because your labor in Him is not in vain.",
-  "Joshua 1:9":
-    "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
-  "2 Timothy 1:7":
-    "God gives you a spirit of power, love, and self-control, not fear.",
-  "Isaiah 26:3":
-    "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
-  "Colossians 3:23":
-    "Work wholeheartedly, as for the Lord and not for people.",
-  "1 Corinthians 9:27":
-    "Practice disciplined self-control so your life stays aligned with what you proclaim.",
-  "Galatians 5:13":
-    "Use your freedom to serve one another humbly in love.",
-  "Mark 10:45":
-    "The Son of Man came not to be served but to serve and to give His life for many."
+const referenceParaphraseFallbacks: Record<
+  string,
+  { en: string; es: string; pt: string }
+> = {
+  "Philippians 4:6-7": {
+    en: "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
+    es: "Presenta a Dios cada preocupación y petición con gratitud, y su paz guardará tu corazón y tu mente en Cristo.",
+    pt: "Apresente a Deus cada preocupação e pedido com gratidão, e a paz dEle guardará seu coração e sua mente em Cristo."
+  },
+  "Proverbs 16:3": {
+    en: "Commit your work to the Lord, and He will establish your plans.",
+    es: "Encomienda tu trabajo al Señor, y Él afirmará tus planes.",
+    pt: "Entregue seu trabalho ao Senhor, e Ele firmará seus planos."
+  },
+  "Matthew 6:33": {
+    en: "Seek God’s kingdom first, and trust Him to provide what you need.",
+    es: "Busca primero el reino de Dios y confía en que Él proveerá lo que necesitas.",
+    pt: "Busque primeiro o reino de Deus e confie que Ele proverá o que você precisa."
+  },
+  "Galatians 6:9": {
+    en: "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
+    es: "No te canses de hacer el bien, porque a su tiempo cosecharás si no te rindes.",
+    pt: "Não se canse de fazer o bem, pois no tempo certo você colherá se não desistir."
+  },
+  "1 Corinthians 15:58": {
+    en: "Stand firm and keep giving yourself fully to the Lord’s work, because your labor in Him is not in vain.",
+    es: "Mantente firme y sigue entregándote por completo a la obra del Señor, porque tu esfuerzo en Él no es en vano.",
+    pt: "Permaneça firme e continue se dedicando por completo à obra do Senhor, pois seu trabalho nEle não é em vão."
+  },
+  "Joshua 1:9": {
+    en: "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
+    es: "Sé fuerte y valiente, no tengas miedo, porque el Señor tu Dios está contigo dondequiera que vayas.",
+    pt: "Seja forte e corajoso, não tenha medo, pois o Senhor seu Deus está com você por onde você for."
+  },
+  "2 Timothy 1:7": {
+    en: "God gives you a spirit of power, love, and self-control, not fear.",
+    es: "Dios te da un espíritu de poder, amor y dominio propio, no de miedo.",
+    pt: "Deus lhe dá um espírito de poder, amor e domínio próprio, e não de medo."
+  },
+  "Isaiah 26:3": {
+    en: "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
+    es: "Dios guarda en perfecta paz a quien mantiene su mente firme y confía en Él.",
+    pt: "Deus mantém em perfeita paz quem permanece firme e confia nEle."
+  },
+  "Colossians 3:23": {
+    en: "Work wholeheartedly, as for the Lord and not for people.",
+    es: "Trabaja de todo corazón, como para el Señor y no para las personas.",
+    pt: "Trabalhe de todo o coração, como para o Senhor e não para as pessoas."
+  },
+  "1 Corinthians 9:27": {
+    en: "Practice disciplined self-control so your life stays aligned with what you proclaim.",
+    es: "Practica un dominio propio disciplinado para que tu vida permanezca alineada con lo que proclamas.",
+    pt: "Pratique domínio próprio com disciplina para que sua vida permaneça alinhada ao que você proclama."
+  },
+  "Galatians 5:13": {
+    en: "Use your freedom to serve one another humbly in love.",
+    es: "Usa tu libertad para servir a los demás con humildad y amor.",
+    pt: "Use sua liberdade para servir uns aos outros com humildade e amor."
+  },
+  "Mark 10:45": {
+    en: "The Son of Man came not to be served but to serve and to give His life for many.",
+    es: "El Hijo del Hombre no vino para ser servido, sino para servir y dar su vida por muchos.",
+    pt: "O Filho do Homem não veio para ser servido, mas para servir e dar a sua vida por muitos."
+  }
 };
 
 const referenceAnchorRules: Record<string, string[]> = {
@@ -531,10 +570,26 @@ const referenceOffTargetSignals: Record<string, string[]> = {
   "Philippians 4:6-7": ["plans", "establish", "business", "provision", "career", "success"]
 };
 
-function enforceParaphraseFidelity(reference: string, paraphrase: string): string {
+function fallbackParaphrase(reference: string, language: SupportedLanguageCode): string | undefined {
   const fallback = referenceParaphraseFallbacks[reference];
+  if (!fallback) return undefined;
+  return fallback[language] ?? fallback.en;
+}
+
+function enforceParaphraseFidelity(reference: string, paraphrase: string, language: SupportedLanguageCode): string {
+  const fallback = fallbackParaphrase(reference, language);
   const anchors = referenceAnchorRules[reference];
-  if (!fallback || !anchors) {
+  if (!fallback) {
+    return paraphrase;
+  }
+
+  // English anchors are intentionally strict only for English output.
+  // For non-English locales, keep model paraphrase unless empty.
+  if (language !== "en") {
+    return paraphrase.trim().length === 0 ? fallback : paraphrase;
+  }
+
+  if (!anchors) {
     return paraphrase;
   }
 
@@ -645,7 +700,8 @@ export function normalizePackageFromObject(
     scriptureParaphrase: normalizeProseEnding(
       enforceParaphraseFidelity(
         uniqueReference,
-        cleanText(source.scriptureParaphrase, 900)
+        cleanText(source.scriptureParaphrase, 900),
+        language
       )
     ),
     prayer: normalizeFirstPersonPrayer(source.prayer, input),
