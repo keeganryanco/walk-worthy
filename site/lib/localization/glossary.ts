@@ -1,5 +1,5 @@
 export type LocalizationDomain = "posthog_onboarding" | "revenuecat_paywall";
-export type LocalizationLocale = "es" | "pt-br" | "ja" | "ko";
+export type LocalizationLocale = "es" | "pt-br" | "de" | "ja" | "ko";
 
 type GlossaryRules = {
   preferredTerms: Array<{ source: string; target: string }>;
@@ -28,6 +28,16 @@ const glossaryByDomain: Record<LocalizationDomain, Partial<Record<LocalizationLo
       ],
       discouragedReplacements: [{ from: "devoção", to: "oração guiada" }],
       styleNotes: ["Prefer natural Brazilian Portuguese. Avoid overly formal or imported literal phrasing."]
+    },
+    de: {
+      preferredTerms: [
+        { source: "journey", target: "Journey" },
+        { source: "prayer", target: "Gebet" },
+        { source: "small step", target: "kleiner Schritt" },
+        { source: "grow", target: "wachsen" }
+      ],
+      discouragedReplacements: [{ from: "Andacht", to: "geführtes Gebet" }],
+      styleNotes: ["Use natural modern German. Keep tone warm, clear, and invitational."]
     },
     ja: {
       preferredTerms: [
@@ -64,6 +74,13 @@ const glossaryByDomain: Record<LocalizationDomain, Partial<Record<LocalizationLo
         { source: "cancel anytime", target: "cancele quando quiser" }
       ],
       styleNotes: ["Keep billing language simple and explicit for app-store compliance."]
+    },
+    de: {
+      preferredTerms: [
+        { source: "free trial", target: "kostenlose Testphase" },
+        { source: "cancel anytime", target: "jederzeit kündbar" }
+      ],
+      styleNotes: ["Keep subscription billing copy concise and plain-language."]
     },
     ja: {
       preferredTerms: [

@@ -70,10 +70,11 @@ function isValidPayload(payload: unknown): payload is LocalizeRequestPayload {
   return true;
 }
 
-function normalizeLocale(input: string): "en" | "es" | "pt-br" | "ja" | "ko" {
+function normalizeLocale(input: string): "en" | "es" | "pt-br" | "de" | "ja" | "ko" {
   const normalized = input.trim().toLowerCase();
   if (normalized.startsWith("es")) return "es";
   if (normalized.startsWith("pt")) return "pt-br";
+  if (normalized.startsWith("de")) return "de";
   if (normalized.startsWith("ja")) return "ja";
   if (normalized.startsWith("ko")) return "ko";
   return "en";

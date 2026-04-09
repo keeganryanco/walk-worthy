@@ -76,6 +76,7 @@ enum DailyJourneyPackageValidation {
         case english
         case spanish
         case portugueseBrazil
+        case german
         case japanese
         case korean
     }
@@ -86,6 +87,8 @@ enum DailyJourneyPackageValidation {
             return .spanish
         case "pt":
             return .portugueseBrazil
+        case "de":
+            return .german
         case "ja":
             return .japanese
         case "ko":
@@ -103,6 +106,8 @@ enum DailyJourneyPackageValidation {
             return "¿Qué paso pequeño podrías dar hoy?"
         case .portugueseBrazil:
             return "Qual pequeno passo você pode dar hoje?"
+        case .german:
+            return "Welchen kleinen Schritt kannst du heute gehen?"
         case .japanese:
             return "今日、どんな小さな一歩を踏み出せますか？"
         case .korean:
@@ -118,6 +123,8 @@ enum DailyJourneyPackageValidation {
             return "Señor, pongo este camino en Tus manos hoy. Dame sabiduría, valentía y fe firme para mi próximo paso. Amén."
         case .portugueseBrazil:
             return "Senhor, coloco esta jornada em Tuas mãos hoje. Dá-me sabedoria, coragem e fé firme para meu próximo passo. Amém."
+        case .german:
+            return "Herr, ich lege diese Journey heute in Deine Hände. Gib mir Weisheit, Mut und beständigen Glauben für meinen nächsten Schritt. Amen."
         case .japanese:
             return "主よ、今日この歩みをあなたの御手にゆだねます。次の一歩のために、知恵と勇気、揺るがない信仰を与えてください。アーメン。"
         case .korean:
@@ -133,6 +140,8 @@ enum DailyJourneyPackageValidation {
             return "Una acción fiel hoy puede formar un crecimiento duradero."
         case .portugueseBrazil:
             return "Uma ação fiel hoje pode gerar crescimento duradouro."
+        case .german:
+            return "Ein treuer Schritt heute kann langfristiges Wachstum formen."
         case .japanese:
             return "今日の忠実な行動が、長く続く成長を形づくります。"
         case .korean:
@@ -153,6 +162,10 @@ enum DailyJourneyPackageValidation {
     )
     private static let firstPersonRegexPortuguese = try? NSRegularExpression(
         pattern: #"\b(eu|meu|minha|meus|minhas|mim|comigo|n[oó]s|nosso|nossa|nossos|nossas|nos)\b"#,
+        options: [.caseInsensitive]
+    )
+    private static let firstPersonRegexGerman = try? NSRegularExpression(
+        pattern: #"\b(ich|mich|mir|mein|meine|meinen|meinem|meiner|meines|wir|uns|unser|unsere|unseren|unserem|unserer)\b"#,
         options: [.caseInsensitive]
     )
     private static let firstPersonRegexJapanese = try? NSRegularExpression(
@@ -186,6 +199,14 @@ enum DailyJourneyPackageValidation {
         "esta usuária",
         "a jornada do usuário",
         "a caminhada do usuário"
+    ]
+    private static let disallowedThirdPersonPhrasesGerman = [
+        "der nutzer",
+        "die nutzerin",
+        "dieser nutzer",
+        "diese nutzerin",
+        "seine journey",
+        "ihre journey"
     ]
     private static let disallowedThirdPersonPhrasesJapanese = [
         "ユーザー",
@@ -307,6 +328,8 @@ enum DailyJourneyPackageValidation {
             disallowed = disallowedThirdPersonPhrasesSpanish
         case .portugueseBrazil:
             disallowed = disallowedThirdPersonPhrasesPortuguese
+        case .german:
+            disallowed = disallowedThirdPersonPhrasesGerman
         case .japanese:
             disallowed = disallowedThirdPersonPhrasesJapanese
         case .korean:
@@ -323,6 +346,8 @@ enum DailyJourneyPackageValidation {
             firstPersonRegex = firstPersonRegexSpanish
         case .portugueseBrazil:
             firstPersonRegex = firstPersonRegexPortuguese
+        case .german:
+            firstPersonRegex = firstPersonRegexGerman
         case .japanese:
             firstPersonRegex = firstPersonRegexJapanese
         case .korean:
@@ -398,6 +423,18 @@ enum DailyJourneyPackageValidation {
                 .replacingOccurrences(of: #"\bnossos\b"#, with: "seus", options: [.regularExpression, .caseInsensitive])
                 .replacingOccurrences(of: #"\bnossas\b"#, with: "suas", options: [.regularExpression, .caseInsensitive])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if language == .german {
+            topic = topic
+                .replacingOccurrences(of: #"\bmein\b"#, with: "dein", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bmeine\b"#, with: "deine", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bmeinen\b"#, with: "deinen", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bmeinem\b"#, with: "deinem", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bmeiner\b"#, with: "deiner", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bich\b"#, with: "du", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bwir\b"#, with: "ihr", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bunser\b"#, with: "euer", options: [.regularExpression, .caseInsensitive])
+                .replacingOccurrences(of: #"\bunsere\b"#, with: "eure", options: [.regularExpression, .caseInsensitive])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
         } else if language == .japanese {
             topic = topic
                 .replacingOccurrences(of: "私の", with: "あなたの")
@@ -422,6 +459,8 @@ enum DailyJourneyPackageValidation {
                     ? #"^(c[oó]mo|qu[eé]|por qu[eé]|cu[aá]ndo|d[oó]nde|qui[eé]n|puedo|puedes|debo|deber[ií]a|es|son|est[aá]|est[aá]n|hay)\s+"#
                     : language == .portugueseBrazil
                         ? #"^(como|o que|que|por que|quando|onde|quem|posso|pode|devo|deveria|[ée]|s[aã]o|est[aá]|est[aã]o|h[aá])\s+"#
+                        : language == .german
+                            ? #"^(wie|was|warum|wann|wo|wer|kann|könnte|sollte|würde|ist|sind|bin|habe|hast|hat)\s+"#
                         : language == .japanese
                             ? #"^(どう|何|なぜ|いつ|どこ|誰|どのように)\s*"#
                         : language == .korean
@@ -435,6 +474,8 @@ enum DailyJourneyPackageValidation {
                     ? #"^(puedo|puedes|debo|deber[ií]a|es|son|est[aá]|est[aá]n|hay)\s+"#
                     : language == .portugueseBrazil
                         ? #"^(posso|pode|devo|deveria|[ée]|s[aã]o|est[aá]|est[aã]o|h[aá])\s+"#
+                        : language == .german
+                            ? #"^(kann|könnte|sollte|würde|ist|sind|bin|habe|hast|hat)\s+"#
                         : language == .japanese
                             ? #"^(できますか|すべき|でしょうか|ですか)\s*"#
                         : language == .korean
@@ -521,6 +562,8 @@ enum DailyJourneyPackageValidation {
                 chips = ["Da un paso de dos minutos", "Elige una acción más fácil", "Ora y empieza pequeño"]
             case .portugueseBrazil:
                 chips = ["Dê um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"]
+            case .german:
+                chips = ["Mach einen Zwei-Minuten-Schritt", "Wähle eine leichtere Aktion", "Bete und starte klein"]
             case .japanese:
                 chips = ["2分でできる一歩を選びましょう", "もっと簡単な行動を一つ選びましょう", "祈ってから小さく始めましょう"]
             case .korean:
@@ -534,6 +577,8 @@ enum DailyJourneyPackageValidation {
                 chips = ["Ora por un próximo paso", "Da una acción fiel", "Termina una tarea pendiente"]
             case .portugueseBrazil:
                 chips = ["Ore por um próximo passo", "Dê uma ação fiel", "Conclua uma tarefa pendente"]
+            case .german:
+                chips = ["Bete über deinen nächsten Schritt", "Tu eine treue Handlung", "Schließe eine offene Aufgabe ab"]
             case .japanese:
                 chips = ["次の一歩を祈りましょう", "忠実な行動を一つ取りましょう", "先延ばしの課題を一つ終えましょう"]
             case .korean:
@@ -550,6 +595,8 @@ enum DailyJourneyPackageValidation {
                     ? ["Respira profundo cinco veces", "Ora por esta preocupación"]
                     : language == .portugueseBrazil
                         ? ["Respire fundo cinco vezes", "Ore sobre esta preocupação"]
+                        : language == .german
+                            ? ["Atme fünfmal ruhig durch", "Bete über diese Sorge"]
                         : language == .japanese
                             ? ["ゆっくり深呼吸を5回しましょう", "この不安を祈りに委ねましょう"]
                         : language == .korean
@@ -567,6 +614,8 @@ enum DailyJourneyPackageValidation {
                     ? ["Haz un bloque de enfoque", "Quita una distracción clara"]
                     : language == .portugueseBrazil
                         ? ["Faça um bloco de foco", "Remova uma distração clara"]
+                        : language == .german
+                            ? ["Starte einen Fokus-Block", "Entferne eine klare Ablenkung"]
                         : language == .japanese
                             ? ["集中ブロックを一つ作りましょう", "はっきりした妨げを一つ取り除きましょう"]
                         : language == .korean
@@ -584,6 +633,8 @@ enum DailyJourneyPackageValidation {
                     ? ["Envía un mensaje de ánimo", "Ora por una persona específica"]
                     : language == .portugueseBrazil
                         ? ["Envie uma mensagem de encorajamento", "Ore por uma pessoa específica"]
+                        : language == .german
+                            ? ["Sende eine ermutigende Nachricht", "Bete für eine konkrete Person"]
                         : language == .japanese
                             ? ["励ましのメッセージを一つ送りましょう", "一人のために具体的に祈りましょう"]
                         : language == .korean
@@ -601,6 +652,8 @@ enum DailyJourneyPackageValidation {
                     ? ["Completa una tarea importante", "Revisa una decisión clave hoy"]
                     : language == .portugueseBrazil
                         ? ["Conclua uma tarefa importante", "Revise uma decisão-chave hoje"]
+                        : language == .german
+                            ? ["Erledige eine wichtige Aufgabe", "Prüfe heute eine zentrale Entscheidung"]
                         : language == .japanese
                             ? ["重要なタスクを一つ完了しましょう", "大切な判断を今日見直しましょう"]
                         : language == .korean
@@ -647,6 +700,12 @@ enum DailyJourneyPackageValidation {
                     "Dê uma ação fiel",
                     "Conclua uma tarefa pendente"
                 ]
+            case .german:
+                return [
+                    "Bete über deinen nächsten Schritt",
+                    "Tu eine treue Handlung",
+                    "Schließe eine offene Aufgabe ab"
+                ]
             case .japanese:
                 return [
                     "次の一歩を祈りましょう",
@@ -685,6 +744,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
         let languageCode = AppLanguage.aiLanguageCode()
         let isSpanish = languageCode == "es"
         let isPortuguese = languageCode == "pt"
+        let isGerman = languageCode == "de"
         let isJapanese = languageCode == "ja"
         let isKorean = languageCode == "ko"
         let usedReferences = Set(
@@ -701,6 +761,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                 ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
                 : isPortuguese
                     ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
+                    : isGerman
+                        ? "Bringe deine Anliegen im Vertrauen zu Gott und gehe heute einen treuen Schritt."
                     : isJapanese
                         ? "神に願いを信頼してゆだね、今日、忠実な一歩を踏み出しましょう。"
                     : isKorean
@@ -712,6 +774,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                 ? "No vas tarde. Una acción fiel hoy sí importa."
                 : isPortuguese
                     ? "Você não está atrasado. Uma ação fiel hoje importa."
+                    : isGerman
+                        ? "Du bist nicht zu spät. Ein treuer Schritt heute zählt."
                     : isJapanese
                         ? "遅れてはいません。今日の忠実な行動には確かな意味があります。"
                     : isKorean
@@ -723,6 +787,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                 ? "Señor, ayúdame a mantenerme firme y sincero en este camino hoy."
                 : isPortuguese
                     ? "Senhor, ajuda-me a permanecer firme e sincero nesta jornada hoje."
+                    : isGerman
+                        ? "Herr, hilf mir, heute auf diesem Weg standhaft und aufrichtig zu bleiben."
                     : isJapanese
                         ? "主よ、今日この歩みの中で、私が誠実に揺るがず歩めるよう助けてください。"
                     : isKorean
@@ -732,6 +798,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                 ? "¿Qué paso pequeño podrías dar hoy?"
                 : isPortuguese
                     ? "Qual pequeno passo você pode dar hoje?"
+                    : isGerman
+                        ? "Welchen kleinen Schritt kannst du heute gehen?"
                     : isJapanese
                         ? "今日、どんな小さな一歩を踏み出せますか？"
                     : isKorean
@@ -742,6 +810,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                     ? "Ora 5 minutos específicamente por este camino."
                     : isPortuguese
                         ? "Ore por 5 minutos especificamente por esta jornada."
+                        : isGerman
+                            ? "Bete fünf Minuten gezielt für diese Journey."
                         : isJapanese
                             ? "この歩みのために、5分間具体的に祈りましょう。"
                         : isKorean
@@ -751,6 +821,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                     ? "Haz una tarea concreta que haga avanzar este camino."
                     : isPortuguese
                         ? "Faça uma tarefa concreta que avance esta jornada."
+                        : isGerman
+                            ? "Tu eine konkrete Aufgabe, die diese Journey voranbringt."
                         : isJapanese
                             ? "この歩みを前進させる具体的な行動を一つ実行しましょう。"
                         : isKorean
@@ -760,6 +832,8 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                     ? "Envía un mensaje a una persona de confianza pidiendo oración."
                     : isPortuguese
                         ? "Envie uma mensagem para alguém de confiança pedindo oração."
+                        : isGerman
+                            ? "Schreibe einer vertrauenswürdigen Person und bitte um Gebet."
                         : isJapanese
                             ? "信頼できる一人に、祈りをお願いするメッセージを送りましょう。"
                         : isKorean

@@ -49,6 +49,10 @@ Capture the next major feature tracks after launch, with implementation-first pl
 - [x] Add Japanese core static strings (`ja.lproj`) with parity against `en.lproj`.
 - [x] Extend RevenueCat locale override support to `_ja` metadata keys.
 - [x] Extend backend localization normalization and glossary support to Japanese.
+- [x] Add German (`de`) app-wide localization wiring (UI locale, AI language routing, remote-copy translation locale support).
+- [x] Add German core static strings (`de.lproj`) with parity against `en.lproj`.
+- [x] Extend RevenueCat locale override support to `_de` metadata keys.
+- [x] Extend backend localization normalization and glossary support to German.
 
 ### Goals
 

@@ -8,7 +8,7 @@ const CHIP_MAX_LENGTH = 80;
 const CHIP_LIMIT = 4;
 const CHIP_FALLBACK_COUNT = 3;
 
-type SupportedLanguageCode = "en" | "es" | "pt" | "ja" | "ko";
+type SupportedLanguageCode = "en" | "es" | "pt" | "de" | "ja" | "ko";
 
 const DANGLING_ENDINGS_EN = new Set([
   "a",
@@ -70,6 +70,35 @@ const DANGLING_ENDINGS_PT = new Set([
   "que",
   "um",
   "uma"
+]);
+
+const DANGLING_ENDINGS_DE = new Set([
+  "an",
+  "am",
+  "auf",
+  "aus",
+  "bei",
+  "das",
+  "dem",
+  "den",
+  "der",
+  "die",
+  "ein",
+  "eine",
+  "einem",
+  "einen",
+  "einer",
+  "für",
+  "im",
+  "in",
+  "mit",
+  "oder",
+  "um",
+  "und",
+  "von",
+  "zu",
+  "zum",
+  "zur"
 ]);
 
 const DANGLING_ENDINGS_JA = new Set([
@@ -141,6 +170,18 @@ const LEADING_FRAGMENT_WORDS_PT = new Set([
   "se"
 ]);
 
+const LEADING_FRAGMENT_WORDS_DE = new Set([
+  "aber",
+  "denn",
+  "oder",
+  "und",
+  "wenn",
+  "weil",
+  "während",
+  "mit",
+  "für"
+]);
+
 const LEADING_FRAGMENT_WORDS_JA = new Set([
   "そして",
   "だから",
@@ -200,6 +241,19 @@ const themeChipBankPt: Record<string, string[]> = {
   wisdom: ["Pare e peça sabedoria", "Defina um passo sábio", "Busque conselho confiável"]
 };
 
+const themeChipBankDe: Record<string, string[]> = {
+  basic: ["Bete über eine Aufgabe", "Tu einen treuen Schritt", "Erledige eine offene Aufgabe"],
+  faith: ["Bete mit vollem Vertrauen", "Schreibe ein Glaubens-Statement", "Gib einen Kontrollbereich ab"],
+  patience: ["Warte vor deiner Reaktion", "Wähle einen ruhigen Schritt", "Erledige eine liegen gebliebene Aufgabe"],
+  peace: ["Atme fünfmal ruhig durch", "Bete über eine Sorge", "Schalte eine Ablenkung aus"],
+  resilience: ["Tu heute etwas Schwieriges", "Deute einen Rückschlag neu", "Bitte heute um Kraft"],
+  community: ["Sende eine ermutigende Nachricht", "Bete für einen Freund", "Plane ein kurzes Nachfassen"],
+  discipline: ["Setze einen Fokus-Block", "Entferne eine Ablenkung", "Starte bevor du bereit bist"],
+  healing: ["Benenne ein echtes Gefühl", "Tu einen fürsorglichen Schritt", "Bitte um Unterstützung"],
+  joy: ["Schreibe drei Dankbarkeiten", "Feiere einen kleinen Fortschritt", "Teile ein Lob"],
+  wisdom: ["Halte inne und bitte um Weisheit", "Schreibe den nächsten weisen Schritt", "Suche vertrauenswürdigen Rat"]
+};
+
 const themeChipBankJa: Record<string, string[]> = {
   basic: ["一つの課題のために祈る", "忠実な一歩を取る", "先延ばしの課題を終える"],
   faith: ["全き信頼で祈る", "信仰のことばを書き留める", "手放す領域を一つ決める"],
@@ -250,6 +304,14 @@ const contextualKeywordChipsPt: Array<{ pattern: RegExp; chips: string[] }> = [
   { pattern: /(sa[uú]de|cura|luto|dor|recuper)/i, chips: ["Dê um passo de cuidado", "Descanse e ore dez minutos"] }
 ];
 
+const contextualKeywordChipsDe: Array<{ pattern: RegExp; chips: string[] }> = [
+  { pattern: /(angst|sorge|furcht|stress|ruhe|frieden)/i, chips: ["Bete über diese Sorge", "Atme ruhig und bete neu"] },
+  { pattern: /(fokus|disziplin|gewohnheit|aufschieb|konstanz)/i, chips: ["Starte einen Fokus-Block", "Erledige eine offene Aufgabe"] },
+  { pattern: /(familie|ehe|freund|beziehung|gemeinschaft)/i, chips: ["Sende eine ehrliche Nachricht", "Bete für diese Beziehung"] },
+  { pattern: /(geld|finanz|budget|schuld|karriere|arbeit|geschäft)/i, chips: ["Prüfe eine wichtige Zahl", "Tu heute einen Arbeitsschritt"] },
+  { pattern: /(gesundheit|heil|trauer|schmerz|erholung)/i, chips: ["Tu einen fürsorglichen Schritt", "Ruh dich aus und bete zehn Minuten"] }
+];
+
 const contextualKeywordChipsJa: Array<{ pattern: RegExp; chips: string[] }> = [
   { pattern: /(不安|心配|恐れ|ストレス|平安|休息)/i, chips: ["この不安を祈りに委ねる", "呼吸を整えて祈り直す"] },
   { pattern: /(集中|鍛錬|習慣|先延ばし|継続)/i, chips: ["集中ブロックを一つ作る", "先延ばしの課題を終える"] },
@@ -269,14 +331,17 @@ const contextualKeywordChipsKo: Array<{ pattern: RegExp; chips: string[] }> = [
 const genericFallbackChipsEn = ["Pray and choose one step", "Take one faithful action", "Write today's next step"];
 const genericFallbackChipsEs = ["Ora y elige un paso", "Da una acción fiel", "Escribe tu próximo paso"];
 const genericFallbackChipsPt = ["Ore e escolha um passo", "Dê uma ação fiel", "Escreva seu próximo passo"];
+const genericFallbackChipsDe = ["Bete und wähle einen Schritt", "Tu eine treue Handlung", "Schreibe deinen nächsten Schritt"];
 const genericFallbackChipsJa = ["祈って一歩を選ぶ", "忠実な行動を一つ取る", "今日の次の一歩を書く"];
 const genericFallbackChipsKo = ["기도하고 한 걸음을 고르세요", "신실한 행동 하나를 하세요", "오늘의 다음 걸음을 적으세요"];
 const FIRST_PERSON_PRAYER_REGEX_EN = /\b(i|i'm|i’ve|i've|i’d|i'll|i’ll|me|my|mine|myself|we|we're|we’ve|we've|we’d|we'll|we’ll|us|our|ours|ourselves)\b/i;
 const FIRST_PERSON_PRAYER_REGEX_ES = /\b(yo|mi|m[ií]o|m[ií]a|m[ií]os|m[ií]as|m[ií]|me|conmigo|nosotros|nosotras|nuestro|nuestra|nuestros|nuestras|nos)\b/i;
 const FIRST_PERSON_PRAYER_REGEX_PT = /\b(eu|meu|minha|meus|minhas|mim|me|comigo|n[oó]s|nosso|nossa|nossos|nossas|nos)\b/i;
+const FIRST_PERSON_PRAYER_REGEX_DE = /\b(ich|mich|mir|mein|meine|meinen|meinem|meiner|meines|wir|uns|unser|unsere|unseren|unserem|unserer)\b/i;
 const FIRST_PERSON_PRAYER_REGEX_JA = /(私|わたし|僕|ぼく|俺|おれ|私たち|わたしたち|僕たち|ぼくたち|わたくし)/i;
 const FIRST_PERSON_PRAYER_REGEX_KO = /(저|제|저는|제가|저를|저의|나|내|나는|내가|우리는|우리가|우리의)/i;
 const FIRST_PERSON_REFLECTION_REGEX = /\b(i|i'm|i’ve|i've|i’d|i'll|i’ll|me|my|mine|myself|we|we're|we’ve|we've|we’d|we'll|we’ll|us|our|ours|ourselves)\b/i;
+const FIRST_PERSON_REFLECTION_REGEX_DE = /\b(ich|mich|mir|mein|meine|meinen|meinem|meiner|meines|wir|uns|unser|unsere|unseren|unserem|unserer)\b/i;
 const PROSE_END_REGEX = /[.!?]["')\]]?$/;
 const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN = [
   "the user",
@@ -302,11 +367,20 @@ const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_PT = [
   "sua jornada",
   "o caminho do usuário"
 ];
+const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_DE = [
+  "der nutzer",
+  "die nutzerin",
+  "dieser nutzer",
+  "diese nutzerin",
+  "seine journey",
+  "ihre journey"
+];
 const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_JA = ["ユーザー", "利用者", "このユーザー", "その人の旅", "彼らの旅路"];
 const DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_KO = ["사용자", "유저", "그 사람의 여정", "그녀의 여정", "그들의 여정"];
 const QUESTION_START_REGEX_EN = /^(how|what|why|when|where|who|can|could|should|would|do|does|did|is|are|am|will|have|has|had)\b/i;
 const QUESTION_START_REGEX_ES = /^(c[oó]mo|qu[eé]|por qu[eé]|cu[aá]ndo|d[oó]nde|qui[eé]n|puedo|puedes|debo|deber[ií]a|es|son|est[aá]|est[aá]n|hay)\b/i;
 const QUESTION_START_REGEX_PT = /^(como|o que|por que|quando|onde|quem|posso|pode|devo|deveria|[ée]|s[aã]o|est[aá]|est[aã]o|h[aá])\b/i;
+const QUESTION_START_REGEX_DE = /^(wie|was|warum|wann|wo|wer|kann|könnte|sollte|würde|ist|sind|bin|habe|hast|hat)\b/i;
 const QUESTION_START_REGEX_JA = /^(どう|何|なぜ|いつ|どこ|誰|どのように|できますか|すべき|でしょうか|ですか)/i;
 const QUESTION_START_REGEX_KO = /^(어떻게|무엇|왜|언제|어디|누가|어떤|할 수|해야)\b/i;
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
@@ -315,6 +389,7 @@ function languageCode(input?: JourneyPackageRequest): SupportedLanguageCode {
   const raw = (input?.languageCode ?? input?.localeIdentifier ?? "").toLowerCase();
   if (raw.startsWith("es")) return "es";
   if (raw.startsWith("pt")) return "pt";
+  if (raw.startsWith("de")) return "de";
   if (raw.startsWith("ja")) return "ja";
   if (raw.startsWith("ko")) return "ko";
   return "en";
@@ -399,6 +474,8 @@ function normalizeChip(value: unknown, language: SupportedLanguageCode): string 
       ? LEADING_FRAGMENT_WORDS_ES
       : language === "pt"
         ? LEADING_FRAGMENT_WORDS_PT
+        : language === "de"
+          ? LEADING_FRAGMENT_WORDS_DE
         : language === "ja"
           ? LEADING_FRAGMENT_WORDS_JA
         : language === "ko"
@@ -409,6 +486,8 @@ function normalizeChip(value: unknown, language: SupportedLanguageCode): string 
       ? DANGLING_ENDINGS_ES
       : language === "pt"
         ? DANGLING_ENDINGS_PT
+        : language === "de"
+          ? DANGLING_ENDINGS_DE
         : language === "ja"
           ? DANGLING_ENDINGS_JA
         : language === "ko"
@@ -457,6 +536,9 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
     if (language === "pt") {
       return ["Faça um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"];
     }
+    if (language === "de") {
+      return ["Mach einen Zwei-Minuten-Schritt", "Wähle eine leichtere Aktion", "Bete und starte klein"];
+    }
     if (language === "ja") {
       return ["2分でできる一歩を選びましょう", "もっと簡単な行動を一つ選びましょう", "祈ってから小さく始めましょう"];
     }
@@ -472,6 +554,8 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
       ? themeChipBankEs
       : language === "pt"
         ? themeChipBankPt
+        : language === "de"
+          ? themeChipBankDe
         : language === "ja"
           ? themeChipBankJa
         : language === "ko"
@@ -482,6 +566,8 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
       ? contextualKeywordChipsEs
       : language === "pt"
         ? contextualKeywordChipsPt
+        : language === "de"
+          ? contextualKeywordChipsDe
         : language === "ja"
           ? contextualKeywordChipsJa
         : language === "ko"
@@ -492,6 +578,8 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
       ? genericFallbackChipsEs
       : language === "pt"
         ? genericFallbackChipsPt
+        : language === "de"
+          ? genericFallbackChipsDe
         : language === "ja"
           ? genericFallbackChipsJa
         : language === "ko"
@@ -518,6 +606,8 @@ function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): s
       ? genericFallbackChipsEs
       : language === "pt"
         ? genericFallbackChipsPt
+        : language === "de"
+          ? genericFallbackChipsDe
         : language === "ja"
           ? genericFallbackChipsJa
         : language === "ko"
@@ -544,6 +634,8 @@ function normalizedChips(rawValues: unknown[], input?: JourneyPackageRequest): s
       ? ["Ora y elige un paso", "Da una acción fiel", "Escribe tu próximo paso"]
       : language === "pt"
         ? ["Ore e escolha um passo", "Dê uma ação fiel", "Escreva seu próximo passo"]
+        : language === "de"
+          ? ["Bete und wähle einen Schritt", "Tu eine treue Handlung", "Schreibe deinen nächsten Schritt"]
         : language === "ja"
           ? ["祈って一歩を選ぶ", "忠実な行動を一つ取る", "今日の次の一歩を書く"]
         : language === "ko"
@@ -563,11 +655,13 @@ function normalizeFirstPersonPrayer(value: unknown, input?: JourneyPackageReques
       ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_ES
       : language === "pt"
         ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_PT
+        : language === "de"
+          ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_DE
         : language === "ja"
           ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_JA
         : language === "ko"
           ? DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_KO
-        : DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN;
+          : DISALLOWED_THIRD_PERSON_PRAYER_PHRASES_EN;
   if (disallowedPhrases.some((phrase) => normalized.includes(phrase))) {
     return "";
   }
@@ -577,6 +671,8 @@ function normalizeFirstPersonPrayer(value: unknown, input?: JourneyPackageReques
       ? FIRST_PERSON_PRAYER_REGEX_ES
       : language === "pt"
         ? FIRST_PERSON_PRAYER_REGEX_PT
+        : language === "de"
+          ? FIRST_PERSON_PRAYER_REGEX_DE
         : language === "ja"
           ? FIRST_PERSON_PRAYER_REGEX_JA
         : language === "ko"
@@ -593,6 +689,8 @@ function fallbackReflectionThought(input?: JourneyPackageRequest): string {
       ? `La fe puede guiar tu camino en ${focus.replace(/[.!?]+$/g, "")}.`
       : language === "pt"
         ? `A fé pode guiar seu caminho em ${focus.replace(/[.!?]+$/g, "")}.`
+        : language === "de"
+          ? `Der Glaube kann deinen Weg in ${focus.replace(/[.!?]+$/g, "")} leiten.`
         : language === "ja"
           ? `${focus.replace(/[.!?]+$/g, "")}の中でも、信仰はあなたの歩みを導けます。`
         : language === "ko"
@@ -603,6 +701,8 @@ function fallbackReflectionThought(input?: JourneyPackageRequest): string {
     ? "Una acción fiel hoy puede formar un crecimiento duradero."
     : language === "pt"
       ? "Uma ação fiel hoje pode formar um crescimento duradouro."
+      : language === "de"
+        ? "Ein treuer Schritt heute kann langfristiges Wachstum formen."
       : language === "ja"
         ? "今日の忠実な行動が、長く続く成長を形づくります。"
       : language === "ko"
@@ -622,13 +722,16 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
       ? QUESTION_START_REGEX_ES
       : language === "pt"
         ? QUESTION_START_REGEX_PT
+        : language === "de"
+          ? QUESTION_START_REGEX_DE
         : language === "ja"
           ? QUESTION_START_REGEX_JA
         : language === "ko"
           ? QUESTION_START_REGEX_KO
           : QUESTION_START_REGEX_EN;
   const originalLooksQuestion = questionStartRegex.test(raw) || raw.includes("?");
-  const originalUsesFirstPerson = FIRST_PERSON_REFLECTION_REGEX.test(raw);
+  const originalUsesFirstPerson =
+    language === "de" ? FIRST_PERSON_REFLECTION_REGEX_DE.test(raw) : FIRST_PERSON_REFLECTION_REGEX.test(raw);
 
   let normalized = raw
     .replace(/\?/g, " ")
@@ -660,6 +763,22 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
       .replace(/^reflita sobre\s+/i, "")
       .replace(/[.!?]+$/g, "")
       .trim();
+  } else if (language === "de") {
+    normalized = normalized
+      .replace(/^nimm dir einen moment und reflektiere über\s+/i, "")
+      .replace(/^reflektiere über\s+/i, "")
+      .replace(/^denke über\s+/i, "")
+      .replace(/\bmein\b/gi, "dein")
+      .replace(/\bmeine\b/gi, "deine")
+      .replace(/\bmeinen\b/gi, "deinen")
+      .replace(/\bmeinem\b/gi, "deinem")
+      .replace(/\bmeiner\b/gi, "deiner")
+      .replace(/\bich\b/gi, "du")
+      .replace(/\bwir\b/gi, "ihr")
+      .replace(/\bunser\b/gi, "euer")
+      .replace(/\bunsere\b/gi, "eure")
+      .replace(/[.!?]+$/g, "")
+      .trim();
   } else if (language === "ja") {
     normalized = normalized
       .replace(/^少し立ち止まって.*を振り返りましょう[:：]?\s*/i, "")
@@ -688,12 +807,13 @@ function normalizeReflectionThought(value: unknown, input?: JourneyPackageReques
 
 const referenceParaphraseFallbacks: Record<
   string,
-  { en: string; es: string; pt: string; ja: string; ko: string }
+  { en: string; es: string; pt: string; de: string; ja: string; ko: string }
 > = {
   "Philippians 4:6-7": {
     en: "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
     es: "Presenta a Dios cada preocupación y petición con gratitud, y su paz guardará tu corazón y tu mente en Cristo.",
     pt: "Apresente a Deus cada preocupação e pedido com gratidão, e a paz dEle guardará seu coração e sua mente em Cristo.",
+    de: "Bring jede Sorge und Bitte mit Dank zu Gott, und sein Frieden wird dein Herz und deinen Sinn in Christus bewahren.",
     ja: "あらゆる不安と願いを感謝とともに神にささげるなら、神の平安がキリストにあってあなたの心と思いを守ってくださいます。",
     ko: "모든 염려와 간구를 감사함으로 하나님께 아뢰면, 그분의 평강이 그리스도 안에서 마음과 생각을 지켜 주십니다."
   },
@@ -701,6 +821,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Commit your work to the Lord, and He will establish your plans.",
     es: "Encomienda tu trabajo al Señor, y Él afirmará tus planes.",
     pt: "Entregue seu trabalho ao Senhor, e Ele firmará seus planos.",
+    de: "Befiehl dem Herrn dein Werk an, und er wird deine Pläne festigen.",
     ja: "あなたの働きを主にゆだねれば、主があなたの計画を確かなものにしてくださいます。",
     ko: "당신의 일을 주님께 맡기면, 주님께서 당신의 계획을 굳게 세워 주십니다."
   },
@@ -708,6 +829,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Seek God’s kingdom first, and trust Him to provide what you need.",
     es: "Busca primero el reino de Dios y confía en que Él proveerá lo que necesitas.",
     pt: "Busque primeiro o reino de Deus e confie que Ele proverá o que você precisa.",
+    de: "Suche zuerst Gottes Reich und vertraue darauf, dass er gibt, was du brauchst.",
     ja: "まず神の国を求め、必要なものは主が満たしてくださると信頼しなさい。",
     ko: "먼저 하나님의 나라를 구하고, 필요한 것을 주님이 채우실 것을 신뢰하세요."
   },
@@ -715,6 +837,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
     es: "No te canses de hacer el bien, porque a su tiempo cosecharás si no te rindes.",
     pt: "Não se canse de fazer o bem, pois no tempo certo você colherá se não desistir.",
+    de: "Werde nicht müde, Gutes zu tun; zur rechten Zeit wirst du ernten, wenn du nicht aufgibst.",
     ja: "善を行うことに疲れ果てないでください。あきらめなければ、時が来て必ず実を結びます。",
     ko: "선을 행하다가 낙심하지 마세요. 포기하지 않으면 때가 되어 반드시 열매를 거둡니다."
   },
@@ -722,6 +845,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Stand firm and keep giving yourself fully to the Lord’s work, because your labor in Him is not in vain.",
     es: "Mantente firme y sigue entregándote por completo a la obra del Señor, porque tu esfuerzo en Él no es en vano.",
     pt: "Permaneça firme e continue se dedicando por completo à obra do Senhor, pois seu trabalho nEle não é em vão.",
+    de: "Steh fest und diene dem Herrn mit ganzem Herzen, denn deine Mühe in ihm ist nicht vergeblich.",
     ja: "固く立って揺らがず、主の働きに心を尽くし続けてください。主にあるあなたの労苦は決して無駄ではありません。",
     ko: "굳게 서서 주님의 일에 더욱 힘쓰세요. 주님 안에서의 수고는 헛되지 않습니다."
   },
@@ -729,6 +853,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
     es: "Sé fuerte y valiente, no tengas miedo, porque el Señor tu Dios está contigo dondequiera que vayas.",
     pt: "Seja forte e corajoso, não tenha medo, pois o Senhor seu Deus está com você por onde você for.",
+    de: "Sei stark und mutig, hab keine Angst, denn der Herr, dein Gott, ist mit dir, wohin du auch gehst.",
     ja: "強くあれ、雄々しくあれ。恐れないでください。あなたがどこへ行っても、あなたの神である主が共におられます。",
     ko: "강하고 담대하세요. 두려워하지 마세요. 어디로 가든지 주 하나님이 함께하십니다."
   },
@@ -736,6 +861,7 @@ const referenceParaphraseFallbacks: Record<
     en: "God gives you a spirit of power, love, and self-control, not fear.",
     es: "Dios te da un espíritu de poder, amor y dominio propio, no de miedo.",
     pt: "Deus lhe dá um espírito de poder, amor e domínio próprio, e não de medo.",
+    de: "Gott gibt dir keinen Geist der Furcht, sondern der Kraft, der Liebe und der Besonnenheit.",
     ja: "神は恐れではなく、力と愛と自制の霊をあなたに与えてくださいます。",
     ko: "하나님은 두려움이 아니라 능력과 사랑과 절제의 영을 주십니다."
   },
@@ -743,6 +869,7 @@ const referenceParaphraseFallbacks: Record<
     en: "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
     es: "Dios guarda en perfecta paz a quien mantiene su mente firme y confía en Él.",
     pt: "Deus mantém em perfeita paz quem permanece firme e confia nEle.",
+    de: "Gott bewahrt den in vollkommenem Frieden, dessen Sinn fest auf ihn gerichtet ist und ihm vertraut.",
     ja: "心を主に堅く据えて主に信頼する者を、神は完全な平安のうちに守ってくださいます。",
     ko: "마음을 주님께 굳게 두고 의지하는 사람을 하나님이 온전한 평강으로 지켜 주십니다."
   },
@@ -750,6 +877,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Work wholeheartedly, as for the Lord and not for people.",
     es: "Trabaja de todo corazón, como para el Señor y no para las personas.",
     pt: "Trabalhe de todo o coração, como para o Senhor e não para as pessoas.",
+    de: "Arbeite von Herzen, als für den Herrn und nicht nur für Menschen.",
     ja: "何をするにも、人のためではなく主のためにするように、心を尽くして行ってください。",
     ko: "무슨 일을 하든 사람에게 하듯이 하지 말고 주님께 하듯 마음을 다해 하세요."
   },
@@ -757,6 +885,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Practice disciplined self-control so your life stays aligned with what you proclaim.",
     es: "Practica un dominio propio disciplinado para que tu vida permanezca alineada con lo que proclamas.",
     pt: "Pratique domínio próprio com disciplina para que sua vida permaneça alinhada ao que você proclama.",
+    de: "Übe disziplinierte Selbstkontrolle, damit dein Leben mit dem übereinstimmt, was du bekennst.",
     ja: "自分を訓練し節制を保ち、あなたが告白する信仰と生き方が一致するようにしなさい。",
     ko: "절제와 훈련으로 자신을 다스려, 말로 고백한 믿음과 삶이 일치하도록 하세요."
   },
@@ -764,6 +893,7 @@ const referenceParaphraseFallbacks: Record<
     en: "Use your freedom to serve one another humbly in love.",
     es: "Usa tu libertad para servir a los demás con humildad y amor.",
     pt: "Use sua liberdade para servir uns aos outros com humildade e amor.",
+    de: "Nutze deine Freiheit, um einander in Liebe demütig zu dienen.",
     ja: "与えられた自由を、愛をもって互いにへりくだって仕えるために用いなさい。",
     ko: "주어진 자유를 사랑 안에서 서로를 겸손히 섬기는 데 사용하세요."
   },
@@ -771,6 +901,7 @@ const referenceParaphraseFallbacks: Record<
     en: "The Son of Man came not to be served but to serve and to give His life for many.",
     es: "El Hijo del Hombre no vino para ser servido, sino para servir y dar su vida por muchos.",
     pt: "O Filho do Homem não veio para ser servido, mas para servir e dar a sua vida por muitos.",
+    de: "Der Menschensohn kam nicht, um sich bedienen zu lassen, sondern um zu dienen und sein Leben für viele hinzugeben.",
     ja: "人の子は仕えられるためではなく仕えるために来られ、多くの人のためにご自身のいのちを与えるために来られました。",
     ko: "인자는 섬김을 받으려 온 것이 아니라 섬기고 많은 사람을 위해 자기 생명을 내어주려 오셨습니다."
   }
@@ -909,6 +1040,8 @@ export function normalizePackageFromObject(
         ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
         : language === "pt"
           ? "Qual é um pequeno passo que você consegue concluir hoje?"
+          : language === "de"
+            ? "Welchen kleinen Schritt kannst du heute realistisch abschließen?"
           : language === "ja"
             ? "今日、現実的に終えられる小さな一歩は何ですか？"
           : language === "ko"
@@ -918,6 +1051,8 @@ export function normalizePackageFromObject(
         ? "¿Qué paso pequeño podrías dar hoy?"
         : language === "pt"
           ? "Qual pequeno passo você pode dar hoje?"
+          : language === "de"
+            ? "Welchen kleinen Schritt kannst du heute gehen?"
           : language === "ja"
             ? "今日、どんな小さな一歩を踏み出せますか？"
           : language === "ko"

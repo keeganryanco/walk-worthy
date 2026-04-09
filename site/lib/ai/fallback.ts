@@ -3,10 +3,11 @@ import { deterministicReference } from "./scripture";
 
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
 
-function languageCode(input: JourneyPackageRequest): "en" | "es" | "pt" | "ja" | "ko" {
+function languageCode(input: JourneyPackageRequest): "en" | "es" | "pt" | "de" | "ja" | "ko" {
   const raw = (input.languageCode ?? input.localeIdentifier ?? "").toLowerCase();
   if (raw.startsWith("es")) return "es";
   if (raw.startsWith("pt")) return "pt";
+  if (raw.startsWith("de")) return "de";
   if (raw.startsWith("ja")) return "ja";
   if (raw.startsWith("ko")) return "ko";
   return "en";
@@ -29,6 +30,9 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
     }
     if (language === "pt") {
       return ["Faça um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"];
+    }
+    if (language === "de") {
+      return ["Mach einen Zwei-Minuten-Schritt", "Wähle eine leichtere Aktion", "Bete und starte klein"];
     }
     if (language === "ja") {
       return ["2分でできる一歩を選びましょう", "もっと簡単な行動を一つ選びましょう", "祈ってから小さく始めましょう"];
@@ -82,6 +86,22 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
       wisdom: ["Pare e peça sabedoria", "Defina um passo sábio", "Busque conselho confiável"]
     };
     return byThemePt[theme] ?? byThemePt.basic;
+  }
+
+  if (language === "de") {
+    const byThemeDe: Record<string, string[]> = {
+      basic: ["Bete über eine Aufgabe", "Tu eine treue Handlung", "Schreibe deinen nächsten Schritt auf"],
+      faith: ["Bete mit vollem Vertrauen", "Schreibe ein Glaubens-Statement", "Gib einen Kontrollbereich ab"],
+      patience: ["Wähle einen ruhigen Schritt", "Warte vor deiner Reaktion", "Erledige eine liegen gebliebene Aufgabe"],
+      peace: ["Atme fünfmal ruhig durch", "Bete über eine Sorge", "Schalte eine Ablenkung aus"],
+      resilience: ["Tu heute etwas Schwieriges", "Deute einen Rückschlag neu", "Bitte heute um Kraft"],
+      community: ["Sende eine ermutigende Nachricht", "Bete für einen Freund", "Plane ein kurzes Nachfassen"],
+      discipline: ["Setze einen Fokus-Block", "Entferne eine Ablenkung", "Starte jetzt sofort"],
+      healing: ["Tu einen fürsorglichen Schritt", "Benenne ein echtes Gefühl", "Bitte heute um Unterstützung"],
+      joy: ["Schreibe drei Dankbarkeiten", "Feiere einen kleinen Fortschritt", "Teile ein Lob"],
+      wisdom: ["Halte inne und bitte um Weisheit", "Formuliere einen weisen Schritt", "Suche vertrauenswürdigen Rat"]
+    };
+    return byThemeDe[theme] ?? byThemeDe.basic;
   }
 
   if (language === "ja") {
@@ -155,6 +175,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
       ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
       : language === "pt"
         ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
+        : language === "de"
+          ? "Bring deine Anliegen im Vertrauen vor Gott und gehe heute einen treuen Schritt."
         : language === "ja"
           ? "神に願いを信頼してゆだね、今日、忠実な一歩を踏み出しましょう。"
         : language === "ko"
@@ -167,6 +189,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         ? "Una decisión fiel hoy puede formar un crecimiento duradero."
         : language === "pt"
           ? "Uma decisão fiel hoje pode formar um crescimento duradouro."
+          : language === "de"
+            ? "Eine treue Entscheidung heute kann langfristiges Wachstum formen."
           : language === "ja"
             ? "今日の忠実な決断が、長く続く成長を形づくります。"
           : language === "ko"
@@ -179,6 +203,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         ? "Señor, afirma mi corazón y alinea mi próxima acción con el crecimiento que te estoy pidiendo."
         : language === "pt"
           ? "Senhor, firma meu coração e alinha minha próxima ação com o crescimento que estou Te pedindo."
+          : language === "de"
+            ? "Herr, stärke mein Herz und richte meine nächste Handlung auf das Wachstum aus, um das ich Dich bitte."
           : language === "ja"
             ? "主よ、私の心を堅くし、私が願う成長と一致する次の行動へ導いてください。"
           : language === "ko"
@@ -191,6 +217,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
           ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
           : language === "pt"
             ? "Qual é um pequeno passo que você consegue concluir hoje?"
+            : language === "de"
+              ? "Welchen kleinen Schritt kannst du heute realistisch abschließen?"
             : language === "ja"
               ? "今日、現実的に終えられる小さな一歩は何ですか？"
             : language === "ko"
@@ -200,6 +228,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
           ? "¿Qué paso pequeño podrías dar hoy?"
           : language === "pt"
             ? "Qual pequeno passo você pode dar hoje?"
+            : language === "de"
+              ? "Welchen kleinen Schritt kannst du heute gehen?"
             : language === "ja"
               ? "今日、どんな小さな一歩を踏み出せますか？"
             : language === "ko"

@@ -5,6 +5,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     case english = "en"
     case spanish = "es"
     case portugueseBrazil = "pt-BR"
+    case german = "de"
     case japanese = "ja"
     case korean = "ko"
 
@@ -22,6 +23,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return ["es", "es-419", "es_MX"]
         case .portugueseBrazil:
             return ["pt-BR", "pt_BR", "pt"]
+        case .german:
+            return ["de", "de-DE", "de_DE"]
         case .japanese:
             return ["ja", "ja-JP", "ja_JP"]
         case .korean:
@@ -47,6 +50,12 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return L10n.string(
                 "settings.language.portuguese_brazil",
                 default: "Português (Brasil)",
+                languageOverride: languageOverride
+            )
+        case .german:
+            return L10n.string(
+                "settings.language.german",
+                default: "Deutsch",
                 languageOverride: languageOverride
             )
         case .japanese:
@@ -80,6 +89,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return Locale(identifier: "es")
         case .portugueseBrazil:
             return Locale(identifier: "pt-BR")
+        case .german:
+            return Locale(identifier: "de-DE")
         case .japanese:
             return Locale(identifier: "ja-JP")
         case .korean:
@@ -99,6 +110,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         if localeIdentifier.hasPrefix("pt") {
             return "pt"
         }
+        if localeIdentifier.hasPrefix("de") {
+            return "de"
+        }
         if localeIdentifier.hasPrefix("ja") {
             return "ja"
         }
@@ -115,6 +129,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
         if localeIdentifier.hasPrefix("pt") {
             return "pt-br"
+        }
+        if localeIdentifier.hasPrefix("de") {
+            return "de"
         }
         if localeIdentifier.hasPrefix("ja") {
             return "ja"
@@ -149,6 +166,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             || normalized == "portuguese"
             || normalized == "portuguese-brazil" {
             return .portugueseBrazil
+        }
+
+        if normalized == "de"
+            || normalized.hasPrefix("de-")
+            || normalized.hasPrefix("de_")
+            || normalized == "german"
+            || normalized == "deutsch" {
+            return .german
         }
 
         if normalized == "ja"

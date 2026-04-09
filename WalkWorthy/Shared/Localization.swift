@@ -164,6 +164,9 @@ enum RemoteLocalizationClient {
         if normalized.hasPrefix("pt") {
             return "pt-br"
         }
+        if normalized.hasPrefix("de") {
+            return "de"
+        }
         if normalized.hasPrefix("ja") {
             return "ja"
         }

@@ -27,7 +27,7 @@ const THEME_KEYS: JourneyThemeKey[] = [
 
 function targetLanguage(
   request: JourneyBootstrapRequest
-): { code: "en" | "es" | "pt" | "ja" | "ko"; label: string; localeIdentifier: string } {
+): { code: "en" | "es" | "pt" | "de" | "ja" | "ko"; label: string; localeIdentifier: string } {
   const languageCode = (request.languageCode ?? "").trim().toLowerCase();
   const localeIdentifier = (request.localeIdentifier ?? "").trim() || "en-US";
   if (languageCode.startsWith("es") || localeIdentifier.toLowerCase().startsWith("es")) {
@@ -35,6 +35,9 @@ function targetLanguage(
   }
   if (languageCode.startsWith("pt") || localeIdentifier.toLowerCase().startsWith("pt")) {
     return { code: "pt", label: "Portuguese (Brazil)", localeIdentifier };
+  }
+  if (languageCode.startsWith("de") || localeIdentifier.toLowerCase().startsWith("de")) {
+    return { code: "de", label: "German", localeIdentifier };
   }
   if (languageCode.startsWith("ja") || localeIdentifier.toLowerCase().startsWith("ja")) {
     return { code: "ja", label: "Japanese", localeIdentifier };
@@ -141,6 +144,8 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
           ? "Aún no hay tends completados."
           : language.code === "pt"
             ? "Ainda não há tends concluídos."
+            : language.code === "de"
+              ? "Es gibt noch keine abgeschlossenen Tends."
             : language.code === "ja"
               ? "まだ完了したTendはありません。"
             : language.code === "ko"
@@ -151,6 +156,8 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
           ? "Aún no se detecta un patrón de bloqueo."
           : language.code === "pt"
             ? "Ainda não foi identificado um padrão de bloqueio."
+            : language.code === "de"
+              ? "Es wurde noch kein klares Blocker-Muster erkannt."
             : language.code === "ja"
               ? "まだ明確なつまずきの傾向は見つかっていません。"
             : language.code === "ko"

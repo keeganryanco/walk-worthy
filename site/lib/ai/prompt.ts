@@ -1,7 +1,7 @@
 import { JourneyPackageRequest } from "./types";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 
-function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt" | "ja" | "ko"; label: string; localeIdentifier: string } {
+function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt" | "de" | "ja" | "ko"; label: string; localeIdentifier: string } {
   const languageCode = (input.languageCode ?? "").trim().toLowerCase();
   const localeIdentifier = (input.localeIdentifier ?? "").trim() || "en-US";
   if (languageCode.startsWith("es") || localeIdentifier.toLowerCase().startsWith("es")) {
@@ -9,6 +9,9 @@ function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt
   }
   if (languageCode.startsWith("pt") || localeIdentifier.toLowerCase().startsWith("pt")) {
     return { code: "pt", label: "Portuguese (Brazil)", localeIdentifier };
+  }
+  if (languageCode.startsWith("de") || localeIdentifier.toLowerCase().startsWith("de")) {
+    return { code: "de", label: "German", localeIdentifier };
   }
   if (languageCode.startsWith("ja") || localeIdentifier.toLowerCase().startsWith("ja")) {
     return { code: "ja", label: "Japanese", localeIdentifier };

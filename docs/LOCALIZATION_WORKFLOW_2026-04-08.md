@@ -6,6 +6,7 @@ Current supported app locales:
 - `en`
 - `es`
 - `pt-BR`
+- `de`
 - `ja`
 - `ko`
 
@@ -37,7 +38,7 @@ What it does:
 - Ignores legacy `OnboardingFlowView.swift` (inactive path) and debug-only fallback diagnostics.
 
 ## 4) Manual QA pass (required)
-- Settings language toggle: `English -> Español -> Português (Brasil) -> 日本語 -> 한국어 -> English`.
+- Settings language toggle: `English -> Español -> Português (Brasil) -> Deutsch -> 日本語 -> 한국어 -> English`.
 - Onboarding (active `ExperimentalOnboardingFlowView`) in each language.
 - Home, Journal, Settings, and Paywall labels.
 - Verify generated new Tend content language for each locale.

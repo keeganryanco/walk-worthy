@@ -1,19 +1,20 @@
 # Localization QA Matrix (2026-04-07)
 
-Scope: multilingual quality pass (`en`, `es`, `pt-BR`, `ja`, `ko`) for core app flows, remote copy translation, and telemetry.
+Scope: multilingual quality pass (`en`, `es`, `pt-BR`, `de`, `ja`, `ko`) for core app flows, remote copy translation, and telemetry.
 
 ## Locales
 
 - `English (en)` baseline
 - `Español (es)`
 - `Português (Brasil) (pt-BR)`
+- `Deutsch (de)`
 - `日本語 (ja)`
 - `한국어 (ko)`
 
 ## Core UI Matrix
 
 - [ ] Settings language switching works:
-  - `System -> Español -> English -> Português (Brasil) -> English -> 日本語 -> English -> 한국어 -> English`
+  - `System -> Español -> English -> Português (Brasil) -> English -> Deutsch -> English -> 日本語 -> English -> 한국어 -> English`
 - [ ] Language preference persists after app relaunch.
 - [ ] Tab labels/localized core chrome update immediately without restart.
 - [ ] Core onboarding labels/buttons render localized (or safe fallback) without layout break.
@@ -35,10 +36,12 @@ Scope: multilingual quality pass (`en`, `es`, `pt-BR`, `ja`, `ko`) for core app 
 
 - [ ] New journey bootstrap in `es` returns Spanish user-facing fields.
 - [ ] New journey bootstrap in `pt-BR` returns Portuguese user-facing fields.
+- [ ] New journey bootstrap in `de` returns German user-facing fields.
 - [ ] New journey bootstrap in `ja` returns Japanese user-facing fields.
 - [ ] New journey bootstrap in `ko` returns Korean user-facing fields.
 - [ ] Daily package in `es` returns Spanish reflection/prayer/question/chips.
 - [ ] Daily package in `pt-BR` returns Portuguese reflection/prayer/question/chips.
+- [ ] Daily package in `de` returns German reflection/prayer/question/chips.
 - [ ] Daily package in `ja` returns Japanese reflection/prayer/question/chips.
 - [ ] Daily package in `ko` returns Korean reflection/prayer/question/chips.
 - [ ] Existing stored/generated content is unchanged (no retroactive translation expected).
@@ -49,6 +52,7 @@ Scope: multilingual quality pass (`en`, `es`, `pt-BR`, `ja`, `ko`) for core app 
 - [ ] PostHog `copy_overrides` authored in English.
 - [ ] `es` app locale renders translated overrides.
 - [ ] `pt-BR` app locale renders translated overrides.
+- [ ] `de` app locale renders translated overrides.
 - [ ] `ja` app locale renders translated overrides.
 - [ ] `ko` app locale renders translated overrides.
 - [ ] If `/api/v1/localize` fails, app falls back to English overrides without blocking flow.
@@ -56,10 +60,11 @@ Scope: multilingual quality pass (`en`, `es`, `pt-BR`, `ja`, `ko`) for core app 
 ## RevenueCat Paywall Copy Matrix
 
 - [ ] English-only metadata in RevenueCat:
-  - non-legal lines (`headline`, `subheadline`, `annual_badge`) translate in `es`, `pt-BR`, `ja`, and `ko`
+  - non-legal lines (`headline`, `subheadline`, `annual_badge`) translate in `es`, `pt-BR`, `de`, `ja`, and `ko`
   - legal-sensitive lines (`cta`, `footnote`) stay English when overrides missing
 - [ ] `_es` override keys take precedence over machine translation.
 - [ ] `_pt_br` override keys take precedence over machine translation.
+- [ ] `_de` override keys take precedence over machine translation.
 - [ ] `_ja` override keys take precedence over machine translation.
 - [ ] `_ko` override keys take precedence over machine translation.
 - [ ] Purchase/restore/resubscribe flows unchanged after localization pass.
