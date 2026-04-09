@@ -42,7 +42,7 @@ type CandidateResult = {
   model: string;
 };
 
-type NormalizedTargetLocale = "en" | "es" | "pt-br" | "ko";
+type NormalizedTargetLocale = "en" | "es" | "pt-br" | "ja" | "ko";
 
 const cache = new Map<string, CacheEntry>();
 
@@ -184,6 +184,9 @@ function normalizeTargetLocale(targetLocale: string): NormalizedTargetLocale {
   if (normalized.startsWith("pt")) {
     return "pt-br";
   }
+  if (normalized.startsWith("ja")) {
+    return "ja";
+  }
   if (normalized.startsWith("ko")) {
     return "ko";
   }
@@ -277,6 +280,8 @@ function buildTranslationPrompt(
       ? "Spanish"
       : targetLocale === "pt-br"
         ? "Portuguese (Brazil)"
+        : targetLocale === "ja"
+          ? "Japanese"
         : targetLocale === "ko"
           ? "Korean"
         : "English";

@@ -1,6 +1,6 @@
 # RFC-0006: Localization and Multilingual AI
 
-- Status: Accepted and Implemented through Phase C
+- Status: Accepted and Implemented through Phase D
 - Date: 2026-04-07
 - Owners: iOS app + AI gateway
 
@@ -30,6 +30,12 @@ Adopt a phased rollout:
    - Glossary and quality controls for devotional terminology.
    - Telemetry on translation failures and fallback-to-English rate.
    - Expand to additional languages after Spanish stability (`pt-BR` first).
+
+4. Phase D:
+   - Add Korean (`ko`) and Japanese (`ja`) as full app locales.
+   - Extend remote-copy translation normalization and glossary support for both locales.
+   - Extend AI generation fallback and validation paths for both locales.
+   - Extend RevenueCat locale override key support to `_ko` and `_ja`.
 
 ## Implemented in Phase A
 
@@ -122,13 +128,38 @@ Adopt a phased rollout:
   - fallback-to-English path usage
   - locale/domain/key-count/provider/cached
 
+## Implemented in Phase D
+
+### Locale expansion and language routing
+
+- Added `ko` and `ja` as supported app language options in Settings.
+- Added `ko.lproj` and `ja.lproj` resources with key parity against `en.lproj`.
+- Extended locale normalization across iOS and backend:
+  - AI generation language: `en | es | pt | ja | ko`
+  - remote-copy translation locale: `en | es | pt-br | ja | ko`
+
+### AI generation quality for Korean and Japanese
+
+- Extended bootstrap and daily prompt language targeting to Korean and Japanese.
+- Extended fallback copy/chip banks and validation heuristics to Korean and Japanese:
+  - first-person prayer checks
+  - reflection/question normalization
+  - fallback question/chip behavior
+
+### Remote copy and paywall overrides
+
+- PostHog onboarding `copy_overrides` localization now supports `ko` and `ja`.
+- RevenueCat paywall metadata now supports locale-specific manual overrides:
+  - `_ko` keys
+  - `_ja` keys
+
 ## Guardrails preserved
 
 - First-person prayer requirement preserved.
 - Existing theological/safety constraints preserved.
 - Onboarding fixed first-journey block order unchanged.
 
-## Known limitations after Phase C
+## Known limitations after Phase D
 
 - Existing generated tend/journey content is not retroactively translated.
 - Legal-sensitive paywall lines (`cta`, `footnote`) require explicit locale overrides to avoid English fallback.
@@ -140,4 +171,4 @@ Adopt a phased rollout:
 1. Add persisted/shared translation cache (Redis) if translation volume grows.
 2. Add dashboard views for `localization_request` success/fallback rates by locale.
 3. Refine Portuguese static copy quality in `pt-BR.lproj`.
-4. Evaluate next locale after Spanish + Portuguese stabilization.
+4. Evaluate next locale after Spanish + Portuguese + Korean + Japanese stabilization.

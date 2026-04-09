@@ -17,7 +17,7 @@ Capture the next major feature tracks after launch, with implementation-first pl
 
 ## 1) Multilingual support (highest priority)
 
-### Progress tracker (updated 2026-04-09, Korean pass)
+### Progress tracker (updated 2026-04-09, Japanese pass)
 
 #### Phase A (ship now)
 - [x] App language setting added (`System Default`, `English`, `Español`) with persisted selection.
@@ -45,6 +45,10 @@ Capture the next major feature tracks after launch, with implementation-first pl
 - [x] Add Korean core static strings (`ko.lproj`) with parity against `en.lproj`.
 - [x] Extend RevenueCat locale override support to `_ko` metadata keys.
 - [x] Extend backend localization normalization and glossary support to Korean.
+- [x] Add Japanese (`ja`) app-wide localization wiring (UI locale, AI language routing, remote-copy translation locale support).
+- [x] Add Japanese core static strings (`ja.lproj`) with parity against `en.lproj`.
+- [x] Extend RevenueCat locale override support to `_ja` metadata keys.
+- [x] Extend backend localization normalization and glossary support to Japanese.
 
 ### Goals
 

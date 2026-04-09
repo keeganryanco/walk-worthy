@@ -89,7 +89,7 @@ You can provide additional copy keys in `copy_overrides`; missing keys fall back
 ### Localization behavior (Phase B/C)
 
 - Keep `copy_overrides` authored in English in PostHog.
-- If app locale is Spanish, Portuguese (Brazil), or Korean, iOS sends `copy_overrides` through the backend localization endpoint and renders translated values.
+- If app locale is Spanish, Portuguese (Brazil), Japanese, or Korean, iOS sends `copy_overrides` through the backend localization endpoint and renders translated values.
 - If localization fails, app falls back to the original English `copy_overrides` values (no crash, no flow block).
 
 ## 5) Allowed Step Tokens

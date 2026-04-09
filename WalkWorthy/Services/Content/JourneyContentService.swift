@@ -110,6 +110,8 @@ final class JourneyContentService {
                 ? "La constancia fiel se construye un día a la vez."
                 : languageCode == "pt"
                     ? "A constância fiel é construída dia após dia."
+                    : languageCode == "ja"
+                        ? "忠実さは、一日一日の積み重ねによって育まれます。"
                     : languageCode == "ko"
                         ? "신실한 꾸준함은 하루하루 쌓여 갑니다."
                     : "Faithful consistency is built one day at a time.",
@@ -118,6 +120,8 @@ final class JourneyContentService {
                 ? "Lleva tus preocupaciones a Dios en oración y recibe Su paz mientras das tu próximo paso."
                 : languageCode == "pt"
                     ? "Leve suas preocupações a Deus em oração e receba Sua paz enquanto dá seu próximo passo."
+                    : languageCode == "ja"
+                        ? "不安を祈りのうちに神にゆだね、次の一歩を踏み出す中で主の平安を受け取りましょう。"
                     : languageCode == "ko"
                         ? "염려를 기도로 하나님께 올려 드리고, 다음 걸음을 내딛을 때 주님의 평안을 누리세요."
                     : "Bring your worries to God in prayer and receive His peace as you take your next step.",
@@ -125,6 +129,8 @@ final class JourneyContentService {
                 ? "Señor, afírmame en la confianza y guíame a una acción concreta hoy."
                 : languageCode == "pt"
                     ? "Senhor, firma-me na confiança e guia-me a uma ação concreta hoje."
+                    : languageCode == "ja"
+                        ? "主よ、私の心を信頼のうちに堅くし、今日取るべき具体的な一歩へ導いてください。"
                     : languageCode == "ko"
                         ? "주님, 오늘 제 마음을 믿음 안에 굳게 세우시고 구체적인 한 걸음을 인도해 주세요."
                     : "Lord, ground me in trust and guide one concrete action today.",
@@ -134,6 +140,8 @@ final class JourneyContentService {
                     ? "Elige una acción específica que haga avanzar este camino."
                     : languageCode == "pt"
                         ? "Escolha uma ação específica que avance esta jornada."
+                        : languageCode == "ja"
+                            ? "この歩みを前に進める具体的な行動を一つ選びましょう。"
                         : languageCode == "ko"
                             ? "이 여정을 앞으로 나아가게 할 구체적인 행동 하나를 선택하세요."
                         : "Choose one specific action that moves this journey forward."

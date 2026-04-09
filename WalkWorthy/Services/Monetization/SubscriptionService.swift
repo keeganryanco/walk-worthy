@@ -489,6 +489,8 @@ final class SubscriptionService: NSObject, ObservableObject {
             suffix = "es"
         } else if languageCode.hasPrefix("pt") {
             suffix = "pt_br"
+        } else if languageCode.hasPrefix("ja") {
+            suffix = "ja"
         } else if languageCode.hasPrefix("ko") {
             suffix = "ko"
         } else {

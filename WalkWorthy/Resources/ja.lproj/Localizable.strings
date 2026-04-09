@@ -1,0 +1,225 @@
+"common.ok" = "OK";
+"common.cancel" = "キャンセル";
+"common.close" = "閉じる";
+
+"tab.home" = "ホーム";
+"tab.journal" = "ジャーナル";
+"tab.settings" = "設定";
+"tab.home.hint" = "ホームタブに切り替えます。";
+"tab.journal.hint" = "ジャーナルタブに切り替えます。";
+"tab.settings.hint" = "設定タブに切り替えます。";
+"tab.selected" = "選択済み";
+
+"settings.title" = "設定";
+"settings.subscription.section" = "サブスクリプション";
+"settings.subscription.status" = "ステータス";
+"settings.subscription.premium" = "プレミアム";
+"settings.subscription.free" = "無料";
+"settings.subscription.restore" = "購入を復元";
+"settings.subscription.resubscribe" = "再登録";
+"settings.subscription.view_options" = "プレミアムプランを見る";
+
+"settings.reminders.section" = "リマインダー";
+"settings.reminders.add" = "リマインダーを追加";
+"settings.reminders.enable_notifications" = "システム通知を有効にする";
+
+"settings.appearance.section" = "表示";
+"settings.language.title" = "アプリの言語";
+"settings.language.system" = "システム設定";
+"settings.language.english" = "英語";
+"settings.language.spanish" = "スペイン語";
+"settings.language.portuguese_brazil" = "ポルトガル語（ブラジル）";
+"settings.language.japanese" = "日本語";
+"settings.language.korean" = "韓国語";
+"settings.appearance.home_background" = "ホーム背景";
+"settings.appearance.home_background.none" = "なし（単色）";
+"settings.appearance.home_background.morning_garden" = "朝の庭";
+"settings.appearance.home_background.greenhouse_oasis" = "温室オアシス";
+"settings.appearance.home_background.mountain_dawn" = "山の夜明け";
+
+"settings.widgets.section" = "ウィジェット";
+"settings.widgets.empty" = "ウィジェット内容を選ぶには、まず旅路を作成してください。";
+"settings.widgets.picker" = "ウィジェットの旅路";
+"settings.widgets.recent_active" = "最新のアクティブ";
+
+"settings.support.section" = "サポートと法務";
+"settings.support.contact" = "サポートに連絡";
+"settings.support.terms" = "利用規約";
+"settings.support.privacy" = "プライバシーポリシー";
+
+"downsell.cta.keep_going" = "続ける";
+"downsell.cta.hint" = "期間限定の再開オファーを購入します。";
+"downsell.subtitle" = "無料体験を解約しました。勢いを保ちましょう。";
+"downsell.headline" = "始めた歩みを止めないで";
+"downsell.intro_with_price" = "最初の3か月は月額%@でこの旅路を続けられます。";
+"downsell.intro_generic" = "期間限定の月額導入オファーで旅路を続けましょう。";
+"downsell.renewal_with_price" = "導入期間後は月額%@で自動更新されます。設定からいつでも解約できます。";
+"downsell.renewal_generic" = "導入期間後は通常の月額料金で自動更新されます。設定からいつでも解約できます。";
+"downsell.settings.renew_with_price" = "%@ / 月で再開";
+"downsell.settings.renew_generic" = "導入オファーで再開";
+
+"paywall.default.headline" = "信仰に根ざした継続で、着実に成長しましょう。";
+"paywall.default.subheadline" = "3日間の無料体験でTendの全機能を解放。";
+"paywall.default.cta" = "3日間無料体験を開始";
+"paywall.default.badge" = "最もお得";
+"paywall.default.footnote" = "設定からいつでも解約できます。";
+"paywall.resubscribe.headline" = "続きから再スタートしましょう。";
+"paywall.resubscribe.subheadline" = "旅路を続けるためにTend Premiumを再登録。";
+"paywall.resubscribe.cta" = "再登録する";
+"paywall.resubscribe.footnote" = "設定で解約しない限り自動更新されます。";
+"paywall.hard_gate.subheadline" = "旅路を続けるにはTend Premiumを解放してください。";
+"paywall.hard_gate.cta" = "プレミアムで続行";
+"paywall.hard_gate.footnote" = "設定で解約しない限り自動更新されます。";
+"paywall.loading_plans" = "プランを読み込み中…";
+"paywall.plan.select_hint" = "ダブルタップでこのプランを選択します。";
+"paywall.cta.hint" = "選択したサブスクリプションプランを開始します。";
+"paywall.footer.terms" = "規約";
+"paywall.footer.privacy" = "プライバシー";
+"paywall.plan.annual" = "年額";
+"paywall.plan.monthly" = "月額";
+"paywall.plan.weekly" = "週額";
+"paywall.plan.daily" = "日額";
+"paywall.plan.subscription" = "サブスクリプション";
+"paywall.plan.billed_yearly" = "年ごとに請求";
+"paywall.plan.billed_monthly" = "月ごとに請求";
+"paywall.plan.billed_weekly" = "週ごとに請求";
+"paywall.plan.billed_daily" = "日ごとに請求";
+"paywall.plan.recurring" = "自動更新サブスクリプション";
+"paywall.plan.accessibility_label" = "%@、%@、%@";
+"paywall.error.no_products" = "現在のオファリングでRevenueCatの商品が見つかりません。";
+
+"home.empty.title" = "あなたの庭の準備ができました。";
+"home.empty.subtitle" = "最初の祈りの旅路を作って成長を始めましょう。";
+"home.new_journey.title" = "新しい旅路を始める";
+"home.new_journey.personalized_title" = "%@さん、新しい旅路を始めましょう";
+"home.new_journey.subtitle" = "次に整えたい人生の領域はどこですか？";
+"home.new_journey.tap_to_begin" = "どこでもタップして開始";
+"home.new_journey.accessibility_label" = "新しい旅路を開始";
+"home.new_journey.accessibility_label_personalized" = "%@さん、新しい旅路を開始";
+"home.new_journey.accessibility_hint" = "ダブルタップで旅路作成を開きます。左にスワイプでジャーナルへ。";
+"home.followthrough.yes" = "あなたが実行したから、これが育ちました。";
+"home.followthrough.partial" = "少しの前進も価値があります。もう少し小さな一歩で続けましょう。";
+"home.followthrough.no" = "今日にも恵みがあります。ごく小さな一歩から始めましょう。";
+
+"journal.title" = "ジャーナル";
+"journal.active_journeys" = "進行中の旅路";
+"journal.memories" = "記録";
+
+"create_journey.title" = "新しい旅路";
+"create_journey.prayer_title" = "今、何について祈りたいですか？";
+"create_journey.prayer_placeholder" = "心にあることを書いてください...";
+"create_journey.goal_title" = "今、神と共にどの目標へ向かっていますか？";
+"create_journey.goal_placeholder" = "目標を説明してください...";
+"create_journey.create_button" = "作成";
+"create_journey.creating" = "旅路を作成中...";
+
+"journey.error.create_title" = "旅路を作成できません";
+"journey.error.offline_create" = "新しい旅路を始めるにはインターネット接続が必要です。既存の旅路はオフラインでも続けられます。";
+"journey.error.unavailable_create" = "現在、旅路作成は利用できません。しばらくしてからもう一度お試しください。";
+
+"content.error.remote_provider_missing" = "リモートAIプロバイダーが設定されていません。";
+
+"onboarding.intro_title" = "Tendへようこそ";
+"onboarding.intro_subtitle" = "祈る。行動する。育つ。";
+"onboarding.intro_tagline" = "あなたの祈りを
+現実の成長につながる
+小さな一歩に変えよう";
+"onboarding.intro.logo_accessibility" = "Tendロゴのアニメーション";
+"onboarding.name_title" = "お名前を教えてください";
+"onboarding.name_placeholder" = "名前を入力";
+"onboarding.prayer_intent_title" = "今、何について祈りたいですか？";
+"onboarding.prayer_intent_placeholder" = "私の祈りは...";
+"onboarding.goal_intent_title" = "今、神と共にどの目標へ向かっていますか？";
+"onboarding.goal_intent_placeholder" = "私の目標は...";
+"onboarding.generating_title" = "あなたの旅路を設計中...";
+"onboarding.tend_reflection_title" = "最初の一歩の準備ができました。";
+"onboarding.tend_scripture_label" = "聖書箇所";
+"onboarding.tend_prayer_title" = "少し祈る時間を持ちましょう。";
+"onboarding.tend_prayer_subtitle" = "あなたの旅路と今日の聖書に基づいた個人的な祈りを読みましょう。";
+"onboarding.tend_step_title" = "最初の一歩を選びましょう。";
+"onboarding.tend_step_question_fallback" = "今日できる小さな一歩は何ですか？";
+"onboarding.tend_step_placeholder" = "私の次の一歩は...";
+"onboarding.banner_name_title" = "{{firstName}}さん、あなたの祈りには意味があります。";
+"onboarding.banner_name_subtitle" = "あなたの次の一歩にも。";
+"onboarding.banner_truth_title" = "あなたの祈りは
+生き方を変えられる。";
+"onboarding.banner_truth_subtitle" = "Tendはあなたの祈りを
+習慣・選択・日々の暮らしへと
+つなげます。";
+"onboarding.banner_change_title" = "祈りが現実の変化の
+始まりになったら？";
+"onboarding.method_title" = "Tendの仕組み";
+"onboarding.method_bullet_pray_lead" = "祈る";
+"onboarding.method_bullet_pray_text" = "大切なことのために";
+"onboarding.method_bullet_reflect_lead" = "振り返る";
+"onboarding.method_bullet_reflect_text" = "聖書とともに";
+"onboarding.method_bullet_choose_lead" = "選ぶ";
+"onboarding.method_bullet_choose_text" = "小さな一歩を";
+"onboarding.method_bullet_grow_lead" = "育つ";
+"onboarding.method_bullet_grow_text" = "日々の忠実さを通して";
+"onboarding.grounding_title" = "信仰は生きることで育ちます。";
+"onboarding.grounding_body" = "祈りは生き方を形づくり、小さな忠実な一歩は、時を経て本当の実りを結びます。";
+"onboarding.reminder_title" = "前に置き続けると成長しやすくなります。";
+"onboarding.reminder_subtitle" = "祈りの旅路に戻り、次の小さな一歩を取るためのリマインダーを設定しましょう。";
+"onboarding.reminder_add_button" = "リマインダーを追加";
+"onboarding.widget_title" = "旅路を身近に。";
+"onboarding.widget_subtitle" = "ホーム画面から現在の祈り、聖句、次の一歩を確認できます。";
+"onboarding.creation_sprout_title" = "種を植えています...";
+"onboarding.background_selection_title" = "背景を選びましょう。";
+"onboarding.background_selection_subtitle" = "ホーム画面の背景テーマを選択してください。";
+"onboarding.review_title" = "ここまでのTendはいかがですか？";
+"onboarding.review_subtitle" = "App Storeでの短いレビューが、より多くの人にTendを届けます。";
+"onboarding.review_primary_button" = "Tendを評価";
+"onboarding.review_secondary_button" = "あとで";
+"onboarding.review_thanks_note" = "Tendの成長を支えてくれてありがとうございます。";
+"onboarding.intro_primary_cta" = "はじめる";
+"onboarding.default_next_cta" = "次へ";
+"onboarding.final_primary_cta" = "Tendに入る";
+
+"Today's Tend" = "今日のTend";
+"View today's journal entry" = "今日のジャーナルを見る";
+"Reveal Today's Step" = "今日の一歩を表示";
+"Streak" = "連続";
+"TODAY'S SCRIPTURE" = "今日の聖句";
+"REFLECT" = "振り返り";
+"PRAY" = "祈り";
+"TEND" = "実践";
+"Type your small step..." = "小さな一歩を入力...";
+"FOLLOW-THROUGH" = "実行状況";
+"Did you do the step you committed to yesterday?" = "昨日コミットした一歩を実行できましたか？";
+"Yes" = "はい";
+"Partially" = "一部";
+"No" = "いいえ";
+"Continue" = "続ける";
+"Day Streak!" = "連続達成！";
+"Journey Milestone" = "旅路の節目";
+"Keep Tending" = "続けて実践";
+"Mark Complete" = "完了にする";
+"Looks like this journey may be complete. You can keep tending or mark it complete." = "この旅路は完了に近いようです。続けて実践するか、完了としてマークできます。";
+"Tap to open today's step" = "タップして今日の一歩を開く";
+"Open today's step" = "今日の一歩を開く";
+"Open today's tend flow." = "今日のTendフローを開きます。";
+"home.sheet.collapse" = "旅路の詳細をたたむ";
+"home.sheet.expand" = "旅路の詳細を広げる";
+"home.sheet.collapse_hint" = "ダブルタップで下部シートをたたみます。";
+"home.sheet.expand_hint" = "ダブルタップで下部シートを広げます。";
+"home.cycle.label" = "サイクル %d";
+"home.generating.revealing" = "表示中...";
+"home.generating.revealing_accessibility" = "今日の一歩を表示中";
+"home.generating.reveal_accessibility" = "今日の一歩を表示";
+"home.generating.reveal_hint" = "今日の振り返り、祈り、次の一歩を生成します。";
+"home.journal.open_entry_hint" = "今日完了したジャーナルを開きます。";
+"home.streak.day_count.single" = "%d日";
+"home.streak.day_count.multi" = "%d日";
+"home.tend.close_accessibility" = "今日のTendを閉じる";
+"home.tend.suggestion_accessibility" = "提案ステップを使う: %@";
+"home.tend.button" = "実践する";
+
+"journal.recent_entries" = "最近の記録";
+"journal.no_entries" = "まだ記録がありません。";
+"journal.step_prefix" = "ステップ: %@";
+"journal.rename.title" = "旅路の名前を変更";
+"journal.rename.placeholder" = "新しいタイトル";
+"journal.rename.save" = "保存";
+"journal.detail.reflection_fallback" = "忠実な一歩を続けましょう。";
+"journal.detail.step_skipped" = "（ステップをスキップ）";

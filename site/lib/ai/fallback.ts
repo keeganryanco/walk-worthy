@@ -3,10 +3,11 @@ import { deterministicReference } from "./scripture";
 
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
 
-function languageCode(input: JourneyPackageRequest): "en" | "es" | "pt" | "ko" {
+function languageCode(input: JourneyPackageRequest): "en" | "es" | "pt" | "ja" | "ko" {
   const raw = (input.languageCode ?? input.localeIdentifier ?? "").toLowerCase();
   if (raw.startsWith("es")) return "es";
   if (raw.startsWith("pt")) return "pt";
+  if (raw.startsWith("ja")) return "ja";
   if (raw.startsWith("ko")) return "ko";
   return "en";
 }
@@ -28,6 +29,9 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
     }
     if (language === "pt") {
       return ["Faça um passo de dois minutos", "Escolha uma ação mais fácil", "Ore e comece pequeno"];
+    }
+    if (language === "ja") {
+      return ["2分でできる一歩を選びましょう", "もっと簡単な行動を一つ選びましょう", "祈ってから小さく始めましょう"];
     }
     if (language === "ko") {
       return ["2분짜리 작은 행동을 하세요", "더 쉬운 행동 하나를 고르세요", "기도하고 작게 시작하세요"];
@@ -78,6 +82,22 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
       wisdom: ["Pare e peça sabedoria", "Defina um passo sábio", "Busque conselho confiável"]
     };
     return byThemePt[theme] ?? byThemePt.basic;
+  }
+
+  if (language === "ja") {
+    const byThemeJa: Record<string, string[]> = {
+      basic: ["一つの課題のために祈る", "忠実な行動を一つ取る", "今日の次の一歩を書く"],
+      faith: ["全き信頼で祈る", "手放す領域を一つ決める", "信仰の一歩を踏み出す"],
+      patience: ["穏やかな一歩を選ぶ", "反応する前に待つ", "先延ばしの課題を終える"],
+      peace: ["ゆっくり5回深呼吸する", "不安を祈りに委ねる", "妨げを一つ静める"],
+      resilience: ["難しいことを一つ行う", "つまずきを捉え直す", "今日の力を祈り求める"],
+      community: ["励ましのメッセージを送る", "一人の友のために祈る", "短い連絡の時間を決める"],
+      discipline: ["集中ブロックを設定する", "妨げを一つ取り除く", "準備できる前に始める"],
+      healing: ["いたわりの一歩を取る", "正直な感情を言葉にする", "支えを求める"],
+      joy: ["感謝を3つ書く", "小さな前進を祝う", "賛美の分かち合いをする"],
+      wisdom: ["立ち止まり知恵を求める", "知恵ある一歩を書く", "信頼できる助言を求める"]
+    };
+    return byThemeJa[theme] ?? byThemeJa.basic;
   }
 
   if (language === "ko") {
@@ -135,6 +155,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
       ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
       : language === "pt"
         ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
+        : language === "ja"
+          ? "神に願いを信頼してゆだね、今日、忠実な一歩を踏み出しましょう。"
         : language === "ko"
           ? "믿음으로 하나님께 간구를 올려 드리고, 오늘 신실한 한 걸음을 내딛으세요."
       : "Bring your requests to God with trust, and take one faithful step today.");
@@ -145,6 +167,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         ? "Una decisión fiel hoy puede formar un crecimiento duradero."
         : language === "pt"
           ? "Uma decisão fiel hoje pode formar um crescimento duradouro."
+          : language === "ja"
+            ? "今日の忠実な決断が、長く続く成長を形づくります。"
           : language === "ko"
             ? "오늘의 신실한 결정 하나가 오래 남는 성장을 만듭니다."
         : "One faithful choice today can shape long-term growth.",
@@ -155,6 +179,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         ? "Señor, afirma mi corazón y alinea mi próxima acción con el crecimiento que te estoy pidiendo."
         : language === "pt"
           ? "Senhor, firma meu coração e alinha minha próxima ação com o crescimento que estou Te pedindo."
+          : language === "ja"
+            ? "主よ、私の心を堅くし、私が願う成長と一致する次の行動へ導いてください。"
           : language === "ko"
             ? "주님, 제 마음을 붙드시고 제가 구하는 성장과 맞는 다음 행동으로 이끌어 주세요."
         : "Lord, steady my heart and align my next action with the growth I am asking You for.",
@@ -165,6 +191,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
           ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
           : language === "pt"
             ? "Qual é um pequeno passo que você consegue concluir hoje?"
+            : language === "ja"
+              ? "今日、現実的に終えられる小さな一歩は何ですか？"
             : language === "ko"
               ? "오늘 현실적으로 마칠 수 있는 작은 걸음 하나는 무엇인가요?"
           : "What is one small step you can realistically finish today?"
@@ -172,6 +200,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
           ? "¿Qué paso pequeño podrías dar hoy?"
           : language === "pt"
             ? "Qual pequeno passo você pode dar hoje?"
+            : language === "ja"
+              ? "今日、どんな小さな一歩を踏み出せますか？"
             : language === "ko"
               ? "오늘 어떤 작은 걸음을 내딛을 수 있을까요?"
           : "What small step could you take today?",
