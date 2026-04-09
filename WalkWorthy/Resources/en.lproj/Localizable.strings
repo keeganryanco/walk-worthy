@@ -27,9 +27,14 @@
 "settings.language.title" = "App Language";
 "settings.language.system" = "System Default";
 "settings.language.english" = "English";
-"settings.language.spanish" = "Español";
-"settings.language.portuguese_brazil" = "Português (Brasil)";
+"settings.language.spanish" = "Spanish";
+"settings.language.portuguese_brazil" = "Portuguese (Brazil)";
+"settings.language.korean" = "Korean";
 "settings.appearance.home_background" = "Home Background";
+"settings.appearance.home_background.none" = "None (Solid)";
+"settings.appearance.home_background.morning_garden" = "Morning Garden";
+"settings.appearance.home_background.greenhouse_oasis" = "Greenhouse Oasis";
+"settings.appearance.home_background.mountain_dawn" = "Mountain Dawn";
 
 "settings.widgets.section" = "Widgets";
 "settings.widgets.empty" = "Create a journey to choose widget content.";
@@ -61,6 +66,9 @@
 "paywall.resubscribe.subheadline" = "Resubscribe to Tend Premium to continue your journey.";
 "paywall.resubscribe.cta" = "Resubscribe";
 "paywall.resubscribe.footnote" = "Auto-renews unless canceled in Settings.";
+"paywall.hard_gate.subheadline" = "Unlock Tend Premium to continue your journey.";
+"paywall.hard_gate.cta" = "Continue with Premium";
+"paywall.hard_gate.footnote" = "Auto-renews unless canceled in Settings.";
 "paywall.loading_plans" = "Loading plans…";
 "paywall.plan.select_hint" = "Double-tap to select this plan.";
 "paywall.cta.hint" = "Starts the selected subscription plan.";
@@ -76,6 +84,7 @@
 "paywall.plan.billed_weekly" = "Billed weekly";
 "paywall.plan.billed_daily" = "Billed daily";
 "paywall.plan.recurring" = "Recurring subscription";
+"paywall.plan.accessibility_label" = "%@, %@, %@";
 "paywall.error.no_products" = "No RevenueCat products found in the current offering.";
 
 "home.empty.title" = "Your garden is ready.";
@@ -112,6 +121,7 @@
 "onboarding.intro_title" = "Welcome to Tend";
 "onboarding.intro_subtitle" = "pray. act. grow.";
 "onboarding.intro_tagline" = "turn your prayers into small\nsteps of real growth";
+"onboarding.intro.logo_accessibility" = "Tend logo animation";
 "onboarding.name_title" = "What's your name?";
 "onboarding.name_placeholder" = "Enter your name";
 "onboarding.prayer_intent_title" = "What do you want to pray about right now?";
@@ -182,3 +192,27 @@
 "Tap to open today's step" = "Tap to open today's step";
 "Open today's step" = "Open today's step";
 "Open today's tend flow." = "Opens today's tend flow.";
+"home.sheet.collapse" = "Collapse journey details";
+"home.sheet.expand" = "Expand journey details";
+"home.sheet.collapse_hint" = "Double-tap to collapse the bottom sheet.";
+"home.sheet.expand_hint" = "Double-tap to expand the bottom sheet.";
+"home.cycle.label" = "Cycle %d";
+"home.generating.revealing" = "Revealing...";
+"home.generating.revealing_accessibility" = "Revealing today's step";
+"home.generating.reveal_accessibility" = "Reveal today's step";
+"home.generating.reveal_hint" = "Generates today's reflection, prayer, and next step.";
+"home.journal.open_entry_hint" = "Opens today's completed journal entry.";
+"home.streak.day_count.single" = "%d day";
+"home.streak.day_count.multi" = "%d days";
+"home.tend.close_accessibility" = "Close today's tend";
+"home.tend.suggestion_accessibility" = "Use suggested step: %@";
+"home.tend.button" = "Tend";
+
+"journal.recent_entries" = "Recent Entries";
+"journal.no_entries" = "No entries yet.";
+"journal.step_prefix" = "Step: %@";
+"journal.rename.title" = "Rename Journey";
+"journal.rename.placeholder" = "New title";
+"journal.rename.save" = "Save";
+"journal.detail.reflection_fallback" = "Continue stepping faithfully.";
+"journal.detail.step_skipped" = "(Step skipped)";

@@ -502,10 +502,19 @@ struct RootView: View {
 
         return PaywallRemoteConfig(
             headline: base.headline,
-            subheadline: "Unlock Tend Premium to continue your journey.",
-            ctaTitle: "Continue with Premium",
+            subheadline: L10n.string(
+                "paywall.hard_gate.subheadline",
+                default: "Unlock Tend Premium to continue your journey."
+            ),
+            ctaTitle: L10n.string(
+                "paywall.hard_gate.cta",
+                default: "Continue with Premium"
+            ),
             annualBadgeText: base.annualBadgeText,
-            footnote: "Auto-renews unless canceled in Settings.",
+            footnote: L10n.string(
+                "paywall.hard_gate.footnote",
+                default: "Auto-renews unless canceled in Settings."
+            ),
             defaultPackageToken: base.defaultPackageToken,
             isDismissable: false
         )

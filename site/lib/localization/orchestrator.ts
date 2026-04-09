@@ -42,7 +42,7 @@ type CandidateResult = {
   model: string;
 };
 
-type NormalizedTargetLocale = "en" | "es" | "pt-br";
+type NormalizedTargetLocale = "en" | "es" | "pt-br" | "ko";
 
 const cache = new Map<string, CacheEntry>();
 
@@ -184,6 +184,9 @@ function normalizeTargetLocale(targetLocale: string): NormalizedTargetLocale {
   if (normalized.startsWith("pt")) {
     return "pt-br";
   }
+  if (normalized.startsWith("ko")) {
+    return "ko";
+  }
   return "en";
 }
 
@@ -274,6 +277,8 @@ function buildTranslationPrompt(
       ? "Spanish"
       : targetLocale === "pt-br"
         ? "Portuguese (Brazil)"
+        : targetLocale === "ko"
+          ? "Korean"
         : "English";
   const glossaryHints =
     targetLocale === "en"

@@ -29,7 +29,12 @@
 "settings.language.english" = "Inglés";
 "settings.language.spanish" = "Español";
 "settings.language.portuguese_brazil" = "Portugués (Brasil)";
+"settings.language.korean" = "Coreano";
 "settings.appearance.home_background" = "Fondo de inicio";
+"settings.appearance.home_background.none" = "Ninguno (Sólido)";
+"settings.appearance.home_background.morning_garden" = "Jardín matutino";
+"settings.appearance.home_background.greenhouse_oasis" = "Oasis de invernadero";
+"settings.appearance.home_background.mountain_dawn" = "Amanecer en la montaña";
 
 "settings.widgets.section" = "Widgets";
 "settings.widgets.empty" = "Crea un camino para elegir el contenido del widget.";
@@ -61,6 +66,9 @@
 "paywall.resubscribe.subheadline" = "Vuelve a Tend Premium para continuar tu camino.";
 "paywall.resubscribe.cta" = "Volver a suscribirme";
 "paywall.resubscribe.footnote" = "Se renueva automáticamente salvo que canceles en Ajustes.";
+"paywall.hard_gate.subheadline" = "Desbloquea Tend Premium para continuar tu camino.";
+"paywall.hard_gate.cta" = "Continuar con Premium";
+"paywall.hard_gate.footnote" = "Se renueva automáticamente salvo que canceles en Ajustes.";
 "paywall.loading_plans" = "Cargando planes…";
 "paywall.plan.select_hint" = "Toca dos veces para seleccionar este plan.";
 "paywall.cta.hint" = "Inicia el plan de suscripción seleccionado.";
@@ -76,6 +84,7 @@
 "paywall.plan.billed_weekly" = "Cobrado semanalmente";
 "paywall.plan.billed_daily" = "Cobrado diariamente";
 "paywall.plan.recurring" = "Suscripción recurrente";
+"paywall.plan.accessibility_label" = "%@, %@, %@";
 "paywall.error.no_products" = "No se encontraron productos de RevenueCat en la oferta actual.";
 
 "home.empty.title" = "Tu jardín está listo.";
@@ -112,6 +121,7 @@
 "onboarding.intro_title" = "Bienvenido a Tend";
 "onboarding.intro_subtitle" = "ora. actúa. crece.";
 "onboarding.intro_tagline" = "convierte tus oraciones en\npequeños pasos de crecimiento real";
+"onboarding.intro.logo_accessibility" = "Animación del logo de Tend";
 "onboarding.name_title" = "¿Cómo te llamas?";
 "onboarding.name_placeholder" = "Escribe tu nombre";
 "onboarding.prayer_intent_title" = "¿Por qué quieres orar ahora mismo?";
@@ -182,3 +192,27 @@
 "Tap to open today's step" = "Toca para abrir el paso de hoy";
 "Open today's step" = "Abrir el paso de hoy";
 "Open today's tend flow." = "Abre el flujo de tend de hoy.";
+"home.sheet.collapse" = "Contraer detalles del camino";
+"home.sheet.expand" = "Expandir detalles del camino";
+"home.sheet.collapse_hint" = "Toca dos veces para contraer la hoja inferior.";
+"home.sheet.expand_hint" = "Toca dos veces para expandir la hoja inferior.";
+"home.cycle.label" = "Ciclo %d";
+"home.generating.revealing" = "Revelando...";
+"home.generating.revealing_accessibility" = "Revelando el paso de hoy";
+"home.generating.reveal_accessibility" = "Revelar el paso de hoy";
+"home.generating.reveal_hint" = "Genera la reflexión, la oración y el siguiente paso de hoy.";
+"home.journal.open_entry_hint" = "Abre la entrada completada de hoy.";
+"home.streak.day_count.single" = "%d día";
+"home.streak.day_count.multi" = "%d días";
+"home.tend.close_accessibility" = "Cerrar el tend de hoy";
+"home.tend.suggestion_accessibility" = "Usar paso sugerido: %@";
+"home.tend.button" = "Tende";
+
+"journal.recent_entries" = "Entradas recientes";
+"journal.no_entries" = "Aún no hay entradas.";
+"journal.step_prefix" = "Paso: %@";
+"journal.rename.title" = "Renombrar camino";
+"journal.rename.placeholder" = "Nuevo título";
+"journal.rename.save" = "Guardar";
+"journal.detail.reflection_fallback" = "Sigue dando pasos fieles.";
+"journal.detail.step_skipped" = "(Paso omitido)";

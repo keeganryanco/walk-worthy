@@ -56,9 +56,18 @@ For Portuguese (Brazil), the app supports explicit suffix overrides:
 - `paywall_annual_badge_pt_br`
 - `paywall_footnote_pt_br`
 
-Resolution order for non-English app locales (`es`, `pt-BR`):
+For Korean, the app supports explicit suffix overrides:
+
+- `paywall_headline_ko`
+- `paywall_subheadline_ko`
+- `paywall_cta_ko`
+- `paywall_annual_badge_ko`
+- `paywall_footnote_ko`
+
+Resolution order for non-English app locales (`es`, `pt-BR`, `ko`):
 1. Use explicit `*_es` key if present.
    - For `pt-BR`, use explicit `*_pt_br` key if present.
+   - For Korean, use explicit `*_ko` key if present.
 2. If missing and field is non-legal (`headline`, `subheadline`, `annual_badge`), app uses backend machine translation.
 3. If missing and field is legal-sensitive (`cta`, `footnote`), app keeps English source text (no machine translation).
 

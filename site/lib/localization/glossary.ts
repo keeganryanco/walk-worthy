@@ -1,5 +1,5 @@
 export type LocalizationDomain = "posthog_onboarding" | "revenuecat_paywall";
-export type LocalizationLocale = "es" | "pt-br";
+export type LocalizationLocale = "es" | "pt-br" | "ko";
 
 type GlossaryRules = {
   preferredTerms: Array<{ source: string; target: string }>;
@@ -28,6 +28,16 @@ const glossaryByDomain: Record<LocalizationDomain, Partial<Record<LocalizationLo
       ],
       discouragedReplacements: [{ from: "devoção", to: "oração guiada" }],
       styleNotes: ["Prefer natural Brazilian Portuguese. Avoid overly formal or imported literal phrasing."]
+    },
+    ko: {
+      preferredTerms: [
+        { source: "journey", target: "여정" },
+        { source: "prayer", target: "기도" },
+        { source: "small step", target: "작은 걸음" },
+        { source: "grow", target: "자라다" }
+      ],
+      discouragedReplacements: [{ from: "디보션", to: "묵상 기도" }],
+      styleNotes: ["Use natural modern Korean. Keep sentence flow concise and warm rather than overly formal."]
     }
   },
   revenuecat_paywall: {
@@ -44,6 +54,13 @@ const glossaryByDomain: Record<LocalizationDomain, Partial<Record<LocalizationLo
         { source: "cancel anytime", target: "cancele quando quiser" }
       ],
       styleNotes: ["Keep billing language simple and explicit for app-store compliance."]
+    },
+    ko: {
+      preferredTerms: [
+        { source: "free trial", target: "무료 체험" },
+        { source: "cancel anytime", target: "언제든지 해지" }
+      ],
+      styleNotes: ["Keep subscription billing copy plain and compliant. Avoid ambiguous legal phrasing."]
     }
   }
 };

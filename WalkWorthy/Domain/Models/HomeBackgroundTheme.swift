@@ -17,4 +17,29 @@ enum HomeBackgroundTheme: String, CaseIterable, Identifiable {
         case .mountain: return "home_plant_background_mountain"
         }
     }
+
+    var localizedDisplayName: String {
+        switch self {
+        case .none:
+            return L10n.string(
+                "settings.appearance.home_background.none",
+                default: "None (Solid)"
+            )
+        case .morningGarden:
+            return L10n.string(
+                "settings.appearance.home_background.morning_garden",
+                default: "Morning Garden"
+            )
+        case .greenhouse:
+            return L10n.string(
+                "settings.appearance.home_background.greenhouse_oasis",
+                default: "Greenhouse Oasis"
+            )
+        case .mountain:
+            return L10n.string(
+                "settings.appearance.home_background.mountain_dawn",
+                default: "Mountain Dawn"
+            )
+        }
+    }
 }

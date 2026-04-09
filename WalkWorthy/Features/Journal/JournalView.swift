@@ -482,13 +482,13 @@ struct JourneyDetailView: View {
                     .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 24) {
-                        Text("Recent Entries")
+                        Text(L10n.string("journal.recent_entries", default: "Recent Entries"))
                             .font(WWTypography.heading(22))
                             .foregroundStyle(WWColor.nearBlack)
                             .padding(.horizontal, 24)
 
                         if journey.entries.isEmpty {
-                            Text("No entries yet.")
+                            Text(L10n.string("journal.no_entries", default: "No entries yet."))
                                 .foregroundStyle(WWColor.muted)
                                 .padding(.horizontal, 24)
                         } else {
@@ -510,7 +510,12 @@ struct JourneyDetailView: View {
                                                 .multilineTextAlignment(.leading)
                                                 
                                             if !entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                                Text("Step: \(entry.actionStep)")
+                                                Text(
+                                                    String(
+                                                        format: L10n.string("journal.step_prefix", default: "Step: %@"),
+                                                        entry.actionStep
+                                                    )
+                                                )
                                                     .font(WWTypography.caption(14).weight(.medium))
                                                     .foregroundStyle(WWColor.muted)
                                                     .padding(12)
@@ -549,10 +554,10 @@ struct JourneyDetailView: View {
                 }
             }
         }
-        .alert("Rename Journey", isPresented: $isRenaming) {
-            TextField("New title", text: $newTitle)
-            Button("Cancel", role: .cancel) {}
-            Button("Save") {
+        .alert(L10n.string("journal.rename.title", default: "Rename Journey"), isPresented: $isRenaming) {
+            TextField(L10n.string("journal.rename.placeholder", default: "New title"), text: $newTitle)
+            Button(L10n.string("common.cancel", default: "Cancel"), role: .cancel) {}
+            Button(L10n.string("journal.rename.save", default: "Save")) {
                 let formatted = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !formatted.isEmpty {
                     journey.title = formatted
@@ -583,12 +588,18 @@ struct HistoricalTendDetailView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("REFLECT")
+                        Text(L10n.string("REFLECT", default: "REFLECT"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
 
-                        Text(package?.reflectionThought ?? "Continue stepping faithfully.")
+                        Text(
+                            package?.reflectionThought
+                                ?? L10n.string(
+                                    "journal.detail.reflection_fallback",
+                                    default: "Continue stepping faithfully."
+                                )
+                        )
                             .font(WWTypography.heading(22))
                             .foregroundStyle(WWColor.nearBlack)
                             .lineSpacing(4)
@@ -622,7 +633,7 @@ struct HistoricalTendDetailView: View {
                     .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("PRAY")
+                        Text(L10n.string("PRAY", default: "PRAY"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
@@ -637,7 +648,7 @@ struct HistoricalTendDetailView: View {
                     .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("TEND")
+                        Text(L10n.string("TEND", default: "TEND"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
@@ -648,7 +659,11 @@ struct HistoricalTendDetailView: View {
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text(entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "(Step skipped)" : entry.actionStep)
+                        Text(
+                            entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? L10n.string("journal.detail.step_skipped", default: "(Step skipped)")
+                                : entry.actionStep
+                        )
                             .font(WWTypography.body(18))
                             .padding(.horizontal, 20)
                             .padding(.vertical, 18)

@@ -102,7 +102,7 @@ Headers:
 
 Body:
 - `domain` (`posthog_onboarding | revenuecat_paywall`)
-- `targetLocale` (`en | es | pt-br`; normalized server-side)
+- `targetLocale` (`en | es | pt-br | ko`; normalized server-side)
 - `strings` (key-value map of source English text)
 - optional `telemetry`:
   - `distinctID`

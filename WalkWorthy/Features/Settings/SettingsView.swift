@@ -32,7 +32,7 @@ struct SettingsView: View {
     }
 
     private var selectedAppLanguage: AppLanguage {
-        AppLanguage(rawValue: appLanguageRawValue) ?? .system
+        AppLanguage.parseStoredLanguage(appLanguageRawValue)
     }
 
     var body: some View {
@@ -143,7 +143,7 @@ struct SettingsView: View {
 
                     Picker(L10n.string("settings.appearance.home_background", default: "Home Background"), selection: $backgroundTheme) {
                         ForEach(HomeBackgroundTheme.allCases) { theme in
-                            Text(theme.rawValue).tag(theme)
+                            Text(theme.localizedDisplayName).tag(theme)
                         }
                     }
                     .foregroundStyle(WWColor.nearBlack)

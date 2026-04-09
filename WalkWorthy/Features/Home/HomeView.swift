@@ -769,8 +769,16 @@ struct JourneyGrowthPage: View {
                     .onTapGesture {
                         setBottomSheetExpanded(!isBottomSheetExpanded)
                     }
-                    .accessibilityLabel(isBottomSheetExpanded ? "Collapse journey details" : "Expand journey details")
-                    .accessibilityHint("Double-tap to \(isBottomSheetExpanded ? "collapse" : "expand") the bottom sheet.")
+                    .accessibilityLabel(
+                        isBottomSheetExpanded
+                            ? L10n.string("home.sheet.collapse", default: "Collapse journey details")
+                            : L10n.string("home.sheet.expand", default: "Expand journey details")
+                    )
+                    .accessibilityHint(
+                        isBottomSheetExpanded
+                            ? L10n.string("home.sheet.collapse_hint", default: "Double-tap to collapse the bottom sheet.")
+                            : L10n.string("home.sheet.expand_hint", default: "Double-tap to expand the bottom sheet.")
+                    )
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction {
                         setBottomSheetExpanded(!isBottomSheetExpanded)
@@ -799,7 +807,12 @@ struct JourneyGrowthPage: View {
                     }
 
                     if currentCycleCount > 0 {
-                        Text("Cycle \(currentCycleCount + 1)")
+                        Text(
+                            String(
+                                format: L10n.string("home.cycle.label", default: "Cycle %d"),
+                                currentCycleCount + 1
+                            )
+                        )
                             .font(WWTypography.caption(11))
                             .foregroundStyle(WWColor.muted)
                     }
@@ -826,7 +839,7 @@ struct JourneyGrowthPage: View {
                                             .font(.system(size: 20, weight: .semibold))
                                             .foregroundStyle(WWColor.growGreen)
                                     }
-                                    Text("Today's Tend")
+                                    Text(L10n.string("Today's Tend", default: "Today's Tend"))
                                         .font(WWTypography.caption(14).weight(.bold))
                                         .foregroundStyle(WWColor.muted)
                                         .tracking(1.0)
@@ -847,14 +860,19 @@ struct JourneyGrowthPage: View {
 
                                 scriptureSummaryCard(for: entry)
 
-                                Text("View today's journal entry")
+                                Text(L10n.string("View today's journal entry", default: "View today's journal entry"))
                                     .font(WWTypography.caption(13).weight(.medium))
                                     .foregroundStyle(WWColor.growGreen)
                             }
                             .padding(.horizontal, 32)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint("Opens today's completed journal entry.")
+                        .accessibilityHint(
+                            L10n.string(
+                                "home.journal.open_entry_hint",
+                                default: "Opens today's completed journal entry."
+                            )
+                        )
                     } else {
                         VStack(spacing: 16) {
                             HStack(spacing: 8) {
@@ -870,7 +888,7 @@ struct JourneyGrowthPage: View {
                                         .foregroundStyle(WWColor.growGreen)
                                         .opacity(0.35)
                                 }
-                                Text("Today's Tend")
+                                Text(L10n.string("Today's Tend", default: "Today's Tend"))
                                     .font(WWTypography.caption(14).weight(.bold))
                                     .foregroundStyle(WWColor.muted)
                                     .tracking(1.0)
@@ -879,7 +897,11 @@ struct JourneyGrowthPage: View {
                             Button {
                                 showTendingSheet = true
                             } label: {
-                                Text(entry.actionStep.isEmpty ? "Tap to open today's step" : entry.actionStep)
+                                Text(
+                                    entry.actionStep.isEmpty
+                                        ? L10n.string("Tap to open today's step", default: "Tap to open today's step")
+                                        : entry.actionStep
+                                )
                                     .font(WWTypography.body(16))
                                     .foregroundStyle(WWColor.nearBlack)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -894,8 +916,12 @@ struct JourneyGrowthPage: View {
                                     .stroke(insetCardStroke, lineWidth: 1)
                             )
                             .padding(.horizontal, 32)
-                            .accessibilityLabel(entry.actionStep.isEmpty ? "Open today's step" : "Open today's step. \(entry.actionStep)")
-                            .accessibilityHint("Opens today's tend flow.")
+                            .accessibilityLabel(
+                                entry.actionStep.isEmpty
+                                    ? L10n.string("Open today's step", default: "Open today's step")
+                                    : "\(L10n.string("Open today's step", default: "Open today's step")). \(entry.actionStep)"
+                            )
+                            .accessibilityHint(L10n.string("Open today's tend flow.", default: "Opens today's tend flow."))
                         }
                     }
                 } else {
@@ -906,7 +932,7 @@ struct JourneyGrowthPage: View {
                             HStack(spacing: 10) {
                                 ProgressView()
                                     .tint(WWColor.nearBlack)
-                                Text("Revealing...")
+                                Text(L10n.string("home.generating.revealing", default: "Revealing..."))
                                     .font(WWTypography.heading(20))
                                     .foregroundStyle(WWColor.nearBlack)
                             }
@@ -917,7 +943,7 @@ struct JourneyGrowthPage: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 18, weight: .semibold))
-                                Text("Reveal Today's Step")
+                                Text(L10n.string("Reveal Today's Step", default: "Reveal Today's Step"))
                                     .font(WWTypography.heading(20))
                             }
                             .foregroundStyle(WWColor.nearBlack)
@@ -948,8 +974,17 @@ struct JourneyGrowthPage: View {
                     .padding(.horizontal, 32)
                     .disabled(isGenerating)
                     .opacity(isGenerating ? 0.88 : 1.0)
-                    .accessibilityLabel(isGenerating ? "Revealing today's step" : "Reveal today's step")
-                    .accessibilityHint("Generates today's reflection, prayer, and next step.")
+                    .accessibilityLabel(
+                        isGenerating
+                            ? L10n.string("home.generating.revealing_accessibility", default: "Revealing today's step")
+                            : L10n.string("home.generating.reveal_accessibility", default: "Reveal today's step")
+                    )
+                    .accessibilityHint(
+                        L10n.string(
+                            "home.generating.reveal_hint",
+                            default: "Generates today's reflection, prayer, and next step."
+                        )
+                    )
                 }
 
                 Spacer(minLength: 10)
@@ -969,14 +1004,22 @@ struct JourneyGrowthPage: View {
     private var streakSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Streak")
+                Text(L10n.string("Streak", default: "Streak"))
                     .font(WWTypography.caption(13).weight(.heavy))
                     .foregroundStyle(WWColor.muted)
                     .tracking(1.4)
 
                 Spacer()
 
-                Text("\(currentStreakCount) day\(currentStreakCount == 1 ? "" : "s")")
+                Text(
+                    String(
+                        format: L10n.string(
+                            currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                            default: currentStreakCount == 1 ? "%d day" : "%d days"
+                        ),
+                        currentStreakCount
+                    )
+                )
                     .font(WWTypography.caption(12).weight(.bold))
                     .foregroundStyle(WWColor.growGreen)
             }
@@ -1019,8 +1062,16 @@ struct JourneyGrowthPage: View {
         )
         .padding(.horizontal, 32)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Streak")
-        .accessibilityValue("\(currentStreakCount) day\(currentStreakCount == 1 ? "" : "s")")
+        .accessibilityLabel(L10n.string("Streak", default: "Streak"))
+        .accessibilityValue(
+            String(
+                format: L10n.string(
+                    currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                    default: currentStreakCount == 1 ? "%d day" : "%d days"
+                ),
+                currentStreakCount
+            )
+        )
     }
 
     private func weekdayLabel(for index: Int) -> String {
@@ -1044,7 +1095,7 @@ struct JourneyGrowthPage: View {
 
         if hasScripture {
             VStack(alignment: .leading, spacing: 8) {
-                Text("TODAY'S SCRIPTURE")
+                Text(L10n.string("TODAY'S SCRIPTURE", default: "TODAY'S SCRIPTURE"))
                     .font(WWTypography.caption(11).weight(.heavy))
                     .foregroundStyle(WWColor.growGreen)
                     .tracking(1.2)
@@ -1374,11 +1425,14 @@ struct TendingFlowView: View {
     private var closureFeedbackLine: String? {
         switch selectedFollowThroughStatus {
         case .yes:
-            return "This grew because you followed through."
+            return L10n.string("home.followthrough.yes", default: "This grew because you followed through.")
         case .partial:
-            return "You still moved forward. Let today be one smaller, doable step."
+            return L10n.string(
+                "home.followthrough.partial",
+                default: "Progress still counts. Keep tending with one smaller step."
+            )
         case .no:
-            return "No shame. Let's reset with one tiny step you can finish today."
+            return L10n.string("home.followthrough.no", default: "Grace for today. Start with one tiny step.")
         case .unanswered, .none:
             return nil
         }
@@ -1406,7 +1460,9 @@ struct TendingFlowView: View {
                                 .padding(12)
                                 .background(Circle().fill(tendCardBackground))
                         }
-                        .accessibilityLabel("Close today's tend")
+                        .accessibilityLabel(
+                            L10n.string("home.tend.close_accessibility", default: "Close today's tend")
+                        )
                         Spacer()
                     }
                     .padding(.horizontal, 24)
@@ -1418,7 +1474,7 @@ struct TendingFlowView: View {
                     }
                 
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("REFLECT")
+                        Text(L10n.string("REFLECT", default: "REFLECT"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
@@ -1456,7 +1512,7 @@ struct TendingFlowView: View {
                     .padding(.horizontal, 24)
                 
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("PRAY")
+                        Text(L10n.string("PRAY", default: "PRAY"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
@@ -1471,7 +1527,7 @@ struct TendingFlowView: View {
                     .padding(.horizontal, 24)
 
                     VStack(spacing: 20) {
-                        Text("TEND")
+                        Text(L10n.string("TEND", default: "TEND"))
                             .font(WWTypography.caption(14).weight(.heavy))
                             .foregroundStyle(WWColor.muted)
                             .tracking(2.0)
@@ -1482,7 +1538,7 @@ struct TendingFlowView: View {
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        TextField("Type your small step...", text: $smallStepInput)
+                        TextField(L10n.string("Type your small step...", default: "Type your small step..."), text: $smallStepInput)
                             .textInputAutocapitalization(.sentences)
                             .font(WWTypography.body(18))
                             .padding(.horizontal, 20)
@@ -1513,7 +1569,15 @@ struct TendingFlowView: View {
                                         .overlay(Capsule().stroke(tendCardStroke, lineWidth: 1))
                                     }
                                     .buttonStyle(.plain)
-                                    .accessibilityLabel("Use suggested step: \(suggestion)")
+                                    .accessibilityLabel(
+                                        String(
+                                            format: L10n.string(
+                                                "home.tend.suggestion_accessibility",
+                                                default: "Use suggested step: %@"
+                                            ),
+                                            suggestion
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -1529,7 +1593,7 @@ struct TendingFlowView: View {
                                 .tint(WWColor.nearBlack)
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Text("Tend")
+                            Text(L10n.string("home.tend.button", default: "Tend"))
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -1550,14 +1614,14 @@ struct TendingFlowView: View {
                 smallStepInput = entry.actionStep
             }
         }
-        .alert("Journey Milestone", isPresented: $showCompletionPrompt) {
-            Button("Keep Tending") {
+        .alert(L10n.string("Journey Milestone", default: "Journey Milestone"), isPresented: $showCompletionPrompt) {
+            Button(L10n.string("Keep Tending", default: "Keep Tending")) {
                 journey.lastCompletionPromptAt = .now
                 try? modelContext.save()
                 WidgetSyncService.publishFromModelContext(modelContext)
                 dismiss()
             }
-            Button("Mark Complete") {
+            Button(L10n.string("Mark Complete", default: "Mark Complete")) {
                 journey.status = .completed
                 journey.isArchived = true
                 journey.lastCompletionPromptAt = .now
@@ -1581,8 +1645,14 @@ struct TendingFlowView: View {
             }
         } message: {
             Text(package?.completionSuggestion.reason.isEmpty == false
-                 ? package?.completionSuggestion.reason ?? "Looks like this journey may be complete. You can keep tending or mark it complete."
-                 : "Looks like this journey may be complete. You can keep tending or mark it complete.")
+                 ? package?.completionSuggestion.reason ?? L10n.string(
+                    "Looks like this journey may be complete. You can keep tending or mark it complete.",
+                    default: "Looks like this journey may be complete. You can keep tending or mark it complete."
+                )
+                 : L10n.string(
+                    "Looks like this journey may be complete. You can keep tending or mark it complete.",
+                    default: "Looks like this journey may be complete. You can keep tending or mark it complete."
+                ))
         }
     }
     
@@ -1683,12 +1753,17 @@ struct TendingFlowView: View {
     @ViewBuilder
     private func closureCard(for priorEntry: PrayerEntry) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("FOLLOW-THROUGH")
+            Text(L10n.string("FOLLOW-THROUGH", default: "FOLLOW-THROUGH"))
                 .font(WWTypography.caption(12).weight(.heavy))
                 .tracking(2.0)
                 .foregroundStyle(WWColor.muted)
 
-            Text("Did you do the step you committed to yesterday?")
+            Text(
+                L10n.string(
+                    "Did you do the step you committed to yesterday?",
+                    default: "Did you do the step you committed to yesterday?"
+                )
+            )
                 .font(WWTypography.heading(22))
                 .foregroundStyle(WWColor.nearBlack)
 
@@ -1702,9 +1777,9 @@ struct TendingFlowView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             HStack(spacing: 8) {
-                followThroughButton(title: "Yes", status: .yes)
-                followThroughButton(title: "Partially", status: .partial)
-                followThroughButton(title: "No", status: .no)
+                followThroughButton(title: L10n.string("Yes", default: "Yes"), status: .yes)
+                followThroughButton(title: L10n.string("Partially", default: "Partially"), status: .partial)
+                followThroughButton(title: L10n.string("No", default: "No"), status: .no)
             }
 
             if let closureFeedbackLine {
@@ -1749,7 +1824,7 @@ struct TendingFlowView: View {
                 )
         }
         .buttonStyle(.plain)
-        .accessibilityValue(isSelected ? "Selected" : "")
+        .accessibilityValue(isSelected ? L10n.string("tab.selected", default: "Selected") : "")
     }
 
     private func shouldPromptCompletionSuggestion(completedCount: Int) -> Bool {
@@ -1832,7 +1907,7 @@ struct StreakOverlayView: View {
                             .font(WWTypography.display(64))
                             .foregroundStyle(WWColor.nearBlack)
                             
-                        Text("Day Streak!")
+                        Text(L10n.string("Day Streak!", default: "Day Streak!"))
                             .font(WWTypography.heading(28))
                             .foregroundStyle(WWColor.nearBlack)
                     }
@@ -1854,7 +1929,7 @@ struct StreakOverlayView: View {
                     Spacer()
                 
                     Button(action: onDismiss) {
-                        Text("Continue")
+                        Text(L10n.string("Continue", default: "Continue"))
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))

@@ -201,7 +201,14 @@ struct PaywallView: View {
         .buttonStyle(.plain)
         .zIndex(isAnnual ? 1 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(planTitle(for: product)), \(priceCaption(for: product)), \(periodSubtitle(for: product))")
+        .accessibilityLabel(
+            String(
+                format: L10n.string("paywall.plan.accessibility_label", default: "%@, %@, %@"),
+                planTitle(for: product),
+                priceCaption(for: product),
+                periodSubtitle(for: product)
+            )
+        )
         .accessibilityValue(isSelected ? L10n.string("tab.selected", default: "Selected") : "")
         .accessibilityHint(L10n.string("paywall.plan.select_hint", default: "Double-tap to select this plan."))
         .accessibilityAddTraits(isSelected ? .isSelected : [])

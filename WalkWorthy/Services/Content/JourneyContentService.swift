@@ -98,27 +98,45 @@ final class JourneyContentService {
             }
         }
 
+        let languageCode = AppLanguage.aiLanguageCode()
+
         let fallback = (try? await templateGenerator.generatePackage(
             profile: profile,
             journey: journey,
             recentEntries: recentEntries,
             memory: memory
         )) ?? DailyJourneyPackage(
-            reflectionThought: AppLanguage.aiLanguageCode() == "es"
+            reflectionThought: languageCode == "es"
                 ? "La constancia fiel se construye un día a la vez."
-                : "Faithful consistency is built one day at a time.",
+                : languageCode == "pt"
+                    ? "A constância fiel é construída dia após dia."
+                    : languageCode == "ko"
+                        ? "신실한 꾸준함은 하루하루 쌓여 갑니다."
+                    : "Faithful consistency is built one day at a time.",
             scriptureReference: "Philippians 4:6-7",
-            scriptureParaphrase: AppLanguage.aiLanguageCode() == "es"
+            scriptureParaphrase: languageCode == "es"
                 ? "Lleva tus preocupaciones a Dios en oración y recibe Su paz mientras das tu próximo paso."
-                : "Bring your worries to God in prayer and receive His peace as you take your next step.",
-            prayer: AppLanguage.aiLanguageCode() == "es"
+                : languageCode == "pt"
+                    ? "Leve suas preocupações a Deus em oração e receba Sua paz enquanto dá seu próximo passo."
+                    : languageCode == "ko"
+                        ? "염려를 기도로 하나님께 올려 드리고, 다음 걸음을 내딛을 때 주님의 평안을 누리세요."
+                    : "Bring your worries to God in prayer and receive His peace as you take your next step.",
+            prayer: languageCode == "es"
                 ? "Señor, afírmame en la confianza y guíame a una acción concreta hoy."
-                : "Lord, ground me in trust and guide one concrete action today.",
+                : languageCode == "pt"
+                    ? "Senhor, firma-me na confiança e guia-me a uma ação concreta hoje."
+                    : languageCode == "ko"
+                        ? "주님, 오늘 제 마음을 믿음 안에 굳게 세우시고 구체적인 한 걸음을 인도해 주세요."
+                    : "Lord, ground me in trust and guide one concrete action today.",
             smallStepQuestion: DailyJourneyPackageValidation.defaultSmallStepQuestion,
             suggestedSteps: [
-                AppLanguage.aiLanguageCode() == "es"
+                languageCode == "es"
                     ? "Elige una acción específica que haga avanzar este camino."
-                    : "Choose one specific action that moves this journey forward."
+                    : languageCode == "pt"
+                        ? "Escolha uma ação específica que avance esta jornada."
+                        : languageCode == "ko"
+                            ? "이 여정을 앞으로 나아가게 할 구체적인 행동 하나를 선택하세요."
+                        : "Choose one specific action that moves this journey forward."
             ],
             completionSuggestion: CompletionSuggestion(
                 shouldPrompt: false,

@@ -31,7 +31,7 @@ struct TendApp: App {
     }
 
     var body: some Scene {
-        let selectedLanguage = AppLanguage(rawValue: appLanguageRawValue) ?? .system
+        let selectedLanguage = AppLanguage.parseStoredLanguage(appLanguageRawValue)
         let locale = AppLanguage.resolvedLocale(for: selectedLanguage)
 
         WindowGroup {

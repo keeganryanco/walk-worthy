@@ -30,7 +30,14 @@ struct OnboardingIntroLoopView: View {
             }
         }
         .frame(width: size, height: size)
-        .accessibilityLabel(Text("Tend logo animation"))
+        .accessibilityLabel(
+            Text(
+                L10n.string(
+                    "onboarding.intro.logo_accessibility",
+                    default: "Tend logo animation"
+                )
+            )
+        )
     }
 }
 

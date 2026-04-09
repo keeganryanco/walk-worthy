@@ -13,9 +13,11 @@ enum L10n {
             return Bundle.main.localizedString(forKey: key, value: defaultValue, table: table)
         }
 
-        if let path = Bundle.main.path(forResource: language.rawValue, ofType: "lproj"),
-           let bundle = Bundle(path: path) {
-            return bundle.localizedString(forKey: key, value: defaultValue, table: table)
+        for candidate in language.localizationResourceCandidates {
+            if let path = Bundle.main.path(forResource: candidate, ofType: "lproj"),
+               let bundle = Bundle(path: path) {
+                return bundle.localizedString(forKey: key, value: defaultValue, table: table)
+            }
         }
 
         return Bundle.main.localizedString(forKey: key, value: defaultValue, table: table)
@@ -161,6 +163,9 @@ enum RemoteLocalizationClient {
         }
         if normalized.hasPrefix("pt") {
             return "pt-br"
+        }
+        if normalized.hasPrefix("ko") {
+            return "ko"
         }
         return "en"
     }

@@ -852,7 +852,7 @@ struct ExperimentalOnboardingFlowView: View {
                                                 .stroke(backgroundTheme == theme ? WWColor.growGreen : Color.clear, lineWidth: 3)
                                         )
                                 }
-                                Text(theme.rawValue)
+                                Text(theme.localizedDisplayName)
                                     .font(WWTypography.caption(12).weight(.medium))
                                     .foregroundStyle(backgroundTheme == theme ? WWColor.nearBlack : WWColor.muted)
                                     .lineLimit(1)
