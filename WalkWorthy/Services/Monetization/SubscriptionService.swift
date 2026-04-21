@@ -10,6 +10,8 @@ private enum SubscriptionLocalization {
 struct SubscriptionDisplayProduct: Identifiable, Equatable {
     let id: String
     let displayPrice: String
+    let priceAmount: Decimal
+    let currencyCode: String?
     let periodLabel: String
 }
 
@@ -112,6 +114,8 @@ final class SubscriptionService: NSObject, ObservableObject {
                     SubscriptionDisplayProduct(
                         id: $0.productIdentifier,
                         displayPrice: $0.localizedPriceString,
+                        priceAmount: $0.price,
+                        currencyCode: $0.currencyCode,
                         periodLabel: $0.subscriptionPeriod?.debugLabel ?? "term"
                     )
                 }

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct PaywallView: View {
@@ -22,6 +23,10 @@ struct PaywallView: View {
         copyOverride ?? subscriptionService.paywallConfig
     }
 
+    private var isDismissOfferPaywall: Bool {
+        triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue
+    }
+
     var body: some View {
         ZStack {
             WWColor.white
@@ -32,6 +37,13 @@ struct PaywallView: View {
                     VStack(spacing: 14) {
                         offerHero
                         packageSelector
+                        if let specialOfferPricingLine {
+                            Text(specialOfferPricingLine)
+                                .font(WWTypography.caption(13))
+                                .foregroundStyle(WWColor.muted)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
                         primaryButton
                         footerLinks
                         if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
@@ -58,17 +70,17 @@ struct PaywallView: View {
             await subscriptionService.loadProducts()
             await subscriptionService.refreshEntitlements()
             if selectedProductID == nil {
-                selectedProductID = subscriptionService.defaultPaywallProductID()
+                selectedProductID = defaultProductIDForCurrentPaywall()
             }
         }
         .onChange(of: subscriptionService.products) { _, _ in
             guard let selectedProductID else {
-                self.selectedProductID = subscriptionService.defaultPaywallProductID()
+                self.selectedProductID = defaultProductIDForCurrentPaywall()
                 return
             }
             let isSelectedStillValid = subscriptionService.products.contains(where: { $0.id == selectedProductID })
             if !isSelectedStillValid {
-                self.selectedProductID = subscriptionService.defaultPaywallProductID()
+                self.selectedProductID = defaultProductIDForCurrentPaywall()
             }
         }
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
@@ -165,10 +177,7 @@ struct PaywallView: View {
                         .foregroundStyle(WWColor.nearBlack)
 
                     Spacer()
-
-                    Text(priceCaption(for: product))
-                        .font(WWTypography.heading(19))
-                        .foregroundStyle(WWColor.nearBlack)
+                    planPriceView(for: product)
                 }
 
                 Text(periodSubtitle(for: product))
@@ -205,7 +214,7 @@ struct PaywallView: View {
             String(
                 format: L10n.string("paywall.plan.accessibility_label", default: "%@, %@, %@"),
                 planTitle(for: product),
-                priceCaption(for: product),
+                accessibilityPriceCaption(for: product),
                 periodSubtitle(for: product)
             )
         )
@@ -275,7 +284,7 @@ struct PaywallView: View {
 
     private func purchaseSelectedPackage() async {
         guard !isPurchasing else { return }
-        let fallbackID = subscriptionService.defaultPaywallProductID()
+        let fallbackID = defaultProductIDForCurrentPaywall()
         guard let productID = selectedProductID ?? fallbackID else { return }
         isPurchasing = true
         defer { isPurchasing = false }
@@ -299,6 +308,14 @@ struct PaywallView: View {
     }
 
     private func periodSubtitle(for product: SubscriptionDisplayProduct) -> String {
+        if isDismissOfferPaywall, isAnnualProduct(product), let basePrice = annualBasePriceCaption(for: product) {
+            let format = L10n.string(
+                "paywall.dismiss_offer.renewal_line",
+                default: "Then %@ per year after year one."
+            )
+            return String(format: format, basePrice)
+        }
+
         switch planTitle(for: product) {
         case L10n.string("paywall.plan.annual", default: "Annual"):
             return L10n.string("paywall.plan.billed_yearly", default: "Billed yearly")
@@ -317,7 +334,85 @@ struct PaywallView: View {
         product.displayPrice
     }
 
+    private func accessibilityPriceCaption(for product: SubscriptionDisplayProduct) -> String {
+        if let discounted = annualDiscountedPriceCaption(for: product), let base = annualBasePriceCaption(for: product) {
+            let format = L10n.string(
+                "paywall.dismiss_offer.accessibility_price",
+                default: "%@ first year, then %@ yearly"
+            )
+            return String(format: format, discounted, base)
+        }
+        return priceCaption(for: product)
+    }
+
+    @ViewBuilder
+    private func planPriceView(for product: SubscriptionDisplayProduct) -> some View {
+        if let discountedPrice = annualDiscountedPriceCaption(for: product) {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(priceCaption(for: product))
+                    .font(WWTypography.caption(12))
+                    .foregroundStyle(WWColor.muted)
+                    .strikethrough()
+                Text(discountedPrice)
+                    .font(WWTypography.heading(19))
+                    .foregroundStyle(WWColor.nearBlack)
+            }
+        } else {
+            Text(priceCaption(for: product))
+                .font(WWTypography.heading(19))
+                .foregroundStyle(WWColor.nearBlack)
+        }
+    }
+
+    private var specialOfferPricingLine: String? {
+        guard isDismissOfferPaywall else { return nil }
+        guard let annualProduct = subscriptionService.products.first(where: isAnnualProduct) else { return nil }
+        guard let discounted = annualDiscountedPriceCaption(for: annualProduct) else { return nil }
+        let base = annualBasePriceCaption(for: annualProduct) ?? annualProduct.displayPrice
+        let format = L10n.string(
+            "paywall.dismiss_offer.price_line",
+            default: "%@ for your first year, then %@ each year."
+        )
+        return String(format: format, discounted, base)
+    }
+
+    private func annualDiscountedPriceCaption(for product: SubscriptionDisplayProduct) -> String? {
+        guard isDismissOfferPaywall, isAnnualProduct(product) else { return nil }
+        let baseAmount = NSDecimalNumber(decimal: product.priceAmount)
+        let halfPrice = baseAmount.multiplying(by: NSDecimalNumber(value: 0.5)).decimalValue
+        return localizedCurrency(amount: halfPrice, currencyCode: product.currencyCode)
+    }
+
+    private func annualBasePriceCaption(for product: SubscriptionDisplayProduct) -> String? {
+        guard isAnnualProduct(product) else { return nil }
+        return product.displayPrice
+    }
+
+    private func localizedCurrency(amount: Decimal, currencyCode: String?) -> String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = Locale.current
+        if let currencyCode, !currencyCode.isEmpty {
+            formatter.currencyCode = currencyCode
+        }
+        return formatter.string(from: NSDecimalNumber(decimal: amount))
+    }
+
+    private func defaultProductIDForCurrentPaywall() -> String? {
+        if isDismissOfferPaywall {
+            if let annualID = subscriptionService.annualProduct?.id {
+                return annualID
+            }
+            if let annualFallback = subscriptionService.products.first(where: isAnnualProduct)?.id {
+                return annualFallback
+            }
+        }
+        return subscriptionService.defaultPaywallProductID()
+    }
+
     private func isAnnualProduct(_ product: SubscriptionDisplayProduct) -> Bool {
-        planTitle(for: product) == "Annual"
+        let period = product.periodLabel.lowercased()
+        let identifier = product.id.lowercased()
+        return period.contains("year") || identifier.contains("annual")
     }
 }

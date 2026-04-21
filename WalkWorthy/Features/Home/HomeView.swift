@@ -278,7 +278,8 @@ struct JourneyGrowthPage: View {
     
     private var todaysEntry: PrayerEntry? {
         let calendar = Calendar.current
-        return entries.first(where: { calendar.isDateInToday($0.createdAt) })
+        let referenceDate = TendingTestingClock.currentDate
+        return entries.first(where: { calendar.isDate($0.createdAt, inSameDayAs: referenceDate) })
     }
     
     private static let tendsPerStage = 3
@@ -313,7 +314,7 @@ struct JourneyGrowthPage: View {
 
     private var orderedWeekDays: [Date] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
+        let today = calendar.startOfDay(for: TendingTestingClock.currentDate)
         let weekday = calendar.component(.weekday, from: today)
         let daysSinceMonday = (weekday + 5) % 7
         let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
@@ -344,7 +345,7 @@ struct JourneyGrowthPage: View {
         let daysSinceAnswer = Calendar.current.dateComponents(
             [.day],
             from: Calendar.current.startOfDay(for: answeredAt),
-            to: Calendar.current.startOfDay(for: .now)
+            to: Calendar.current.startOfDay(for: TendingTestingClock.currentDate)
         ).day ?? 99
 
         guard daysSinceAnswer <= 2 else { return nil }
@@ -393,7 +394,7 @@ struct JourneyGrowthPage: View {
     }
 
     private var todaysPackageRecord: DailyJourneyPackageRecord? {
-        let dayKey = JourneyContentService.dayKey(for: .now)
+        let dayKey = JourneyContentService.dayKey(for: TendingTestingClock.currentDate)
         let journeyID = journey.id
         let descriptor = FetchDescriptor<DailyJourneyPackageRecord>(
             predicate: #Predicate {
@@ -1327,18 +1328,21 @@ struct JourneyGrowthPage: View {
     private func generateEntry() async {
         isGenerating = true
         defer { isGenerating = false }
+
+        let generationDate = TendingTestingClock.currentDate
         
         let result = await contentService.packageForDate(
             profile: profile,
             journey: journey,
             recentEntries: entries,
             memory: memory,
-            date: .now,
+            date: generationDate,
             isOnline: connectivityService.isOnline,
             modelContext: modelContext
         )
         
         let entry = PrayerEntry(
+            createdAt: generationDate,
             prompt: result.package.prayer,
             scriptureReference: result.package.scriptureReference,
             scriptureText: result.package.scriptureParaphrase,
@@ -1371,6 +1375,26 @@ struct JourneyGrowthPage: View {
     }
 }
 
+private enum TendingTestingClock {
+    private static let dayOffsetKey = "tend.debug.fast_day_offset"
+
+    static var isEnabled: Bool {
+        AppConstants.Debug.fastDayTesting
+    }
+
+    static var currentDate: Date {
+        guard isEnabled else { return .now }
+        let offset = UserDefaults.standard.integer(forKey: dayOffsetKey)
+        return Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
+    }
+
+    static func advanceDay() {
+        guard isEnabled else { return }
+        let defaults = UserDefaults.standard
+        defaults.set(defaults.integer(forKey: dayOffsetKey) + 1, forKey: dayOffsetKey)
+    }
+}
+
 private final class PlantAssetBundleLocator {}
 
 struct TendingFlowView: View {
@@ -1378,6 +1402,7 @@ struct TendingFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var connectivityService: ConnectivityService
     @EnvironmentObject private var notificationService: NotificationService
     @Query(sort: \AppSettings.firstLaunchAt, order: .forward) private var settingsRows: [AppSettings]
     @Query(sort: \ReminderSchedule.sortOrder) private var reminderRows: [ReminderSchedule]
@@ -1392,6 +1417,7 @@ struct TendingFlowView: View {
     @State private var smallStepInput = ""
     @State private var showCompletionPrompt = false
     @State private var selectedFollowThroughStatus: FollowThroughStatus?
+    private let contentService = JourneyContentService()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
     private static let tendsPerCycle = 15
@@ -1616,7 +1642,7 @@ struct TendingFlowView: View {
         }
         .alert(L10n.string("Journey Milestone", default: "Journey Milestone"), isPresented: $showCompletionPrompt) {
             Button(L10n.string("Keep Tending", default: "Keep Tending")) {
-                journey.lastCompletionPromptAt = .now
+                journey.lastCompletionPromptAt = TendingTestingClock.currentDate
                 try? modelContext.save()
                 WidgetSyncService.publishFromModelContext(modelContext)
                 dismiss()
@@ -1624,7 +1650,7 @@ struct TendingFlowView: View {
             Button(L10n.string("Mark Complete", default: "Mark Complete")) {
                 journey.status = .completed
                 journey.isArchived = true
-                journey.lastCompletionPromptAt = .now
+                journey.lastCompletionPromptAt = TendingTestingClock.currentDate
                 JourneyProgressService.logEvent(
                     journeyID: journey.id,
                     type: .journeyCompleted,
@@ -1661,10 +1687,11 @@ struct TendingFlowView: View {
         
         // Artificial delay so the user feels the weight of the action
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            let now = Date()
+            let completionDate = TendingTestingClock.currentDate
+            let schedulingNow = Date()
             let trimmedStep = smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines)
             entry.actionStep = trimmedStep
-            entry.completedAt = now
+            entry.completedAt = completionDate
 
             let closureTarget = pendingClosureEntry
             if let closureTarget, let selectedFollowThroughStatus {
@@ -1672,14 +1699,14 @@ struct TendingFlowView: View {
                     status: selectedFollowThroughStatus,
                     for: closureTarget,
                     on: entry,
-                    at: now
+                    at: completionDate
                 )
                 JourneyProgressService.logEvent(
                     journeyID: journey.id,
                     type: .followThroughAnswered,
                     notes: "Follow-through recorded as \(selectedFollowThroughStatus.rawValue) for priorEntryID=\(closureTarget.id.uuidString)",
                     modelContext: modelContext,
-                    date: now
+                    date: completionDate
                 )
             }
 
@@ -1705,7 +1732,7 @@ struct TendingFlowView: View {
                 await notificationService.scheduleReminderSchedules(
                     reminderRows.filter(\.isEnabled),
                     modelContext: modelContext,
-                    now: now
+                    now: schedulingNow
                 )
             }
             
@@ -1740,14 +1767,94 @@ struct TendingFlowView: View {
                 modelContext: modelContext
             )
             WidgetSyncService.publishFromModelContext(modelContext)
-            
-            isCompleting = false
-            if shouldPromptCompletionSuggestion(completedCount: nextCompletedSessionCount) {
+
+            let shouldShowCompletionPrompt = shouldPromptCompletionSuggestion(
+                completedCount: nextCompletedSessionCount,
+                now: completionDate
+            )
+
+            if shouldShowCompletionPrompt {
+                isCompleting = false
                 showCompletionPrompt = true
+                return
+            }
+
+            if TendingTestingClock.isEnabled {
+                Task { @MainActor in
+                    await advanceTestingDayAndSeedNextEntryIfNeeded()
+                    isCompleting = false
+                    dismiss()
+                }
             } else {
+                isCompleting = false
                 dismiss()
             }
         }
+    }
+
+    @MainActor
+    private func advanceTestingDayAndSeedNextEntryIfNeeded() async {
+        guard TendingTestingClock.isEnabled else { return }
+
+        TendingTestingClock.advanceDay()
+        let nextDate = TendingTestingClock.currentDate
+        let currentEntries = entriesForJourney()
+        let calendar = Calendar.current
+        let hasEntryForNextDay = currentEntries.contains { calendar.isDate($0.createdAt, inSameDayAs: nextDate) }
+        guard !hasEntryForNextDay else { return }
+
+        let memory = JourneyMemoryService.snapshot(for: journey.id, modelContext: modelContext)
+        let result = await contentService.packageForDate(
+            profile: profile,
+            journey: journey,
+            recentEntries: currentEntries,
+            memory: memory,
+            date: nextDate,
+            isOnline: connectivityService.isOnline,
+            modelContext: modelContext
+        )
+
+        let nextEntry = PrayerEntry(
+            createdAt: nextDate,
+            prompt: result.package.prayer,
+            scriptureReference: result.package.scriptureReference,
+            scriptureText: result.package.scriptureParaphrase,
+            actionStep: "",
+            journey: journey
+        )
+        modelContext.insert(nextEntry)
+        JourneyProgressService.logEvent(
+            journeyID: journey.id,
+            type: .packageGenerated,
+            notes: "Daily package source: \(result.source.rawValue) | fast_day_mode=true",
+            modelContext: modelContext
+        )
+        analytics.track(
+            .dailyPackageGenerated,
+            properties: [
+                "source": result.source.rawValue,
+                "journey_id": journey.id.uuidString,
+                "is_online": connectivityService.isOnline ? "true" : "false",
+                "fast_day_mode": "true"
+            ]
+        )
+        JourneyMemoryService.refreshSnapshot(
+            for: journey,
+            entries: currentEntries + [nextEntry],
+            profile: profile,
+            modelContext: modelContext
+        )
+        try? modelContext.save()
+        WidgetSyncService.publishFromModelContext(modelContext)
+    }
+
+    private func entriesForJourney() -> [PrayerEntry] {
+        let journeyID = journey.id
+        let descriptor = FetchDescriptor<PrayerEntry>(
+            predicate: #Predicate { $0.journey?.id == journeyID },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? entries
     }
 
     @ViewBuilder
@@ -1827,12 +1934,15 @@ struct TendingFlowView: View {
         .accessibilityValue(isSelected ? L10n.string("tab.selected", default: "Selected") : "")
     }
 
-    private func shouldPromptCompletionSuggestion(completedCount: Int) -> Bool {
+    private func shouldPromptCompletionSuggestion(
+        completedCount: Int,
+        now: Date
+    ) -> Bool {
         guard journey.status == .active else { return false }
         guard completedCount >= 7 else { return false }
         guard package?.completionSuggestion.shouldPrompt == true else { return false }
 
-        if let lastPrompt = journey.lastCompletionPromptAt, Calendar.current.isDateInToday(lastPrompt) {
+        if let lastPrompt = journey.lastCompletionPromptAt, Calendar.current.isDate(lastPrompt, inSameDayAs: now) {
             return false
         }
         return true

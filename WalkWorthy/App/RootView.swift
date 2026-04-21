@@ -120,6 +120,7 @@ struct RootView: View {
         }
         .onChange(of: showPaywall) { _, isShown in
             guard isShown else { return }
+            let triggerReason = settings?.pendingPaywallReason ?? "unspecified"
             if subscriptionService.paywallMode == .firstTendReviewThenPaywall {
                 FirstTendMilestoneService.markPaywallShownAfterFirstTend(settings: settings)
                 try? modelContext.save()
@@ -127,9 +128,10 @@ struct RootView: View {
             analytics.track(
                 .paywallShown,
                 properties: [
-                    "trigger_reason": settings?.pendingPaywallReason ?? "unspecified",
+                    "trigger_reason": triggerReason,
                     "paywall_mode": subscriptionService.paywallMode.rawValue,
-                    "has_premium": subscriptionService.isPremium ? "true" : "false"
+                    "has_premium": subscriptionService.isPremium ? "true" : "false",
+                    "is_dismiss_offer": triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue ? "true" : "false"
                 ]
             )
         }
@@ -477,12 +479,14 @@ struct RootView: View {
         let onboardingPaywallPending =
             settings?.pendingPaywallReason == PaywallTriggerReason.onboardingCompletion.rawValue
             && settings?.paywallDismissedAt == nil
+        let dismissOfferPending =
+            settings?.pendingPaywallReason == PaywallTriggerReason.paywallDismissOffer.rawValue
 
-        guard profile == nil || hardPaywallRequired || onboardingPaywallPending else {
+        guard profile == nil || hardPaywallRequired || onboardingPaywallPending || dismissOfferPending else {
             showPaywall = false
             return
         }
-        showPaywall = onboardingPaywallPending || MonetizationPolicy.requiresPaywall(
+        showPaywall = dismissOfferPending || onboardingPaywallPending || MonetizationPolicy.requiresPaywall(
             hasPremium: subscriptionService.isPremium,
             settings: settings,
             paywallMode: subscriptionService.paywallMode,
@@ -492,6 +496,35 @@ struct RootView: View {
 
     private func paywallConfigForCurrentState(now: Date = .now) -> PaywallRemoteConfig {
         let base = subscriptionService.paywallConfig
+        let triggerReason = settings?.pendingPaywallReason
+
+        if triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue {
+            return PaywallRemoteConfig(
+                headline: L10n.string(
+                    "paywall.dismiss_offer.headline",
+                    default: "Stay on track with 50% off your first year."
+                ),
+                subheadline: L10n.string(
+                    "paywall.dismiss_offer.subheadline",
+                    default: "You just started your journey. Keep momentum with a one-time first-year discount."
+                ),
+                ctaTitle: L10n.string(
+                    "paywall.dismiss_offer.cta",
+                    default: "Claim 50% Off First Year"
+                ),
+                annualBadgeText: L10n.string(
+                    "paywall.dismiss_offer.badge",
+                    default: "50% Off Year One"
+                ),
+                footnote: L10n.string(
+                    "paywall.dismiss_offer.footnote",
+                    default: "After your first year, your plan renews at the full annual price. Cancel anytime in Settings."
+                ),
+                defaultPackageToken: "annual",
+                isDismissable: true
+            )
+        }
+
         let hardPaywallRequired = MonetizationPolicy.requiresHardPaywallAfterDismiss(
             settings: settings,
             paywallMode: subscriptionService.paywallMode,
@@ -525,10 +558,38 @@ struct RootView: View {
         let config = paywallConfigForCurrentState(now: now)
         guard config.isDismissable else { return }
         guard let settings else { return }
+        let dismissedReason = settings.pendingPaywallReason
 
-        settings.markPaywallDismissed(now: now)
-        settings.pendingPaywallReason = nil
+        if dismissedReason != PaywallTriggerReason.paywallDismissOffer.rawValue || settings.paywallDismissedAt == nil {
+            settings.markPaywallDismissed(now: now)
+        }
+        if dismissedReason != PaywallTriggerReason.paywallDismissOffer.rawValue {
+            analytics.track(
+                .freeTrialStarted,
+                properties: [
+                    "source": "paywall_dismissed",
+                    "trigger_reason": dismissedReason ?? "unspecified",
+                    "paywall_mode": subscriptionService.paywallMode.rawValue
+                ]
+            )
+        }
+
+        let shouldShowDismissOffer = shouldPresentDismissOffer(after: dismissedReason, config: config)
+        settings.pendingPaywallReason = shouldShowDismissOffer ? PaywallTriggerReason.paywallDismissOffer.rawValue : nil
         try? modelContext.save()
+
+        if shouldShowDismissOffer {
+            DispatchQueue.main.async {
+                self.showPaywall = true
+            }
+        }
+    }
+
+    private func shouldPresentDismissOffer(after dismissedReason: String?, config: PaywallRemoteConfig) -> Bool {
+        guard config.isDismissable else { return false }
+        guard subscriptionService.paywallConfig.isDismissable else { return false }
+        guard dismissedReason == PaywallTriggerReason.onboardingCompletion.rawValue else { return false }
+        return true
     }
 
     private func fetchReminderSchedules() -> [ReminderSchedule] {

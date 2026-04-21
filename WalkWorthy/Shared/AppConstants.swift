@@ -82,14 +82,16 @@ enum AppConstants {
     }
 
     enum Debug {
-        static var bypassPaywall: Bool {
-#if DEBUG
+        private static func isEnabled(
+            argument: String,
+            environmentKey: String
+        ) -> Bool {
             let processInfo = ProcessInfo.processInfo
-            if processInfo.arguments.contains("-TEND_BYPASS_PAYWALL") {
+            if processInfo.arguments.contains(argument) {
                 return true
             }
 
-            guard let raw = processInfo.environment["TEND_BYPASS_PAYWALL"]?
+            guard let raw = processInfo.environment[environmentKey]?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .lowercased()
             else {
@@ -102,6 +104,19 @@ enum AppConstants {
             default:
                 return false
             }
+        }
+
+        static var bypassPaywall: Bool {
+#if DEBUG
+            return isEnabled(argument: "-TEND_BYPASS_PAYWALL", environmentKey: "TEND_BYPASS_PAYWALL")
+#else
+            return false
+#endif
+        }
+
+        static var fastDayTesting: Bool {
+#if DEBUG
+            return isEnabled(argument: "-TEND_FAST_DAYS", environmentKey: "TEND_FAST_DAYS")
 #else
             return false
 #endif
@@ -114,4 +129,5 @@ enum PaywallTriggerReason: String {
     case secondJourney
     case timelineAccess
     case onboardingCompletion
+    case paywallDismissOffer
 }
