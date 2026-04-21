@@ -264,6 +264,7 @@ struct JourneyGrowthPage: View {
     // Evolution States
     @State private var isEvolving = false
     @State private var evolutionStep = 0
+    @State private var shouldShowStreakAfterEvolution = false
 
     // New states for streak overlay
     @State private var showStreakOverlay = false
@@ -621,6 +622,7 @@ struct JourneyGrowthPage: View {
                         
                         if newStage > oldStage {
                             // Stage Up! Trigger Evolution
+                            shouldShowStreakAfterEvolution = true
                             withAnimation(.easeIn(duration: 0.5)) {
                                 isEvolving = true
                                 evolutionStep = 1
@@ -646,7 +648,14 @@ struct JourneyGrowthPage: View {
                 if isEvolving {
                     ZStack {
                         // Dark Vignette
-                        Color.black.opacity(0.85)
+                        LinearGradient(
+                            colors: [
+                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.45 : 0.18),
+                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.28 : 0.10)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                             .frame(width: proxy.size.width, height: proxy.size.height + effectiveTopInset + 24)
                             .offset(y: -(effectiveTopInset + 24))
                             .ignoresSafeArea()
@@ -1244,9 +1253,13 @@ struct JourneyGrowthPage: View {
         if reduceMotion {
             isEvolving = true
             evolutionStep = 3
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 isEvolving = false
                 evolutionStep = 0
+                if shouldShowStreakAfterEvolution {
+                    shouldShowStreakAfterEvolution = false
+                    withAnimation { showStreakOverlay = true }
+                }
             }
             return
         }
@@ -1255,24 +1268,28 @@ struct JourneyGrowthPage: View {
         // TODO: Play native AudioServicesPlaySystemSound(...) chime here!
         
         // Step 2: Flash white build up
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             withAnimation(.easeIn(duration: 0.15)) {
                 evolutionStep = 2 // White flash
             }
             
             // Step 3: Reveal Full Color
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
                     evolutionStep = 3 // Color reveal & scale bounce
                 }
                 
                 // Step 4: Dismiss Overlay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         isEvolving = false
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                         evolutionStep = 0 // Reset for next time
+                        if shouldShowStreakAfterEvolution {
+                            shouldShowStreakAfterEvolution = false
+                            withAnimation { showStreakOverlay = true }
+                        }
                     }
                 }
             }
@@ -1780,10 +1797,10 @@ struct TendingFlowView: View {
             }
 
             if TendingTestingClock.isEnabled {
+                isCompleting = false
+                dismiss()
                 Task { @MainActor in
                     await advanceTestingDayAndSeedNextEntryIfNeeded()
-                    isCompleting = false
-                    dismiss()
                 }
             } else {
                 isCompleting = false
