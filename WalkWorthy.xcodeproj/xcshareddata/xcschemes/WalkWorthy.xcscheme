@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1430"
-   wasCreatedForAppExtension = "YES"
+   wasCreatedForAppExtension = "NO"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -74,9 +74,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
-            BuildableName = "TendWidgets.appex"
-            BlueprintName = "TendWidgets"
+            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
+            BuildableName = "Tend.app"
+            BlueprintName = "WalkWorthy"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -109,31 +109,42 @@
       selectedDebuggerIdentifier = ""
       selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
-      askForAppToLaunch = "Yes"
+      askForAppToLaunch = "No"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <RemoteRunnable
-         runnableDebuggingMode = "2"
-         BundleIdentifier = "com.apple.springboard">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
-            BuildableName = "TendWidgets.appex"
-            BlueprintName = "TendWidgets"
+            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
+            BuildableName = "Tend.app"
+            BlueprintName = "WalkWorthy"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
-      </RemoteRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "TEND_BYPASS_PAYWALL"
-            value = "1"
+      </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
+            BuildableName = "Tend.app"
+            BlueprintName = "WalkWorthy"
+            ReferencedContainer = "container:WalkWorthy.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-TEND_BYPASS_PAYWALL"
             isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-TEND_FAST_DAYS"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -145,9 +156,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
-            BuildableName = "TendWidgets.appex"
-            BlueprintName = "TendWidgets"
+            BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
+            BuildableName = "Tend.app"
+            BlueprintName = "WalkWorthy"
             ReferencedContainer = "container:WalkWorthy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
