@@ -65,6 +65,9 @@ struct RootView: View {
             }
         }
         .task {
+            rootLogger.log(
+                "debug flags resolved bypassPaywall=\(AppConstants.Debug.bypassPaywall, privacy: .public) fastDayTesting=\(AppConstants.Debug.fastDayTesting, privacy: .public)"
+            )
             onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
             analytics.track(
                 .onboardingExperimentAssigned,

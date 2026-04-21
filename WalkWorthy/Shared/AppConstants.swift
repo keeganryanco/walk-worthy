@@ -82,28 +82,77 @@ enum AppConstants {
     }
 
     enum Debug {
-        private static func isEnabled(
-            argument: String,
-            environmentKey: String
-        ) -> Bool {
-            let processInfo = ProcessInfo.processInfo
-            if processInfo.arguments.contains(argument) {
-                return true
-            }
+        private static func normalized(_ value: String) -> String {
+            value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        }
 
-            guard let raw = processInfo.environment[environmentKey]?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-            else {
-                return false
-            }
-
-            switch raw {
+        private static func truthy(_ value: String?) -> Bool {
+            guard let value else { return false }
+            switch normalized(value) {
             case "1", "true", "yes", "on":
                 return true
             default:
                 return false
             }
+        }
+
+        private static func hasTruthyArgument(_ argument: String) -> Bool {
+            let processInfo = ProcessInfo.processInfo
+            let rawArgs = processInfo.arguments
+            let candidates = [
+                argument,
+                argument.replacingOccurrences(of: "-", with: ""),
+                argument.replacingOccurrences(of: "-", with: "_"),
+                argument.replacingOccurrences(of: "-", with: "_").trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+            ]
+                .map { $0.lowercased() }
+
+            for rawArg in rawArgs {
+                let arg = rawArg.trimmingCharacters(in: .whitespacesAndNewlines)
+                let lowered = arg.lowercased()
+                if candidates.contains(lowered) {
+                    return true
+                }
+                if let equalsIndex = lowered.firstIndex(of: "=") {
+                    let key = String(lowered[..<equalsIndex])
+                    let value = String(lowered[lowered.index(after: equalsIndex)...])
+                    if candidates.contains(key), truthy(value) {
+                        return true
+                    }
+                }
+            }
+
+            return false
+        }
+
+        private static func hasTruthyEnvironmentValue(_ keys: [String]) -> Bool {
+            let env = ProcessInfo.processInfo.environment
+            for key in keys {
+                if truthy(env[key]) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        private static func isEnabled(
+            argument: String,
+            environmentKey: String
+        ) -> Bool {
+            if hasTruthyArgument(argument) {
+                return true
+            }
+
+            if hasTruthyEnvironmentValue([
+                environmentKey,
+                argument,
+                environmentKey.replacingOccurrences(of: "_", with: "-"),
+                "-\(environmentKey)"
+            ]) {
+                return true
+            }
+
+            return false
         }
 
         static var bypassPaywall: Bool {
