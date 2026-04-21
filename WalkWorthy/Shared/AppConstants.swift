@@ -82,6 +82,10 @@ enum AppConstants {
     }
 
     enum Debug {
+        static let bypassPaywallOverrideStorageKey = "TEND_DEBUG_BYPASS_PAYWALL_OVERRIDE"
+        static let fastDayTestingOverrideStorageKey = "TEND_DEBUG_FAST_DAY_OVERRIDE"
+        static let fastDayOffsetStorageKey = "TEND_DEBUG_FAST_DAY_OFFSET"
+
         private static func normalized(_ value: String) -> String {
             value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         }
@@ -157,6 +161,9 @@ enum AppConstants {
 
         static var bypassPaywall: Bool {
 #if DEBUG
+            if UserDefaults.standard.bool(forKey: bypassPaywallOverrideStorageKey) {
+                return true
+            }
             return isEnabled(argument: "-TEND_BYPASS_PAYWALL", environmentKey: "TEND_BYPASS_PAYWALL")
 #else
             return false
@@ -165,9 +172,18 @@ enum AppConstants {
 
         static var fastDayTesting: Bool {
 #if DEBUG
+            if UserDefaults.standard.bool(forKey: fastDayTestingOverrideStorageKey) {
+                return true
+            }
             return isEnabled(argument: "-TEND_FAST_DAYS", environmentKey: "TEND_FAST_DAYS")
 #else
             return false
+#endif
+        }
+
+        static func resetFastDayOffset() {
+#if DEBUG
+            UserDefaults.standard.removeObject(forKey: fastDayOffsetStorageKey)
 #endif
         }
     }

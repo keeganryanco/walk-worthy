@@ -1376,7 +1376,7 @@ struct JourneyGrowthPage: View {
 }
 
 private enum TendingTestingClock {
-    private static let dayOffsetKey = "tend.debug.fast_day_offset"
+    private static let dayOffsetKey = AppConstants.Debug.fastDayOffsetStorageKey
 
     static var isEnabled: Bool {
         AppConstants.Debug.fastDayTesting

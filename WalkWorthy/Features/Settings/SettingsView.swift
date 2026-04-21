@@ -4,6 +4,10 @@ import SwiftData
 struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @AppStorage("homeBackgroundTheme") private var backgroundTheme: HomeBackgroundTheme = .none
+#if DEBUG
+    @AppStorage(AppConstants.Debug.bypassPaywallOverrideStorageKey) private var debugBypassPaywallOverride = false
+    @AppStorage(AppConstants.Debug.fastDayTestingOverrideStorageKey) private var debugFastDayTestingOverride = false
+#endif
     @EnvironmentObject private var subscriptionService: SubscriptionService
     @EnvironmentObject private var notificationService: NotificationService
     @Environment(\.modelContext) private var modelContext
@@ -56,7 +60,10 @@ struct SettingsView: View {
                     }
                     .foregroundStyle(WWColor.nearBlack)
 
-                    if subscriptionService.hasEligibleDownsellOffer {
+                    if AppConstants.Debug.bypassPaywall {
+                        Text("Paywall bypass is enabled for this debug build.")
+                            .foregroundStyle(WWColor.muted)
+                    } else if subscriptionService.hasEligibleDownsellOffer {
                         Button(subscriptionService.downsellSettingsButtonTitle) {
                             showDownsellPaywall = true
                         }
@@ -189,6 +196,19 @@ struct SettingsView: View {
                         .foregroundStyle(WWColor.nearBlack)
                 }
                 .listRowBackground(WWColor.surface)
+
+#if DEBUG
+                Section("Debug Testing") {
+                    Toggle("Bypass Paywall (Debug)", isOn: $debugBypassPaywallOverride)
+                    Toggle("Fast-Day Tending (Debug)", isOn: $debugFastDayTestingOverride)
+
+                    Button("Reset Fast-Day Offset") {
+                        AppConstants.Debug.resetFastDayOffset()
+                    }
+                    .foregroundStyle(WWColor.growGreen)
+                }
+                .listRowBackground(WWColor.surface)
+#endif
             }
             .navigationTitle(L10n.string("settings.title", default: "Settings"))
             .scrollContentBackground(.hidden)
