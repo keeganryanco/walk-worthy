@@ -47,6 +47,8 @@
 "settings.support.contact" = "サポートに連絡";
 "settings.support.terms" = "利用規約";
 "settings.support.privacy" = "プライバシーポリシー";
+"settings.debug.paywall_bypass_enabled" = "このデバッグビルドではペイウォールのバイパスが有効です。";
+"settings.debug.reset_fast_day_offset" = "Fast-Dayオフセットをリセット";
 
 "downsell.cta.keep_going" = "続ける";
 "downsell.cta.hint" = "期間限定の再開オファーを購入します。";
@@ -98,6 +100,12 @@
 "home.new_journey.accessibility_label" = "新しい旅路を開始";
 "home.new_journey.accessibility_label_personalized" = "%@さん、新しい旅路を開始";
 "home.new_journey.accessibility_hint" = "ダブルタップで旅路作成を開きます。左にスワイプでジャーナルへ。";
+"home.switcher.button" = "苗床";
+"home.switcher.accessibility_hint" = "旅路を開き、新しい旅路を植えましょう。";
+"home.switcher.section" = "進行中の旅路";
+"home.switcher.plant_new" = "新しい旅路を植える";
+"home.switcher.title" = "あなたの庭";
+"home.signal.growth" = "成長";
 "home.followthrough.yes" = "あなたが実行したから、これが育ちました。";
 "home.followthrough.partial" = "少しの前進も価値があります。もう少し小さな一歩で続けましょう。";
 "home.followthrough.no" = "今日にも恵みがあります。ごく小さな一歩から始めましょう。";
@@ -107,11 +115,18 @@
 "journal.memories" = "記録";
 
 "create_journey.title" = "新しい旅路";
-"create_journey.prayer_title" = "今、何について祈りたいですか？";
+"create_journey.header_title" = "新しい旅路を植える";
+"create_journey.helper" = "一つの焦点を分かち合えば、Tendがあなたと道を形づくります。";
+"create_journey.prayer_title" = "今、神にどんなことを整える助けを求めたいですか？";
 "create_journey.prayer_placeholder" = "心にあることを書いてください...";
+"create_journey.starter_title" = "始め方に迷ったら";
+"create_journey.starter_1" = "不安を神にゆだねる";
+"create_journey.starter_2" = "祈りの継続力を育てる";
+"create_journey.starter_3" = "関係の癒し";
+"create_journey.starter_4" = "難しい決断への知恵";
 "create_journey.goal_title" = "今、神と共にどの目標へ向かっていますか？";
 "create_journey.goal_placeholder" = "目標を説明してください...";
-"create_journey.create_button" = "作成";
+"create_journey.create_button" = "旅路を植える";
 "create_journey.creating" = "旅路を作成中...";
 
 "journey.error.create_title" = "旅路を作成できません";
@@ -215,6 +230,9 @@
 "home.tend.close_accessibility" = "今日のTendを閉じる";
 "home.tend.suggestion_accessibility" = "提案ステップを使う: %@";
 "home.tend.button" = "実践する";
+"home.tend.commit_button" = "この一歩にコミットする";
+"home.tend.followthrough.unlock" = "フォロー状況に答えると、今日のリチュアルを続けられます。";
+"home.tend.followthrough.previous_step" = "前回の一歩";
 
 "journal.recent_entries" = "最近の記録";
 "journal.no_entries" = "まだ記録がありません。";
@@ -232,6 +250,7 @@
 "home.reignite.title" = "連続記録を復活";
 "home.reignite.subtitle" = "%d日連続を復活させる。";
 "home.reignite.cta" = "復活";
+"home.reignite.inline_title" = "この旅路の連続記録を復活";
 "home.reignite.calendar_hint" = "このジャーニーの前の連続記録を復活させます。";
 "home.reignite.overlay.title" = "%d日連続を復活";
 "home.reignite.overlay.subtitle" = "ワンタップで、成長を続けよう。";

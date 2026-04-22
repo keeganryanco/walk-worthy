@@ -25,7 +25,7 @@ function isValidPayload(payload: unknown): payload is JourneyBootstrapRequest {
   return (
     typeof source.name === "string" &&
     typeof source.prayerIntentText === "string" &&
-    typeof source.goalIntentText === "string" &&
+    (source.goalIntentText === undefined || typeof source.goalIntentText === "string") &&
     typeof source.reminderWindow === "string" &&
     (source.languageCode === undefined || typeof source.languageCode === "string") &&
     (source.localeIdentifier === undefined || typeof source.localeIdentifier === "string")
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const typedPayload = payload as JourneyBootstrapRequest;
   console.info(
-    `[journey-bootstrap][${rid}] start generation reminderWindow=${typedPayload.reminderWindow} prayerLen=${typedPayload.prayerIntentText.length} goalLen=${typedPayload.goalIntentText.length}`
+    `[journey-bootstrap][${rid}] start generation reminderWindow=${typedPayload.reminderWindow} prayerLen=${typedPayload.prayerIntentText.length} goalLen=${typedPayload.goalIntentText?.length ?? 0}`
   );
 
   try {

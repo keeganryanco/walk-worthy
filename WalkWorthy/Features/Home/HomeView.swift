@@ -10,7 +10,6 @@ struct HomeView: View {
     let profile: OnboardingProfile
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
-    let onNavigateToJournal: () -> Void
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -26,9 +25,10 @@ struct HomeView: View {
     @State private var selectedJourneyID: UUID?
     @State private var suppressHomePageIndicator = false
     @State private var reigniteRouteJourneyID: UUID?
+    @State private var isJourneySwitcherPresented = false
+    @State private var isCreatingJourney = false
     @AppStorage(AppConstants.DeepLink.pendingJourneyStorageKey) private var pendingJourneyIDRaw = ""
     @AppStorage(AppConstants.DeepLink.pendingActionStorageKey) private var pendingActionRaw = ""
-    private let createJourneyTabID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     var body: some View {
         NavigationStack {
@@ -59,17 +59,40 @@ struct HomeView: View {
                             )
                             .tag(journey.id as UUID?)
                         }
-                        
-                        CreateJourneyTerminalPage(
-                            profile: profile,
-                            isPremium: isPremium,
-                            onRequirePaywall: onRequirePaywall,
-                            onNavigateToJournal: onNavigateToJournal
-                        )
-                            .tag(createJourneyTabID as UUID?)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .ignoresSafeArea()
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if !activeJourneys.isEmpty {
+                    Button {
+                        isJourneySwitcherPresented = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "leaf.fill")
+                                .font(.system(size: 13, weight: .bold))
+                            Text(L10n.string("home.switcher.button", default: "Nursery"))
+                                .font(WWTypography.caption(12).weight(.semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(
+                            Capsule()
+                                .fill(WWColor.nearBlack.opacity(0.58))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 58)
+                    .padding(.trailing, 20)
+                    .accessibilityLabel(L10n.string("home.switcher.button", default: "Nursery"))
+                    .accessibilityHint(
+                        L10n.string(
+                            "home.switcher.accessibility_hint",
+                            default: "Open your journeys and plant a new one."
+                        )
+                    )
                 }
             }
             .overlay(alignment: .bottom) {
@@ -91,7 +114,6 @@ struct HomeView: View {
                     return
                 }
                 if let selectedJourneyID,
-                   selectedJourneyID != createJourneyTabID,
                    ids.contains(selectedJourneyID) {
                     return
                 }
@@ -106,6 +128,21 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .accessibilityIdentifier("HomeView")
+            .sheet(isPresented: $isJourneySwitcherPresented) {
+                JourneySwitcherSheet(
+                    journeys: activeJourneys,
+                    selectedJourneyID: selectedJourneyID,
+                    onSelectJourney: { selectedID in
+                        selectedJourneyID = selectedID
+                    },
+                    onPlantJourney: {
+                        isCreatingJourney = true
+                    }
+                )
+            }
+            .sheet(isPresented: $isCreatingJourney) {
+                CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+            }
         }
     }
 
@@ -120,6 +157,12 @@ struct HomeView: View {
                 .font(WWTypography.body(18))
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
+
+            Button(L10n.string("home.switcher.plant_new", default: "Plant New Journey")) {
+                isCreatingJourney = true
+            }
+            .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+            .padding(.top, 8)
         }
         .padding(32)
     }
@@ -133,7 +176,7 @@ struct HomeView: View {
     }
 
     private var pageIDs: [UUID] {
-        activeJourneys.map(\.id) + [createJourneyTabID]
+        activeJourneys.map(\.id)
     }
 
     private var selectedPageIndex: Int {
@@ -174,95 +217,84 @@ struct HomeView: View {
     }
 }
 
-struct CreateJourneyTerminalPage: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let profile: OnboardingProfile
-    let isPremium: Bool
-    let onRequirePaywall: (PaywallTriggerReason) -> Void
-    let onNavigateToJournal: () -> Void
-    
-    @State private var isCreating = false
+private struct JourneySwitcherSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let journeys: [PrayerJourney]
+    let selectedJourneyID: UUID?
+    let onSelectJourney: (UUID) -> Void
+    let onPlantJourney: () -> Void
 
     var body: some View {
-        GeometryReader { _ in
-            ZStack {
-                WWColor.surface
-                    .ignoresSafeArea()
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(journeys) { journey in
+                        Button {
+                            onSelectJourney(journey.id)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(WWColor.growGreen.opacity(0.18))
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Image(systemName: "leaf.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(WWColor.growGreen)
+                                    )
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(journey.title)
+                                        .font(WWTypography.body(16).weight(.semibold))
+                                        .foregroundStyle(WWColor.nearBlack)
+                                        .lineLimit(1)
+                                    Text(journey.category.uppercased())
+                                        .font(WWTypography.caption(10).weight(.heavy))
+                                        .tracking(1.0)
+                                        .foregroundStyle(WWColor.muted)
+                                }
+                                Spacer()
+                                if selectedJourneyID == journey.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(WWColor.growGreen)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text(L10n.string("home.switcher.section", default: "ACTIVE JOURNEYS"))
+                }
 
-                VStack(spacing: 22) {
-                    Spacer()
-
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 96))
-                        .foregroundStyle(WWColor.growGreen)
-                        .shadow(color: WWColor.growGreen.opacity(0.32), radius: 22, y: 10)
-
-                    Text(profile.name.isEmpty
-                         ? L10n.string("home.new_journey.title", default: "Start a New Journey")
-                         : String(
-                            format: L10n.string("home.new_journey.personalized_title", default: "%@, start a new journey"),
-                            profile.name
-                         )
-                    )
-                        .font(WWTypography.heading(30))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 28)
-
-                    Text(L10n.string("home.new_journey.subtitle", default: "What area of your life needs tending next?"))
-                        .font(WWTypography.body(19))
-                        .foregroundStyle(WWColor.muted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 34)
-
-                    Text(L10n.string("home.new_journey.tap_to_begin", default: "Tap anywhere to begin"))
-                        .font(WWTypography.caption(14).weight(.medium))
-                        .foregroundStyle(WWColor.growGreen.opacity(0.88))
-                        .padding(.top, 8)
-
-                    Spacer()
-                    Spacer().frame(height: 108)
+                Section {
+                    Button {
+                        dismiss()
+                        DispatchQueue.main.async {
+                            onPlantJourney()
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(WWColor.growGreen)
+                            Text(L10n.string("home.switcher.plant_new", default: "Plant New Journey"))
+                                .font(WWTypography.body(16).weight(.semibold))
+                                .foregroundStyle(WWColor.nearBlack)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            isCreating = true
-        }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 24)
-                .onEnded { value in
-                    let horizontal = value.translation.width
-                    let vertical = value.translation.height
-                    guard abs(horizontal) > abs(vertical) else { return }
-                    if horizontal < -64 {
-                        onNavigateToJournal()
+            .navigationTitle(L10n.string("home.switcher.title", default: "Your Garden"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("common.close", default: "Close")) {
+                        dismiss()
                     }
                 }
-        )
-        .sheet(isPresented: $isCreating) {
-            CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityLabel(
-            profile.name.isEmpty
-                ? L10n.string("home.new_journey.accessibility_label", default: "Start a new journey")
-                : String(
-                    format: L10n.string("home.new_journey.accessibility_label_personalized", default: "%@, start a new journey"),
-                    profile.name
-                )
-        )
-        .accessibilityHint(L10n.string("home.new_journey.accessibility_hint", default: "Double-tap to open journey creation. Swipe left to go to Journal."))
-        .accessibilityAction {
-            if reduceMotion {
-                isCreating = true
-            } else {
-                withAnimation(.default) {
-                    isCreating = true
-                }
             }
         }
+        .presentationDetents([.medium, .large])
     }
 }
 
@@ -304,7 +336,6 @@ struct JourneyGrowthPage: View {
     @State private var showStreakOverlay = false
     @State private var showReigniteOverlay = false
     @State private var showReigniteCelebration = false
-    @State private var particles: [CGPoint] = []
     @State private var isBottomSheetExpanded = false
     @GestureState private var bottomSheetDragOffset: CGFloat = 0
 
@@ -373,56 +404,6 @@ struct JourneyGrowthPage: View {
         journey.hydrationStage
     }
 
-    private var orderedWeekDays: [Date] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: TendingTestingClock.currentDate)
-        let weekday = calendar.component(.weekday, from: today)
-        let daysSinceMonday = (weekday + 5) % 7
-        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
-
-        return (0..<7).compactMap {
-            calendar.date(byAdding: .day, value: $0, to: monday)
-        }
-    }
-
-    private var completedDaysInJourney: Set<Date> {
-        let calendar = Calendar.current
-        return Set(entries.compactMap { entry in
-            guard let completedAt = entry.completedAt else { return nil }
-            return calendar.startOfDay(for: completedAt)
-        })
-    }
-
-    private var followThroughMeaningLine: String? {
-        guard
-            let recentClosure = entries
-                .sorted(by: { $0.createdAt > $1.createdAt })
-                .first(where: { $0.followThroughStatus != .unanswered }),
-            let answeredAt = recentClosure.followThroughAnsweredAt
-        else {
-            return nil
-        }
-
-        let daysSinceAnswer = Calendar.current.dateComponents(
-            [.day],
-            from: Calendar.current.startOfDay(for: answeredAt),
-            to: Calendar.current.startOfDay(for: TendingTestingClock.currentDate)
-        ).day ?? 99
-
-        guard daysSinceAnswer <= 2 else { return nil }
-
-        switch recentClosure.followThroughStatus {
-        case .yes:
-            return L10n.string("home.followthrough.yes", default: "This grew because you followed through.")
-        case .partial:
-            return L10n.string("home.followthrough.partial", default: "Progress still counts. Keep tending with one smaller step.")
-        case .no:
-            return L10n.string("home.followthrough.no", default: "Grace for today. Start with one tiny step.")
-        case .unanswered:
-            return nil
-        }
-    }
-    
     private var themeSuffix: String {
         if journey.themeKey != .basic {
             return journey.themeKey.rawValue
@@ -869,8 +850,6 @@ struct JourneyGrowthPage: View {
         .ignoresSafeArea()
     }
     
-    @State private var dewDropFocus = false
-    
     @ViewBuilder
     private var bottomHalf: some View {
         ScrollView(showsIndicators: false) {
@@ -911,31 +890,8 @@ struct JourneyGrowthPage: View {
                         .font(WWTypography.caption(12).weight(.heavy))
                         .foregroundStyle(WWColor.growGreen)
                         .tracking(2.0)
-
-                    if let followThroughMeaningLine {
-                        Text(followThroughMeaningLine)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.muted)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 4)
-                    }
-
-                    if currentCycleCount > 0 {
-                        Text(
-                            String(
-                                format: L10n.string("home.cycle.label", default: "Cycle %d"),
-                                currentCycleCount + 1
-                            )
-                        )
-                            .font(WWTypography.caption(11))
-                            .foregroundStyle(WWColor.muted)
-                    }
                 }
                 .padding(.top, 8)
-
-                streakSection
-                hydrationSection
                 
                 // Action or Completed State
                 if let entry = todaysEntry {
@@ -1103,6 +1059,8 @@ struct JourneyGrowthPage: View {
                     )
                 }
 
+                secondarySignalsRow
+
                 Spacer(minLength: 10)
             }
             .padding(.bottom, 118)
@@ -1114,116 +1072,6 @@ struct JourneyGrowthPage: View {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(bottomSheetBackground)
                 .shadow(color: .black.opacity(0.2), radius: 40, y: -10)
-        )
-    }
-
-    private var streakSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(L10n.string("Streak", default: "Streak"))
-                    .font(WWTypography.caption(13).weight(.heavy))
-                    .foregroundStyle(WWColor.muted)
-                    .tracking(1.4)
-
-                Spacer()
-                if !shouldOfferInAppReigniteOption {
-                    Text(
-                        String(
-                            format: L10n.string(
-                                currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
-                                default: currentStreakCount == 1 ? "%d day" : "%d days"
-                            ),
-                            currentStreakCount
-                        )
-                    )
-                        .font(WWTypography.caption(12).weight(.bold))
-                        .foregroundStyle(WWColor.growGreen)
-                }
-            }
-
-            HStack(spacing: 10) {
-                ForEach(Array(orderedWeekDays.enumerated()), id: \.offset) { index, day in
-                    let isCompleted = completedDaysInJourney.contains(day)
-                    let dayLabel = weekdayLabel(for: index)
-
-                    VStack(spacing: 6) {
-                        if let img = resolveUIImage(named: "sun_streak_icon") {
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 18, height: 18)
-                                .opacity(isCompleted ? 1.0 : 0.22)
-                                .grayscale(isCompleted ? 0.0 : 1.0)
-                        } else {
-                            Image(systemName: "sun.max.fill")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(WWColor.growGreen)
-                                .opacity(isCompleted ? 1.0 : 0.22)
-                        }
-
-                        Text(dayLabel)
-                            .font(WWTypography.caption(10).weight(.semibold))
-                            .foregroundStyle(isCompleted ? WWColor.nearBlack : WWColor.muted)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(streakCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(insetCardStroke, lineWidth: 1)
-        )
-        .overlay(alignment: .topTrailing) {
-            if shouldOfferInAppReigniteOption {
-                reigniteCalendarChip
-                    .padding(.top, 10)
-                    .padding(.trailing, 10)
-            }
-        }
-        .padding(.horizontal, 32)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L10n.string("Streak", default: "Streak"))
-        .accessibilityValue(
-            String(
-                format: L10n.string(
-                    currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
-                    default: currentStreakCount == 1 ? "%d day" : "%d days"
-                ),
-                currentStreakCount
-            )
-        )
-    }
-
-    private var reigniteCalendarChip: some View {
-        Button {
-            presentReigniteOverlay()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 11, weight: .bold))
-                Text(L10n.string("home.reignite.cta", default: "Restore"))
-                    .font(WWTypography.caption(11).weight(.bold))
-            }
-            .foregroundStyle(WWColor.growGreen)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                Capsule()
-                    .fill(WWColor.growGreen.opacity(colorScheme == .dark ? 0.20 : 0.14))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(WWColor.growGreen.opacity(0.45), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(L10n.string("home.reignite.cta", default: "Restore"))
-        .accessibilityHint(
-            L10n.string("home.reignite.calendar_hint", default: "Restore your previous streak for this journey.")
         )
     }
 
@@ -1240,57 +1088,105 @@ struct JourneyGrowthPage: View {
         }
     }
 
-    private var hydrationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(L10n.string("home.hydration.title", default: "Water"))
-                    .font(WWTypography.caption(13).weight(.heavy))
-                    .foregroundStyle(WWColor.muted)
-                    .tracking(1.4)
-
-                Spacer()
-
-                Text(hydrationStatusLabel)
-                    .font(WWTypography.caption(12).weight(.bold))
-                    .foregroundStyle(WWColor.growGreen)
-            }
-
-            HStack(spacing: 10) {
-                ForEach(0..<3, id: \.self) { index in
-                    Image(systemName: "drop.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(WWColor.growGreen)
-                        .opacity(index < hydrationStage ? 1.0 : 0.26)
-                        .scaleEffect(index < hydrationStage ? 1.0 : 0.9)
-                }
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(streakCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(insetCardStroke, lineWidth: 1)
+    private var streakCountLabel: String {
+        String(
+            format: L10n.string(
+                currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                default: currentStreakCount == 1 ? "%d day" : "%d days"
+            ),
+            currentStreakCount
         )
-        .padding(.horizontal, 32)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L10n.string("home.hydration.title", default: "Water"))
-        .accessibilityValue(hydrationStatusLabel)
     }
 
-    private func weekdayLabel(for index: Int) -> String {
-        switch index {
-        case 0: return "M"
-        case 1: return "T"
-        case 2: return "W"
-        case 3: return "Th"
-        case 4: return "F"
-        case 5: return "Sa"
-        case 6: return "Su"
-        default: return ""
+    private var growthSignalLabel: String {
+        String(
+            format: L10n.string("home.cycle.label", default: "Cycle %d"),
+            currentCycleCount + 1
+        )
+    }
+
+    private var secondarySignalsRow: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                signalBadge(
+                    icon: "sun.max.fill",
+                    title: L10n.string("Streak", default: "Streak"),
+                    value: streakCountLabel
+                )
+
+                signalBadge(
+                    icon: "drop.fill",
+                    title: L10n.string("home.hydration.title", default: "Water"),
+                    value: hydrationStatusLabel
+                )
+
+                signalBadge(
+                    icon: "leaf.fill",
+                    title: L10n.string("home.signal.growth", default: "Growth"),
+                    value: growthSignalLabel
+                )
+            }
+
+            if shouldOfferInAppReigniteOption {
+                Button {
+                    presentReigniteOverlay()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "flame.fill")
+                        Text(L10n.string("home.reignite.inline_title", default: "Restore this journey streak"))
+                        Spacer()
+                        Text(L10n.string("home.reignite.cta", default: "Restore"))
+                            .font(WWTypography.caption(12).weight(.bold))
+                    }
+                    .font(WWTypography.caption(13).weight(.semibold))
+                    .foregroundStyle(WWColor.growGreen)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(WWColor.growGreen.opacity(colorScheme == .dark ? 0.18 : 0.12))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(WWColor.growGreen.opacity(0.42), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.string("home.reignite.cta", default: "Restore"))
+                .accessibilityHint(
+                    L10n.string("home.reignite.calendar_hint", default: "Restore your previous streak for this journey.")
+                )
+            }
         }
+        .padding(.horizontal, 32)
+    }
+
+    private func signalBadge(icon: String, title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(WWColor.growGreen)
+                Text(title)
+                    .font(WWTypography.caption(11).weight(.heavy))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(1.0)
+            }
+            Text(value)
+                .font(WWTypography.caption(12).weight(.bold))
+                .foregroundStyle(WWColor.nearBlack)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(streakCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(insetCardStroke, lineWidth: 1)
+        )
     }
 
     @ViewBuilder
@@ -1697,6 +1593,7 @@ struct TendingFlowView: View {
     @State private var smallStepInput = ""
     @State private var showCompletionPrompt = false
     @State private var selectedFollowThroughStatus: FollowThroughStatus?
+    @State private var revealedStageCount = 0
     private let contentService = JourneyContentService()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -1728,24 +1625,36 @@ struct TendingFlowView: View {
         )
     }
 
-    private var closureFeedbackLine: String? {
+    private var requiresClosureAnswer: Bool {
+        pendingClosureEntry != nil
+    }
+
+    private var canRevealRitual: Bool {
+        !requiresClosureAnswer || selectedFollowThroughStatus != nil
+    }
+
+    private var completionButtonTitle: String {
+        L10n.string("home.tend.commit_button", default: "Commit this step")
+    }
+
+    private var followThroughVisualAccent: Color {
         switch selectedFollowThroughStatus {
         case .yes:
-            return L10n.string("home.followthrough.yes", default: "This grew because you followed through.")
+            return WWColor.growGreen.opacity(0.22)
         case .partial:
-            return L10n.string(
-                "home.followthrough.partial",
-                default: "Progress still counts. Keep tending with one smaller step."
-            )
+            return WWColor.morningGold.opacity(0.20)
         case .no:
-            return L10n.string("home.followthrough.no", default: "Grace for today. Start with one tiny step.")
+            return WWColor.muted.opacity(0.18)
         case .unanswered, .none:
-            return nil
+            return .clear
         }
     }
 
-    private var requiresClosureAnswer: Bool {
-        pendingClosureEntry != nil
+    private var hasFollowThroughVisualAccent: Bool {
+        if case .yes = selectedFollowThroughStatus { return true }
+        if case .partial = selectedFollowThroughStatus { return true }
+        if case .no = selectedFollowThroughStatus { return true }
+        return false
     }
 
     private var tendCardBackground: Color { WWColor.contrastCard }
@@ -1754,6 +1663,10 @@ struct TendingFlowView: View {
     var body: some View {
         ZStack {
             WWColor.surface.ignoresSafeArea()
+            if hasFollowThroughVisualAccent {
+                followThroughVisualAccent
+                    .ignoresSafeArea()
+            }
             
             ScrollView {
                 VStack(spacing: 32) {
@@ -1778,146 +1691,185 @@ struct TendingFlowView: View {
                         closureCard(for: pendingClosureEntry)
                             .padding(.horizontal, 24)
                     }
-                
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text(L10n.string("REFLECT", default: "REFLECT"))
-                            .font(WWTypography.caption(14).weight(.heavy))
-                            .foregroundStyle(WWColor.muted)
-                            .tracking(2.0)
 
-                        Text(reflectionThought)
-                            .font(WWTypography.heading(22))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .lineSpacing(4)
-                            .multilineTextAlignment(.leading)
+                    if !canRevealRitual {
+                        Text(
+                            L10n.string(
+                                "home.tend.followthrough.unlock",
+                                default: "Answer the follow-through checkpoint to continue today's ritual."
+                            )
+                        )
+                        .font(WWTypography.caption(14))
+                        .foregroundStyle(WWColor.muted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
 
-                    VStack(spacing: 24) {
-                        Text(entry.scriptureText)
-                            .font(WWTypography.heading(24))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .lineSpacing(6)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 16)
-                        
-                        Text("— " + entry.scriptureReference)
-                            .font(WWTypography.body(16).weight(.bold))
-                            .foregroundStyle(WWColor.growGreen)
+                    if revealedStageCount >= 1 {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text(L10n.string("REFLECT", default: "REFLECT"))
+                                .font(WWTypography.caption(14).weight(.heavy))
+                                .foregroundStyle(WWColor.muted)
+                                .tracking(2.0)
+
+                            Text(reflectionThought)
+                                .font(WWTypography.heading(22))
+                                .foregroundStyle(WWColor.nearBlack)
+                                .lineSpacing(4)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .padding(.vertical, 32)
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(tendCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(tendCardStroke, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 24)
-                
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text(L10n.string("PRAY", default: "PRAY"))
-                            .font(WWTypography.caption(14).weight(.heavy))
-                            .foregroundStyle(WWColor.muted)
-                            .tracking(2.0)
 
-                        Text(prayerText)
-                            .font(WWTypography.body(18))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .lineSpacing(6)
-                            .multilineTextAlignment(.leading)
+                    if revealedStageCount >= 2 {
+                        VStack(spacing: 24) {
+                            Text(entry.scriptureText)
+                                .font(WWTypography.heading(24))
+                                .foregroundStyle(WWColor.nearBlack)
+                                .lineSpacing(6)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 16)
+
+                            Text("— " + entry.scriptureReference)
+                                .font(WWTypography.body(16).weight(.bold))
+                                .foregroundStyle(WWColor.growGreen)
+                        }
+                        .padding(.vertical, 32)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(tendCardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(tendCardStroke, lineWidth: 1)
+                        )
+                        .padding(.horizontal, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
 
-                    VStack(spacing: 20) {
-                        Text(L10n.string("TEND", default: "TEND"))
-                            .font(WWTypography.caption(14).weight(.heavy))
-                            .foregroundStyle(WWColor.muted)
-                            .tracking(2.0)
-                        
-                        Text(smallStepQuestion)
-                            .font(WWTypography.heading(22))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    if revealedStageCount >= 3 {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text(L10n.string("PRAY", default: "PRAY"))
+                                .font(WWTypography.caption(14).weight(.heavy))
+                                .foregroundStyle(WWColor.muted)
+                                .tracking(2.0)
 
-                        TextField(L10n.string("Type your small step...", default: "Type your small step..."), text: $smallStepInput)
-                            .textInputAutocapitalization(.sentences)
-                            .font(WWTypography.body(18))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 18)
-                            .background(tendCardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(tendCardStroke, lineWidth: 1))
+                            Text(prayerText)
+                                .font(WWTypography.body(18))
+                                .foregroundStyle(WWColor.nearBlack)
+                                .lineSpacing(6)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
 
-                        if !suggestionChips.isEmpty {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
-                                ForEach(suggestionChips, id: \.self) { suggestion in
-                                    Button {
-                                        smallStepInput = suggestion
-                                    } label: {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "plus.circle.fill")
-                                                .foregroundStyle(WWColor.growGreen)
-                                            Text(suggestion)
-                                                .font(WWTypography.caption(13).weight(.medium))
-                                                .foregroundStyle(WWColor.nearBlack)
-                                                .lineLimit(1)
+                    if revealedStageCount >= 4 {
+                        VStack(spacing: 20) {
+                            Text(L10n.string("TEND", default: "TEND"))
+                                .font(WWTypography.caption(14).weight(.heavy))
+                                .foregroundStyle(WWColor.muted)
+                                .tracking(2.0)
+
+                            Text(smallStepQuestion)
+                                .font(WWTypography.heading(22))
+                                .foregroundStyle(WWColor.nearBlack)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            TextField(L10n.string("Type your small step...", default: "Type your small step..."), text: $smallStepInput)
+                                .textInputAutocapitalization(.sentences)
+                                .font(WWTypography.body(18))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 18)
+                                .background(tendCardBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(tendCardStroke, lineWidth: 1))
+
+                            if !suggestionChips.isEmpty {
+                                VStack(spacing: 10) {
+                                    ForEach(suggestionChips, id: \.self) { suggestion in
+                                        Button {
+                                            smallStepInput = suggestion
+                                        } label: {
+                                            HStack(alignment: .top, spacing: 10) {
+                                                Image(systemName: "plus.circle.fill")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundStyle(WWColor.growGreen)
+                                                    .padding(.top, 2)
+                                                Text(suggestion)
+                                                    .font(WWTypography.body(15).weight(.medium))
+                                                    .foregroundStyle(WWColor.nearBlack)
+                                                    .multilineTextAlignment(.leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                                Spacer(minLength: 0)
+                                            }
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 13)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(tendCardBackground)
+                                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .stroke(tendCardStroke, lineWidth: 1)
+                                            )
                                         }
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 12)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(tendCardBackground)
-                                        .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(tendCardStroke, lineWidth: 1))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(
-                                        String(
-                                            format: L10n.string(
-                                                "home.tend.suggestion_accessibility",
-                                                default: "Use suggested step: %@"
-                                            ),
-                                            suggestion
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel(
+                                            String(
+                                                format: L10n.string(
+                                                    "home.tend.suggestion_accessibility",
+                                                    default: "Use suggested step: %@"
+                                                ),
+                                                suggestion
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
 
-                    Button {
-                        completeTending()
-                    } label: {
-                        if isCompleting {
-                            ProgressView()
-                                .tint(WWColor.nearBlack)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text(L10n.string("home.tend.button", default: "Tend"))
-                                .frame(maxWidth: .infinity)
+                        Button {
+                            completeTending()
+                        } label: {
+                            if isCompleting {
+                                ProgressView()
+                                    .tint(WWColor.nearBlack)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text(completionButtonTitle)
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
+                        .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 48)
+                        .padding(.top, 8)
+                        .disabled(
+                            isCompleting ||
+                            smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                            (requiresClosureAnswer && selectedFollowThroughStatus == nil)
+                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 48)
-                    .padding(.top, 16)
-                    .disabled(
-                        isCompleting ||
-                        smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                        (requiresClosureAnswer && selectedFollowThroughStatus == nil)
-                    )
                 }
             }
         }
         .onAppear {
             if !entry.actionStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 smallStepInput = entry.actionStep
+            }
+            startRitualReveal()
+        }
+        .onChange(of: selectedFollowThroughStatus) { _, _ in
+            if canRevealRitual {
+                startRitualReveal()
             }
         }
         .alert(L10n.string("Journey Milestone", default: "Journey Milestone"), isPresented: $showCompletionPrompt) {
@@ -2148,9 +2100,36 @@ struct TendingFlowView: View {
         return (try? modelContext.fetch(descriptor)) ?? entries
     }
 
+    private func startRitualReveal() {
+        guard canRevealRitual else {
+            revealedStageCount = 0
+            return
+        }
+
+        if reduceMotion {
+            revealedStageCount = 4
+            return
+        }
+
+        if revealedStageCount >= 4 {
+            return
+        }
+
+        revealedStageCount = max(1, revealedStageCount)
+        let revealDelays: [Double] = [0.12, 0.24, 0.36]
+        for (index, delay) in revealDelays.enumerated() {
+            let stage = index + 2
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.spring(response: 0.36, dampingFraction: 0.84)) {
+                    revealedStageCount = max(revealedStageCount, stage)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func closureCard(for priorEntry: PrayerEntry) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(L10n.string("FOLLOW-THROUGH", default: "FOLLOW-THROUGH"))
                 .font(WWTypography.caption(12).weight(.heavy))
                 .tracking(2.0)
@@ -2165,28 +2144,43 @@ struct TendingFlowView: View {
                 .font(WWTypography.heading(22))
                 .foregroundStyle(WWColor.nearBlack)
 
-            Text(priorEntry.actionStep)
-                .font(WWTypography.body(16))
-                .foregroundStyle(WWColor.muted)
-                .lineLimit(2)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(tendCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.string("home.tend.followthrough.previous_step", default: "Previous step"))
+                    .font(WWTypography.caption(11).weight(.heavy))
+                    .tracking(1.0)
+                    .foregroundStyle(WWColor.muted)
+                Text(priorEntry.actionStep)
+                    .font(WWTypography.body(16))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(WWColor.surface.opacity(0.88))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(tendCardStroke, lineWidth: 1)
+            )
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 followThroughButton(title: L10n.string("Yes", default: "Yes"), status: .yes)
                 followThroughButton(title: L10n.string("Partially", default: "Partially"), status: .partial)
                 followThroughButton(title: L10n.string("No", default: "No"), status: .no)
             }
-
-            if let closureFeedbackLine {
-                Text(closureFeedbackLine)
-                    .font(WWTypography.caption(13))
-                    .foregroundStyle(WWColor.growGreen)
-            }
+            .padding(4)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(WWColor.surface.opacity(0.72))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(tendCardStroke, lineWidth: 1)
+            )
         }
-        .padding(24)
+        .padding(20)
         .background(tendCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
@@ -2208,10 +2202,11 @@ struct TendingFlowView: View {
         } label: {
             Text(title)
                 .font(WWTypography.body(14).weight(.semibold))
-                .foregroundStyle(isSelected ? WWColor.nearBlack : WWColor.nearBlack)
-                .padding(.vertical, 14)
+                .foregroundStyle(isSelected ? WWColor.nearBlack : WWColor.muted)
+                .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
-                .background(isSelected ? WWColor.growGreen : WWColor.surface)
+                .multilineTextAlignment(.center)
+                .background(isSelected ? WWColor.growGreen : WWColor.surface.opacity(0.82))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)

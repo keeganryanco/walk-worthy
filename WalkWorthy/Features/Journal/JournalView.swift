@@ -199,7 +199,6 @@ struct CreateJourneyView: View {
     private var reminderRows: [ReminderSchedule]
     
     @State private var prayerIntentText = ""
-    @State private var goalIntentText = ""
     @State private var alertMessage: String?
     @State private var isSubmitting = false
     @FocusState private var focusedField: InputField?
@@ -208,7 +207,15 @@ struct CreateJourneyView: View {
 
     private enum InputField {
         case prayer
-        case goal
+    }
+
+    private var starterPromptSuggestions: [String] {
+        [
+            L10n.string("create_journey.starter_1", default: "Trusting God with my anxiety"),
+            L10n.string("create_journey.starter_2", default: "Growing consistency in prayer"),
+            L10n.string("create_journey.starter_3", default: "Healing in a relationship"),
+            L10n.string("create_journey.starter_4", default: "Wisdom for a hard decision")
+        ]
     }
     
     var body: some View {
@@ -217,9 +224,46 @@ struct CreateJourneyView: View {
                 WWColor.white.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 28) {
+                        ZStack(alignment: .bottomLeading) {
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            WWColor.growGreen.opacity(0.24),
+                                            WWColor.morningGold.opacity(0.18),
+                                            WWColor.surface
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(height: 168)
+
+                            HStack(spacing: 14) {
+                                Image(systemName: "leaf.fill")
+                                    .font(.system(size: 28, weight: .semibold))
+                                    .foregroundStyle(WWColor.growGreen)
+                                    .frame(width: 52, height: 52)
+                                    .background(
+                                        Circle()
+                                            .fill(WWColor.white.opacity(0.84))
+                                    )
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(L10n.string("create_journey.header_title", default: "Plant a New Journey"))
+                                        .font(WWTypography.heading(24))
+                                        .foregroundStyle(WWColor.nearBlack)
+                                    Text(L10n.string("create_journey.helper", default: "Share one focus and Tend will shape the path with you."))
+                                        .font(WWTypography.body(15))
+                                        .foregroundStyle(WWColor.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .padding(20)
+                        }
+
                         VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.string("create_journey.prayer_title", default: "What do you want to pray about right now?"))
+                            Text(L10n.string("create_journey.prayer_title", default: "What do you want God to help you tend right now?"))
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
                             TextField(L10n.string("create_journey.prayer_placeholder", default: "Share what's on your heart..."), text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
@@ -239,31 +283,43 @@ struct CreateJourneyView: View {
                                 )
                         }
 
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.string("create_journey.goal_title", default: "What goal are you moving toward with God right now?"))
-                                .font(WWTypography.heading(18))
-                                .foregroundStyle(WWColor.nearBlack)
-                            TextField(L10n.string("create_journey.goal_placeholder", default: "Describe your goal..."), text: newlineDismissBinding(for: $goalIntentText), axis: .vertical)
-                                .focused($focusedField, equals: .goal)
-                                .textInputAutocapitalization(.sentences)
-                                .submitLabel(.done)
-                                .onSubmit { focusedField = nil }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .frame(minHeight: 120, alignment: .topLeading)
-                                .foregroundStyle(WWColor.nearBlack)
-                                .background(WWColor.surface.opacity(0.96))
-                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
-                                )
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(L10n.string("create_journey.starter_title", default: "Need a starter?"))
+                                .font(WWTypography.caption(13).weight(.heavy))
+                                .foregroundStyle(WWColor.muted)
+                                .tracking(1.2)
+
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                                ForEach(starterPromptSuggestions, id: \.self) { suggestion in
+                                    Button {
+                                        prayerIntentText = suggestion
+                                    } label: {
+                                        Text(suggestion)
+                                            .font(WWTypography.caption(13).weight(.semibold))
+                                            .foregroundStyle(WWColor.nearBlack)
+                                            .multilineTextAlignment(.leading)
+                                            .lineLimit(3)
+                                            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 10)
+                                            .background(WWColor.surface.opacity(0.96))
+                                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .stroke(WWColor.nearBlack.opacity(0.08), lineWidth: 1)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
-                        .padding(.bottom, 24)
+
+                        Spacer(minLength: 18)
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, 24)
                 }
             }
             .navigationTitle(L10n.string("create_journey.title", default: "New Journey"))
@@ -276,13 +332,12 @@ struct CreateJourneyView: View {
                     Button(L10n.string("common.cancel", default: "Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.string("create_journey.create_button", default: "Create")) {
+                    Button(L10n.string("create_journey.create_button", default: "Plant Journey")) {
                         createJourneyFromIntents()
                     }
                     .disabled(
                         isSubmitting ||
-                        prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                        goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     )
                 }
             }
@@ -340,13 +395,12 @@ struct CreateJourneyView: View {
         }
 
         let prayer = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let goal = goalIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
         let displayName = profiles.first?.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
             ? (profiles.first?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Friend")
             : "Friend"
         let reminderWindow = inferredReminderWindow()
 
-        guard !prayer.isEmpty, !goal.isEmpty else { return }
+        guard !prayer.isEmpty else { return }
 
         isSubmitting = true
         Task {
@@ -354,7 +408,7 @@ struct CreateJourneyView: View {
                 let payload = try await bootstrapProvider.bootstrap(
                     name: displayName,
                     prayerIntentText: prayer,
-                    goalIntentText: goal,
+                    goalIntentText: nil,
                     reminderWindow: reminderWindow
                 )
 
@@ -366,6 +420,7 @@ struct CreateJourneyView: View {
                         title: payload.journeyTitle,
                         category: payload.journeyCategory,
                         themeKey: theme,
+                        growthFocus: payload.growthFocus ?? payload.journeyCategory,
                         status: .active
                     )
                     modelContext.insert(journey)

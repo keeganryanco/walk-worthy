@@ -177,9 +177,13 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         recentEntries: [PrayerEntry],
         memory: JourneyMemorySnapshot?
     ) -> RequestBody {
+        let journeyGrowthFocus = journey.growthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveGrowthGoal = journeyGrowthFocus.isEmpty
+            ? profile.growthGoal
+            : journeyGrowthFocus
         let profilePayload = RequestBody.Profile(
             prayerFocus: profile.prayerFocus,
-            growthGoal: profile.growthGoal,
+            growthGoal: effectiveGrowthGoal,
             reminderWindow: profile.reminderWindow,
             blocker: profile.blocker,
             supportCadence: profile.supportCadence
@@ -244,6 +248,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
                 guard !reflection.isEmpty else { return nil }
                 return reflection
             }
+        let seededSignals = journey.growthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return RequestBody(
             profile: profilePayload,
@@ -254,7 +259,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             followThroughContext: followThroughPayload,
             cycleCount: journey.cycleCount,
             completionCount: completionCount,
-            recentJourneySignals: Array(recentSignals),
+            recentJourneySignals: seededSignals.isEmpty ? Array(recentSignals) : [seededSignals] + Array(recentSignals),
             dateISO: dateFormatter.string(from: .now),
             languageCode: AppLanguage.aiLanguageCode(),
             localeIdentifier: AppLanguage.aiLocaleIdentifier(),
@@ -279,6 +284,7 @@ struct JourneyBootstrapPayload: Decodable {
     let journeyTitle: String
     let journeyCategory: String
     let themeKey: String
+    let growthFocus: String?
     let initialMemory: InitialMemory
     let initialPackage: DailyJourneyPackage
 }
@@ -294,7 +300,7 @@ struct BackendJourneyBootstrapProvider {
 
         let name: String
         let prayerIntentText: String
-        let goalIntentText: String
+        let goalIntentText: String?
         let reminderWindow: String
         let languageCode: String
         let localeIdentifier: String
@@ -331,7 +337,7 @@ struct BackendJourneyBootstrapProvider {
     func bootstrap(
         name: String,
         prayerIntentText: String,
-        goalIntentText: String,
+        goalIntentText: String? = nil,
         reminderWindow: String
     ) async throws -> JourneyBootstrapPayload {
         let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -362,7 +368,7 @@ struct BackendJourneyBootstrapProvider {
         let payload = RequestBody(
             name: name,
             prayerIntentText: prayerIntentText,
-            goalIntentText: goalIntentText,
+            goalIntentText: goalIntentText?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             reminderWindow: reminderWindow,
             languageCode: AppLanguage.aiLanguageCode(),
             localeIdentifier: AppLanguage.aiLocaleIdentifier(),
@@ -402,6 +408,12 @@ struct BackendJourneyBootstrapProvider {
             throw ProviderError.decodeFailure(bodySnippet: String(snippet))
         }
         return decoded.bootstrap
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }
 

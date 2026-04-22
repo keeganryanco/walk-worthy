@@ -47,6 +47,8 @@
 "settings.support.contact" = "Support kontaktieren";
 "settings.support.terms" = "Nutzungsbedingungen";
 "settings.support.privacy" = "Datenschutz";
+"settings.debug.paywall_bypass_enabled" = "Paywall-Bypass ist in diesem Debug-Build aktiviert.";
+"settings.debug.reset_fast_day_offset" = "Schnelltag-Versatz zurücksetzen";
 
 "downsell.cta.keep_going" = "Weitergehen";
 "downsell.cta.hint" = "Kauft das zeitlich begrenzte Verlängerungsangebot.";
@@ -98,6 +100,12 @@
 "home.new_journey.accessibility_label" = "Eine neue Journey starten";
 "home.new_journey.accessibility_label_personalized" = "%@, starte eine neue Journey";
 "home.new_journey.accessibility_hint" = "Doppeltippen, um die Journey-Erstellung zu öffnen. Nach links wischen für Journal.";
+"home.switcher.button" = "Gärtnerei";
+"home.switcher.accessibility_hint" = "Öffne deine Journeys und pflanze eine neue.";
+"home.switcher.section" = "AKTIVE JOURNEYS";
+"home.switcher.plant_new" = "Neue Journey pflanzen";
+"home.switcher.title" = "Dein Garten";
+"home.signal.growth" = "Wachstum";
 "home.followthrough.yes" = "Das ist gewachsen, weil du drangeblieben bist.";
 "home.followthrough.partial" = "Fortschritt zählt trotzdem. Mach mit einem kleineren Schritt weiter.";
 "home.followthrough.no" = "Gnade für heute. Starte mit einem ganz kleinen Schritt.";
@@ -107,11 +115,18 @@
 "journal.memories" = "ERINNERUNGEN";
 
 "create_journey.title" = "Neue Journey";
-"create_journey.prayer_title" = "Wofür möchtest du gerade beten?";
+"create_journey.header_title" = "Pflanze eine neue Journey";
+"create_journey.helper" = "Teile einen Fokus, und Tend formt den Weg mit dir.";
+"create_journey.prayer_title" = "Wobei soll Gott dir jetzt beim Tenden helfen?";
 "create_journey.prayer_placeholder" = "Teile, was dir auf dem Herzen liegt...";
+"create_journey.starter_title" = "Brauchst du einen Einstieg?";
+"create_journey.starter_1" = "Gott meine Angst anvertrauen";
+"create_journey.starter_2" = "Beständiger im Gebet werden";
+"create_journey.starter_3" = "Heilung in einer Beziehung";
+"create_journey.starter_4" = "Weisheit für eine schwere Entscheidung";
 "create_journey.goal_title" = "Welches Ziel verfolgst du mit Gott gerade?";
 "create_journey.goal_placeholder" = "Beschreibe dein Ziel...";
-"create_journey.create_button" = "Erstellen";
+"create_journey.create_button" = "Journey pflanzen";
 "create_journey.creating" = "Journey wird erstellt...";
 
 "journey.error.create_title" = "Journey konnte nicht erstellt werden";
@@ -209,6 +224,9 @@
 "home.tend.close_accessibility" = "Heutiges Tend schließen";
 "home.tend.suggestion_accessibility" = "Vorgeschlagenen Schritt verwenden: %@";
 "home.tend.button" = "Tend";
+"home.tend.commit_button" = "Diesen Schritt zusagen";
+"home.tend.followthrough.unlock" = "Beantworte den Follow-through-Check, um das heutige Ritual fortzusetzen.";
+"home.tend.followthrough.previous_step" = "Vorheriger Schritt";
 
 "journal.recent_entries" = "Letzte Einträge";
 "journal.no_entries" = "Noch keine Einträge.";
@@ -226,6 +244,7 @@
 "home.reignite.title" = "Serie neu entfachen";
 "home.reignite.subtitle" = "Stelle deine %d-Tage-Serie wieder her.";
 "home.reignite.cta" = "Wiederherstellen";
+"home.reignite.inline_title" = "Serie dieser Journey wiederherstellen";
 "home.reignite.calendar_hint" = "Stelle die vorherige Serie für diese Journey wieder her.";
 "home.reignite.overlay.title" = "Stelle deine %d-Tage-Serie wieder her";
 "home.reignite.overlay.subtitle" = "Ein Tippen. Weiter wachsen.";

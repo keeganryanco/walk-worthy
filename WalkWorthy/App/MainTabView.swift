@@ -16,10 +16,7 @@ struct MainTabView: View {
                 HomeView(
                     profile: profile,
                     isPremium: isPremium,
-                    onRequirePaywall: onRequirePaywall,
-                    onNavigateToJournal: {
-                        selectTab(.journal)
-                    }
+                    onRequirePaywall: onRequirePaywall
                 )
                     .tag(RootTab.home)
                     .toolbar(.hidden, for: .tabBar)

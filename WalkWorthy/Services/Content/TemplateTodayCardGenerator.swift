@@ -81,7 +81,14 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
     ]
 
     func generateTodayCard(profile: OnboardingProfile, journeys: [PrayerJourney], date: Date = .now) -> TodayCard {
-        let goalKey = normalize(profile.growthGoal)
+        let journeyGrowthFocus = journeys
+            .sorted(by: { $0.createdAt > $1.createdAt })
+            .map(\.growthFocus)
+            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        let effectiveGrowthGoal = journeyGrowthFocus?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? (journeyGrowthFocus ?? "")
+            : profile.growthGoal
+        let goalKey = normalize(effectiveGrowthGoal)
         let focusKey = normalize(profile.prayerFocus)
 
         let prayerPrompt = pick(
@@ -102,7 +109,7 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
         let generatedSnippet = buildConstrainedScriptureSnippet(
             reference: scripture.reference,
             canonicalIdea: scripture.canonicalIdea,
-            profile: profile
+            growthGoal: effectiveGrowthGoal
         )
 
         let approvedReference = ScriptureReferenceValidator.isApproved(scripture.reference) ? scripture.reference : "Philippians 4:6-7"
@@ -122,11 +129,11 @@ struct TemplateTodayCardGenerator: TodayCardGenerating {
     private func buildConstrainedScriptureSnippet(
         reference: String,
         canonicalIdea: String,
-        profile: OnboardingProfile
+        growthGoal: String
     ) -> String {
         // This simulates constrained AI output for MVP: reference is selected from approved list,
         // and snippet is generated from a stable canonical idea to reduce hallucination risk.
-        let emphasis = profile.growthGoal.lowercased() == "peace" ? "Rest in that promise today." : "Take one step in response today."
+        let emphasis = normalize(growthGoal) == "peace" ? "Rest in that promise today." : "Take one step in response today."
         return "\(canonicalIdea) \(emphasis)"
     }
 

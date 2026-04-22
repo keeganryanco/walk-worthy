@@ -93,7 +93,8 @@ function extractJSON(raw: string): unknown {
 }
 
 function fallbackTheme(request: JourneyBootstrapRequest): JourneyThemeKey {
-  const text = `${request.prayerIntentText} ${request.goalIntentText}`.toLowerCase();
+  const goalIntentText = request.goalIntentText ?? "";
+  const text = `${request.prayerIntentText} ${goalIntentText}`.toLowerCase();
   if (/(peace|anxiet|worr|calm|rest|fear)/.test(text)) return "peace";
   if (/(resilien|hard|pain|trial|endur|persever)/.test(text)) return "resilience";
   if (/(patien|wait|timing)/.test(text)) return "patience";
@@ -106,16 +107,52 @@ function fallbackTheme(request: JourneyBootstrapRequest): JourneyThemeKey {
   return "basic";
 }
 
+function inferGrowthFocus(request: JourneyBootstrapRequest, themeKey: JourneyThemeKey): string {
+  const rawGoal = cleanText(request.goalIntentText ?? "", 80);
+  if (rawGoal.length >= 4) {
+    return rawGoal;
+  }
+
+  const prayerFocus = cleanText(request.prayerIntentText, 80);
+  if (prayerFocus.length >= 4) {
+    return prayerFocus;
+  }
+
+  switch (themeKey) {
+    case "peace":
+      return "peace";
+    case "resilience":
+      return "resilience";
+    case "patience":
+      return "patience";
+    case "faith":
+      return "faith";
+    case "joy":
+      return "joy";
+    case "wisdom":
+      return "wisdom";
+    case "healing":
+      return "healing";
+    case "discipline":
+      return "discipline";
+    case "community":
+      return "community";
+    default:
+      return "consistency";
+  }
+}
+
 function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapResponse {
   const language = targetLanguage(request);
   const themeKey = fallbackTheme(request);
-  const titleSeed = cleanText(request.goalIntentText, 48) || cleanText(request.prayerIntentText, 48) || "First Journey";
+  const growthFocus = inferGrowthFocus(request, themeKey);
+  const titleSeed = cleanText(request.prayerIntentText, 48) || cleanText(growthFocus, 48) || "First Journey";
   const journeyTitle = titleSeed.length < 4 ? "First Journey" : titleSeed;
   const journeyCategory = cleanText(request.prayerIntentText, 32) || "General";
   const pkg = fallbackPackage({
     profile: {
       prayerFocus: request.prayerIntentText,
-      growthGoal: request.goalIntentText,
+      growthGoal: growthFocus,
       reminderWindow: request.reminderWindow
     },
     journey: {
@@ -132,6 +169,7 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
     journeyTitle,
     journeyCategory,
     themeKey,
+    growthFocus,
     initialMemory: {
       summary:
         language.code === "es"
@@ -203,6 +241,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
         journeyTitle: "string",
         journeyCategory: "string",
         themeKey: "one of fixed theme keys",
+        growthFocus: "short inferred growth direction string",
         initialMemory: {
           summary: "string",
           winsSummary: "string",
@@ -240,11 +279,13 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
   const fallback = fallbackBootstrap(request);
   const themeCandidate = cleanText(source.themeKey, 40).toLowerCase() as JourneyThemeKey;
   const themeKey = THEME_KEYS.includes(themeCandidate) ? themeCandidate : fallback.themeKey;
+  const parsedGrowthFocus = cleanText(source.growthFocus, 80);
+  const growthFocus = parsedGrowthFocus || fallback.growthFocus;
 
   const normalizationContext: JourneyPackageRequest = {
     profile: {
       prayerFocus: request.prayerIntentText,
-      growthGoal: request.goalIntentText,
+      growthGoal: growthFocus,
       reminderWindow: request.reminderWindow
     },
     journey: {
@@ -253,7 +294,9 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
       category: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
       themeKey
     },
-    recentJourneySignals: [request.prayerIntentText, request.goalIntentText],
+    recentJourneySignals: [request.prayerIntentText, request.goalIntentText ?? "", growthFocus].filter(
+      (signal) => signal.trim().length > 0
+    ),
     languageCode: request.languageCode,
     localeIdentifier: request.localeIdentifier
   };
@@ -268,6 +311,7 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
     journeyTitle: cleanText(source.journeyTitle, 60) || fallback.journeyTitle,
     journeyCategory: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
     themeKey,
+    growthFocus,
     initialMemory: {
       summary:
         cleanText((source.initialMemory as Record<string, unknown> | undefined)?.summary, 240) ||

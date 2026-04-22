@@ -99,7 +99,7 @@ export interface OrchestratedResult {
 export interface JourneyBootstrapRequest {
   name: string;
   prayerIntentText: string;
-  goalIntentText: string;
+  goalIntentText?: string;
   reminderWindow: string;
   languageCode?: string;
   localeIdentifier?: string;
@@ -110,6 +110,7 @@ export interface JourneyBootstrapResponse {
   journeyTitle: string;
   journeyCategory: string;
   themeKey: JourneyThemeKey;
+  growthFocus: string;
   initialMemory: {
     summary: string;
     winsSummary: string;

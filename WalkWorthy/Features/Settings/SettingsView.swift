@@ -61,7 +61,12 @@ struct SettingsView: View {
                     .foregroundStyle(WWColor.nearBlack)
 
                     if AppConstants.Debug.bypassPaywall {
-                        Text("Paywall bypass is enabled for this debug build.")
+                        Text(
+                            L10n.string(
+                                "settings.debug.paywall_bypass_enabled",
+                                default: "Paywall bypass is enabled for this debug build."
+                            )
+                        )
                             .foregroundStyle(WWColor.muted)
                     } else if subscriptionService.hasEligibleDownsellOffer {
                         Button(subscriptionService.downsellSettingsButtonTitle) {
@@ -202,7 +207,7 @@ struct SettingsView: View {
                     Toggle("Bypass Paywall (Debug)", isOn: $debugBypassPaywallOverride)
                     Toggle("Fast-Day Tending (Debug)", isOn: $debugFastDayTestingOverride)
 
-                    Button("Reset Fast-Day Offset") {
+                    Button(L10n.string("settings.debug.reset_fast_day_offset", default: "Reset Fast-Day Offset")) {
                         AppConstants.Debug.resetFastDayOffset()
                     }
                     .foregroundStyle(WWColor.growGreen)
