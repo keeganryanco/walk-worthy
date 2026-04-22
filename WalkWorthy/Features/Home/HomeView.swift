@@ -1126,18 +1126,19 @@ struct JourneyGrowthPage: View {
                     .tracking(1.4)
 
                 Spacer()
-
-                Text(
-                    String(
-                        format: L10n.string(
-                            currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
-                            default: currentStreakCount == 1 ? "%d day" : "%d days"
-                        ),
-                        currentStreakCount
+                if !shouldOfferInAppReigniteOption {
+                    Text(
+                        String(
+                            format: L10n.string(
+                                currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                                default: currentStreakCount == 1 ? "%d day" : "%d days"
+                            ),
+                            currentStreakCount
+                        )
                     )
-                )
-                    .font(WWTypography.caption(12).weight(.bold))
-                    .foregroundStyle(WWColor.growGreen)
+                        .font(WWTypography.caption(12).weight(.bold))
+                        .foregroundStyle(WWColor.growGreen)
+                }
             }
 
             HStack(spacing: 10) {
