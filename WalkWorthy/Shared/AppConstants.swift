@@ -12,6 +12,11 @@ enum AppConstants {
     enum DeepLink {
         static let scheme = "tend"
         static let homeHost = "home"
+        static let journeyQueryKey = "journey"
+        static let actionQueryKey = "action"
+        static let reigniteActionValue = "reignite"
+        static let pendingJourneyStorageKey = "TEND_PENDING_HOME_JOURNEY_ID"
+        static let pendingActionStorageKey = "TEND_PENDING_HOME_ACTION"
     }
 
     enum Widget {

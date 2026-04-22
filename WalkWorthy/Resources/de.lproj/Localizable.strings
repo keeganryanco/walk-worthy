@@ -218,3 +218,15 @@
 "journal.rename.save" = "Speichern";
 "journal.detail.reflection_fallback" = "Geh treu den nächsten Schritt.";
 "journal.detail.step_skipped" = "(Schritt übersprungen)";
+"home.hydration.title" = "Wasser";
+"home.hydration.status.full" = "Hydriert";
+"home.hydration.status.steady" = "Stabil";
+"home.hydration.status.low" = "Braucht Wasser";
+"home.hydration.status.dry" = "Trockenphase";
+"home.reignite.title" = "Serie neu entfachen";
+"home.reignite.subtitle" = "Stelle deine %d-Tage-Serie wieder her.";
+"home.reignite.cta" = "Wiederherstellen";
+"home.reignite.overlay.title" = "Stelle deine %d-Tage-Serie wieder her";
+"home.reignite.overlay.subtitle" = "Ein Tippen. Weiter wachsen.";
+"home.reignite.overlay.cta" = "Neu entfachen";
+"home.reignite.overlay.dismiss" = "Jetzt nicht";

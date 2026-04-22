@@ -218,3 +218,15 @@
 "journal.rename.save" = "Save";
 "journal.detail.reflection_fallback" = "Continue stepping faithfully.";
 "journal.detail.step_skipped" = "(Step skipped)";
+"home.hydration.title" = "Water";
+"home.hydration.status.full" = "Hydrated";
+"home.hydration.status.steady" = "Steady";
+"home.hydration.status.low" = "Needs Water";
+"home.hydration.status.dry" = "Dry Spell";
+"home.reignite.title" = "Reignite Streak";
+"home.reignite.subtitle" = "Restore your %d-day streak.";
+"home.reignite.cta" = "Restore";
+"home.reignite.overlay.title" = "Restore your %d-day streak";
+"home.reignite.overlay.subtitle" = "One tap. Keep growing.";
+"home.reignite.overlay.cta" = "Reignite";
+"home.reignite.overlay.dismiss" = "Not now";

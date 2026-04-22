@@ -25,6 +25,9 @@ struct HomeView: View {
     
     @State private var selectedJourneyID: UUID?
     @State private var suppressHomePageIndicator = false
+    @State private var reigniteRouteJourneyID: UUID?
+    @AppStorage(AppConstants.DeepLink.pendingJourneyStorageKey) private var pendingJourneyIDRaw = ""
+    @AppStorage(AppConstants.DeepLink.pendingActionStorageKey) private var pendingActionRaw = ""
     private let createJourneyTabID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     var body: some View {
@@ -44,6 +47,14 @@ struct HomeView: View {
                                 profile: profile,
                                 memory: memory(for: journey.id),
                                 contentService: contentService,
+                                shouldShowReignitePrompt: reigniteRouteJourneyID == journey.id && pendingActionRaw == AppConstants.DeepLink.reigniteActionValue,
+                                onConsumeReignitePrompt: {
+                                    if reigniteRouteJourneyID == journey.id {
+                                        pendingJourneyIDRaw = ""
+                                        pendingActionRaw = ""
+                                        reigniteRouteJourneyID = nil
+                                    }
+                                },
                                 suppressHomePageIndicator: $suppressHomePageIndicator
                             )
                             .tag(journey.id as UUID?)
@@ -72,6 +83,7 @@ struct HomeView: View {
                 if selectedJourneyID == nil {
                     selectedJourneyID = activeJourneys.first?.id
                 }
+                applyPendingRouteIfNeeded()
             }
             .onChange(of: activeJourneys.map(\.id)) { _, ids in
                 guard !ids.isEmpty else {
@@ -84,6 +96,13 @@ struct HomeView: View {
                     return
                 }
                 selectedJourneyID = ids.first
+                applyPendingRouteIfNeeded()
+            }
+            .onChange(of: pendingJourneyIDRaw) { _, _ in
+                applyPendingRouteIfNeeded()
+            }
+            .onChange(of: pendingActionRaw) { _, _ in
+                applyPendingRouteIfNeeded()
             }
             .navigationBarHidden(true)
             .accessibilityIdentifier("HomeView")
@@ -140,6 +159,19 @@ struct HomeView: View {
         .accessibilityHidden(true)
     }
 
+    private func applyPendingRouteIfNeeded() {
+        guard !pendingJourneyIDRaw.isEmpty, let journeyID = UUID(uuidString: pendingJourneyIDRaw) else { return }
+        guard activeJourneys.contains(where: { $0.id == journeyID }) else { return }
+
+        selectedJourneyID = journeyID
+        if pendingActionRaw == AppConstants.DeepLink.reigniteActionValue {
+            reigniteRouteJourneyID = journeyID
+        } else {
+            reigniteRouteJourneyID = nil
+            pendingJourneyIDRaw = ""
+            pendingActionRaw = ""
+        }
+    }
 }
 
 struct CreateJourneyTerminalPage: View {
@@ -246,6 +278,8 @@ struct JourneyGrowthPage: View {
     let profile: OnboardingProfile
     let memory: JourneyMemorySnapshot?
     let contentService: JourneyContentService
+    let shouldShowReignitePrompt: Bool
+    let onConsumeReignitePrompt: () -> Void
     @Binding var suppressHomePageIndicator: Bool
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     
@@ -268,6 +302,7 @@ struct JourneyGrowthPage: View {
 
     // New states for streak overlay
     @State private var showStreakOverlay = false
+    @State private var showReigniteOverlay = false
     @State private var particles: [CGPoint] = []
     @State private var isBottomSheetExpanded = false
     @GestureState private var bottomSheetDragOffset: CGFloat = 0
@@ -310,7 +345,23 @@ struct JourneyGrowthPage: View {
     }
 
     private var currentStreakCount: Int {
-        TendingFlowView.calculateGlobalStreakCount(for: entries)
+        JourneyEngagementService.effectiveStreakCount(
+            for: journey,
+            entries: entries,
+            now: TendingTestingClock.currentDate
+        )
+    }
+
+    private var reigniteEligibility: ReigniteEligibility {
+        JourneyEngagementService.reigniteEligibility(
+            for: journey,
+            entries: entries,
+            now: TendingTestingClock.currentDate
+        )
+    }
+
+    private var hydrationStage: Int {
+        journey.hydrationStage
     }
 
     private var orderedWeekDays: [Date] {
@@ -594,6 +645,8 @@ struct JourneyGrowthPage: View {
                             maxHeightRatio: 0.33,
                             bottomPadding: 0
                         )
+                            .saturation(0.86 + (Double(hydrationStage) * 0.05))
+                            .brightness(-0.02 + (Double(hydrationStage) * 0.01))
                             .scaleEffect(justWatered ? 1.05 : 1.0)
                             .shadow(color: .black.opacity(0.4), radius: 20, y: 15)
                             .padding(.bottom, homePlantLift)
@@ -717,23 +770,53 @@ struct JourneyGrowthPage: View {
 
                 if showStreakOverlay {
                     StreakOverlayView(
-                        streakCount: TendingFlowView.calculateGlobalStreakCount(for: entries),
+                        streakCount: currentStreakCount,
                         onDismiss: { showStreakOverlay = false }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
                     .zIndex(200)
                 }
+
+                if showReigniteOverlay {
+                    ReigniteOverlayView(
+                        streakCount: max(reigniteEligibility.recoverableStreak, currentStreakCount),
+                        onReignite: {
+                            triggerReignite()
+                        },
+                        onDismiss: {
+                            showReigniteOverlay = false
+                        }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
+                    .zIndex(220)
+                }
             }
         }
         .contentShape(Rectangle())
         .simultaneousGesture(pageVerticalRevealGesture, including: .all)
         .onChange(of: showStreakOverlay) { _, isVisible in
-            suppressHomePageIndicator = isVisible
-            homeOverlayActive = isVisible || isEvolving
+            suppressHomePageIndicator = isVisible || showReigniteOverlay
+            homeOverlayActive = isVisible || isEvolving || showReigniteOverlay
+        }
+        .onChange(of: showReigniteOverlay) { _, isVisible in
+            suppressHomePageIndicator = isVisible || showStreakOverlay
+            homeOverlayActive = isVisible || isEvolving || showStreakOverlay
         }
         .onChange(of: isEvolving) { _, isVisible in
-            homeOverlayActive = isVisible || showStreakOverlay
+            homeOverlayActive = isVisible || showStreakOverlay || showReigniteOverlay
+        }
+        .onAppear {
+            refreshEngagementState()
+            maybePresentReigniteOverlay()
+        }
+        .onChange(of: entries.map(\.id)) { _, _ in
+            refreshEngagementState()
+            maybePresentReigniteOverlay()
+        }
+        .onChange(of: shouldShowReignitePrompt) { _, _ in
+            maybePresentReigniteOverlay()
         }
         .onDisappear {
             if suppressHomePageIndicator {
@@ -830,6 +913,11 @@ struct JourneyGrowthPage: View {
                 .padding(.top, 8)
 
                 streakSection
+                hydrationSection
+
+                if reigniteEligibility.isEligible {
+                    reigniteCard
+                }
                 
                 // Action or Completed State
                 if let entry = todaysEntry {
@@ -1082,6 +1170,103 @@ struct JourneyGrowthPage: View {
                 currentStreakCount
             )
         )
+    }
+
+    private var hydrationStatusLabel: String {
+        switch hydrationStage {
+        case 3:
+            return L10n.string("home.hydration.status.full", default: "Hydrated")
+        case 2:
+            return L10n.string("home.hydration.status.steady", default: "Steady")
+        case 1:
+            return L10n.string("home.hydration.status.low", default: "Needs Water")
+        default:
+            return L10n.string("home.hydration.status.dry", default: "Dry Spell")
+        }
+    }
+
+    private var hydrationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L10n.string("home.hydration.title", default: "Water"))
+                    .font(WWTypography.caption(13).weight(.heavy))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(1.4)
+
+                Spacer()
+
+                Text(hydrationStatusLabel)
+                    .font(WWTypography.caption(12).weight(.bold))
+                    .foregroundStyle(WWColor.growGreen)
+            }
+
+            HStack(spacing: 10) {
+                ForEach(0..<3, id: \.self) { index in
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(WWColor.growGreen)
+                        .opacity(index < hydrationStage ? 1.0 : 0.26)
+                        .scaleEffect(index < hydrationStage ? 1.0 : 0.9)
+                }
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(streakCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(insetCardStroke, lineWidth: 1)
+        )
+        .padding(.horizontal, 32)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.string("home.hydration.title", default: "Water"))
+        .accessibilityValue(hydrationStatusLabel)
+    }
+
+    private var reigniteCard: some View {
+        Button {
+            presentReigniteOverlay(markShown: true)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(WWColor.growGreen)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.string("home.reignite.title", default: "Reignite Streak"))
+                        .font(WWTypography.caption(13).weight(.heavy))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .tracking(1.0)
+
+                    Text(
+                        String(
+                            format: L10n.string("home.reignite.subtitle", default: "Restore your %d-day streak."),
+                            reigniteEligibility.recoverableStreak
+                        )
+                    )
+                        .font(WWTypography.caption(12))
+                        .foregroundStyle(WWColor.muted)
+                }
+
+                Spacer()
+
+                Text(L10n.string("home.reignite.cta", default: "Restore"))
+                    .font(WWTypography.caption(12).weight(.bold))
+                    .foregroundStyle(WWColor.growGreen)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(streakCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(WWColor.growGreen.opacity(0.38), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 32)
     }
 
     private func weekdayLabel(for index: Int) -> String {
@@ -1338,6 +1523,52 @@ struct JourneyGrowthPage: View {
             withAnimation(.interactiveSpring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
                 isBottomSheetExpanded = expanded
             }
+        }
+    }
+
+    private func refreshEngagementState() {
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: entries,
+            now: TendingTestingClock.currentDate
+        )
+        try? modelContext.save()
+    }
+
+    private func maybePresentReigniteOverlay() {
+        if shouldShowReignitePrompt {
+            presentReigniteOverlay(markShown: true)
+            onConsumeReignitePrompt()
+            return
+        }
+
+        if reigniteEligibility.isEligible, journey.reigniteOverlayShownAt == nil {
+            presentReigniteOverlay(markShown: true)
+        }
+    }
+
+    private func presentReigniteOverlay(markShown: Bool) {
+        guard reigniteEligibility.isEligible else { return }
+        if markShown, journey.reigniteOverlayShownAt == nil {
+            journey.reigniteOverlayShownAt = TendingTestingClock.currentDate
+            try? modelContext.save()
+        }
+        showReigniteOverlay = true
+    }
+
+    private func triggerReignite() {
+        let activated = JourneyEngagementService.applyReignite(
+            to: journey,
+            entries: entries,
+            at: TendingTestingClock.currentDate
+        )
+        guard activated else { return }
+
+        try? modelContext.save()
+        showReigniteOverlay = false
+        onConsumeReignitePrompt()
+        withAnimation {
+            showStreakOverlay = true
         }
     }
 
@@ -1727,17 +1958,26 @@ struct TendingFlowView: View {
                 )
             }
 
-            let growthPoints = FollowThroughService.growthPoints(
+            let baseGrowthPoints = FollowThroughService.growthPoints(
                 for: selectedFollowThroughStatus,
                 hasPriorCommitmentToEvaluate: closureTarget != nil
             )
 
             let inferredLegacyCount = entries.filter { $0.completedAt != nil }.count
-            let baselineProgressPoints = max(journey.completedTends, inferredLegacyCount)
-            let nextProgressPoints = baselineProgressPoints + growthPoints
-            journey.completedTends = nextProgressPoints
-            journey.cycleCount = nextProgressPoints / Self.tendsPerCycle
+            let growthUpdate = JourneyEngagementService.applyCompletionGrowth(
+                to: journey,
+                inferredLegacyCount: inferredLegacyCount,
+                baseGrowthPoints: baseGrowthPoints,
+                at: completionDate
+            )
+            journey.cycleCount = growthUpdate.completedTendsAfterUpdate / Self.tendsPerCycle
             let nextCompletedSessionCount = inferredLegacyCount + 1
+            let projectedEntries = entries.contains(where: { $0.id == entry.id }) ? entries : (entries + [entry])
+            JourneyEngagementService.refreshJourneyState(
+                for: journey,
+                entries: projectedEntries,
+                now: completionDate
+            )
 
             let settings = settingsRows.first
             let wasFirstTendCompleted = FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
@@ -1756,7 +1996,7 @@ struct TendingFlowView: View {
             JourneyProgressService.logEvent(
                 journeyID: journey.id,
                 type: .stepCompleted,
-                notes: "Completed step: \(trimmedStep) | growthPoints: \(growthPoints)",
+                notes: "Completed step: \(trimmedStep) | baseGrowthPoints: \(baseGrowthPoints) | appliedGrowth: \(growthUpdate.appliedGrowth)",
                 modelContext: modelContext
             )
             analytics.track(
@@ -1764,7 +2004,9 @@ struct TendingFlowView: View {
                 properties: [
                     "source": "home_tending",
                     "journey_id": journey.id.uuidString,
-                    "growth_points": String(growthPoints),
+                    "growth_points": String(baseGrowthPoints),
+                    "applied_growth": String(format: "%.2f", growthUpdate.appliedGrowth),
+                    "hydration_stage_before": String(growthUpdate.hydrationStageBeforeTend),
                     "had_followthrough_prompt": closureTarget == nil ? "false" : "true",
                     "did_complete_first_tend": didCompleteFirstTend ? "true" : "false"
                 ]
@@ -2062,6 +2304,69 @@ struct StreakOverlayView: View {
                     .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
                     .padding(.horizontal, 32)
                     .padding(.bottom, max(120, proxy.safeAreaInsets.bottom + 52))
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+struct ReigniteOverlayView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let streakCount: Int
+    let onReignite: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let effectiveTopInset = max(proxy.safeAreaInsets.top, 64)
+            let backgroundColor = colorScheme == .dark ? WWColor.darkBackground : WWColor.white
+
+            ZStack {
+                backgroundColor
+                    .frame(width: proxy.size.width, height: proxy.size.height + effectiveTopInset + 24)
+                    .offset(y: -(effectiveTopInset + 24))
+                    .ignoresSafeArea()
+
+                VStack(spacing: 26) {
+                    Spacer()
+
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 82, weight: .bold))
+                        .foregroundStyle(WWColor.growGreen)
+                        .shadow(color: WWColor.growGreen.opacity(0.35), radius: 28, y: 12)
+
+                    Text(
+                        String(
+                            format: L10n.string("home.reignite.overlay.title", default: "Restore your %d-day streak"),
+                            max(streakCount, 1)
+                        )
+                    )
+                        .font(WWTypography.heading(30))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
+
+                    Text(L10n.string("home.reignite.overlay.subtitle", default: "One tap. Keep growing."))
+                        .font(WWTypography.body(18))
+                        .foregroundStyle(WWColor.muted)
+
+                    Spacer()
+
+                    Button(action: onReignite) {
+                        Text(L10n.string("home.reignite.overlay.cta", default: "Reignite"))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                    .padding(.horizontal, 32)
+
+                    Button(action: onDismiss) {
+                        Text(L10n.string("home.reignite.overlay.dismiss", default: "Not now"))
+                            .font(WWTypography.caption(13).weight(.medium))
+                            .foregroundStyle(WWColor.muted)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, max(110, proxy.safeAreaInsets.bottom + 44))
                 }
             }
         }

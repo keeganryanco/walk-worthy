@@ -26,6 +26,8 @@ struct RootView: View {
     @State private var onboardingErrorMessage: String?
     @State private var isBootstrappingJourney = false
     @State private var onboardingExperimentConfig: OnboardingExperimentConfig = .default
+    @AppStorage(AppConstants.DeepLink.pendingJourneyStorageKey) private var pendingJourneyIDRaw = ""
+    @AppStorage(AppConstants.DeepLink.pendingActionStorageKey) private var pendingHomeActionRaw = ""
 
     private let journeyContentService = JourneyContentService()
     private let bootstrapProvider = BackendJourneyBootstrapProvider()
@@ -81,12 +83,20 @@ struct RootView: View {
             )
             await subscriptionService.initialize()
             await notificationService.refreshAuthorizationStatus()
+            notificationService.recordAppOpen(modelContext: modelContext)
             bootstrapSettingsIfNeeded()
             registerSessionIfNeeded()
             syncPaywallPresentationState()
             await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
             syncWidgetSnapshot()
+            if notificationService.authorizationStatus == .authorized {
+                let reminders = fetchReminderSchedules()
+                await notificationService.scheduleReminderSchedules(
+                    reminders.filter(\.isEnabled),
+                    modelContext: modelContext
+                )
+            }
         }
         .onChange(of: subscriptionService.isPremium) { _, isPremium in
             if isPremium {
@@ -116,8 +126,22 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             syncPaywallPresentationState()
+            Task {
+                await notificationService.refreshAuthorizationStatus()
+                notificationService.recordAppOpen(modelContext: modelContext)
+                guard notificationService.authorizationStatus == .authorized else { return }
+                await notificationService.scheduleReminderSchedules(
+                    fetchReminderSchedules().filter(\.isEnabled),
+                    modelContext: modelContext
+                )
+            }
         }
         .onOpenURL(perform: handleDeepLink)
+        .onChange(of: notificationService.pendingDeepLinkURL) { _, value in
+            guard let value else { return }
+            handleDeepLink(value)
+            notificationService.consumePendingDeepLink()
+        }
         .onAppear {
             trackOnboardingStartedIfNeeded()
         }
@@ -607,6 +631,17 @@ struct RootView: View {
         let normalizedPath = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
         if host == AppConstants.DeepLink.homeHost || normalizedPath == AppConstants.DeepLink.homeHost {
             selectedTab = .home
+        }
+
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let queryItems = components?.queryItems ?? []
+        if let journeyValue = queryItems.first(where: { $0.name.lowercased() == AppConstants.DeepLink.journeyQueryKey })?.value {
+            pendingJourneyIDRaw = journeyValue
+        }
+        if let actionValue = queryItems.first(where: { $0.name.lowercased() == AppConstants.DeepLink.actionQueryKey })?.value {
+            pendingHomeActionRaw = actionValue.lowercased()
+        } else if host == AppConstants.DeepLink.homeHost || normalizedPath == AppConstants.DeepLink.homeHost {
+            pendingHomeActionRaw = ""
         }
     }
 

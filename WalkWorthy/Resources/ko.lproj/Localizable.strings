@@ -202,3 +202,15 @@
 "journal.rename.save" = "저장";
 "journal.detail.reflection_fallback" = "단계를 계속 충실히 진행하세요.";
 "journal.detail.step_skipped" = "(단계 건너뜀)";
+"home.hydration.title" = "물";
+"home.hydration.status.full" = "수분 충분";
+"home.hydration.status.steady" = "안정";
+"home.hydration.status.low" = "물 주기 필요";
+"home.hydration.status.dry" = "건조 구간";
+"home.reignite.title" = "연속 기록 되살리기";
+"home.reignite.subtitle" = "%d일 연속 기록을 복구하세요.";
+"home.reignite.cta" = "복구";
+"home.reignite.overlay.title" = "%d일 연속 기록 복구";
+"home.reignite.overlay.subtitle" = "한 번의 탭으로 계속 성장하세요.";
+"home.reignite.overlay.cta" = "되살리기";
+"home.reignite.overlay.dismiss" = "나중에";

@@ -19,15 +19,20 @@ final class WalkWorthyTests: XCTestCase {
         XCTAssertFalse(card.scriptureText.isEmpty)
     }
 
-    func testJourneyLimitPolicyForFreeTier() {
-        XCTAssertTrue(MonetizationPolicy.canCreateJourney(hasPremium: false, activeJourneyCount: 0))
-        XCTAssertFalse(MonetizationPolicy.canCreateJourney(hasPremium: false, activeJourneyCount: 1))
+    func testJourneyCreationAllowedWhenOnline() {
+        let decision = JourneyCreationPolicy.evaluate(
+            isOnline: true,
+            hasPremium: false,
+            activeJourneyCount: 1,
+            settings: AppSettings()
+        )
+        XCTAssertEqual(decision, .allowed)
     }
 
-    func testPaywallRequiredAfterSecondSession() {
+    func testSessionGatePaywallModeIsDisabled() {
         let fourDaysAgo = Calendar.current.date(byAdding: .day, value: -4, to: .now) ?? .now
         let settings = AppSettings(firstLaunchAt: fourDaysAgo, totalSessions: 2)
-        XCTAssertTrue(
+        XCTAssertFalse(
             MonetizationPolicy.requiresPaywall(
                 hasPremium: false,
                 settings: settings,
@@ -258,5 +263,124 @@ final class WalkWorthyTests: XCTestCase {
         XCTAssertEqual(context?.previousCommitmentText, "Review one key number")
         XCTAssertEqual(context?.previousFollowThroughStatus, .partial)
         XCTAssertEqual(context?.daysSinceCommitment, 1)
+    }
+
+    func testAdaptiveSendTimeUsesAllowedWindowAndAvoidsReminderProximity() {
+        let settings = AppSettings()
+        var histogram = Array(repeating: 0, count: 24)
+        histogram[10] = 9
+        histogram[18] = 7
+        settings.appOpenHourHistogram = histogram
+
+        let selector = AdaptiveSendTimeSelector(
+            calendar: Calendar(identifier: .gregorian),
+            allowedHours: 9...20
+        )
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 4
+        components.day = 22
+        components.hour = 8
+        components.minute = 30
+        let now = Calendar(identifier: .gregorian).date(from: components) ?? .now
+        let day = Calendar(identifier: .gregorian).startOfDay(for: now)
+        let reminders = [
+            ReminderSchedule(hour: 10, minute: 15, isEnabled: true, sortOrder: 0)
+        ]
+
+        let selected = selector.selectSendDate(
+            for: day,
+            settings: settings,
+            reminders: reminders,
+            alreadyScheduled: [],
+            now: now
+        )
+
+        XCTAssertNotNil(selected)
+        let selectedHour = Calendar(identifier: .gregorian).component(.hour, from: selected ?? now)
+        XCTAssertTrue((9...20).contains(selectedHour))
+        let reminderDate = Calendar(identifier: .gregorian).date(
+            bySettingHour: 10,
+            minute: 15,
+            second: 0,
+            of: day
+        ) ?? now
+        XCTAssertGreaterThanOrEqual(abs((selected ?? now).timeIntervalSince(reminderDate)), 90 * 60)
+    }
+
+    func testStreakLossAndReigniteWindow() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let lastComplete = calendar.date(byAdding: .day, value: -2, to: now) ?? now
+
+        let journey = PrayerJourney(title: "Faith", category: "Growth")
+        let entry = PrayerEntry(
+            createdAt: lastComplete,
+            prompt: "p",
+            scriptureReference: "James 1:5",
+            scriptureText: "t",
+            actionStep: "step",
+            completedAt: lastComplete
+        )
+
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: [entry],
+            now: now,
+            calendar: calendar
+        )
+
+        let eligibility = JourneyEngagementService.reigniteEligibility(
+            for: journey,
+            entries: [entry],
+            now: now,
+            calendar: calendar
+        )
+        XCTAssertTrue(eligibility.isEligible)
+        XCTAssertEqual(eligibility.recoverableStreak, 1)
+
+        let activated = JourneyEngagementService.applyReignite(
+            to: journey,
+            entries: [entry],
+            at: now,
+            calendar: calendar
+        )
+        XCTAssertTrue(activated)
+        XCTAssertEqual(journey.reignitedStreakOffset, 1)
+    }
+
+    func testHydrationDecayAndWeightedGrowth() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 2_000_000)
+        let completion = calendar.date(byAdding: .day, value: -3, to: now) ?? now
+
+        let journey = PrayerJourney(title: "Patience", category: "Trust")
+        let entry = PrayerEntry(
+            createdAt: completion,
+            prompt: "p",
+            scriptureReference: "James 1:5",
+            scriptureText: "t",
+            actionStep: "step",
+            completedAt: completion
+        )
+
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: [entry],
+            now: now,
+            calendar: calendar
+        )
+        XCTAssertEqual(journey.hydrationStage, 0)
+
+        let result = JourneyEngagementService.applyCompletionGrowth(
+            to: journey,
+            inferredLegacyCount: 1,
+            baseGrowthPoints: 1,
+            at: now
+        )
+        XCTAssertEqual(result.hydrationStageBeforeTend, 0)
+        XCTAssertGreaterThan(result.appliedGrowth, 0)
+        XCTAssertEqual(journey.hydrationStage, JourneyEngagementService.hydrationMaxStage)
+        XCTAssertGreaterThanOrEqual(journey.growthProgress, 1.0)
     }
 }

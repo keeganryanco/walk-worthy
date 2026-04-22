@@ -224,3 +224,15 @@
 "journal.rename.save" = "保存";
 "journal.detail.reflection_fallback" = "忠実な一歩を続けましょう。";
 "journal.detail.step_skipped" = "（ステップをスキップ）";
+"home.hydration.title" = "水分";
+"home.hydration.status.full" = "うるおい十分";
+"home.hydration.status.steady" = "安定";
+"home.hydration.status.low" = "水やりが必要";
+"home.hydration.status.dry" = "乾き気味";
+"home.reignite.title" = "連続記録を復活";
+"home.reignite.subtitle" = "%d日連続を復活させる。";
+"home.reignite.cta" = "復活";
+"home.reignite.overlay.title" = "%d日連続を復活";
+"home.reignite.overlay.subtitle" = "ワンタップで、成長を続けよう。";
+"home.reignite.overlay.cta" = "復活する";
+"home.reignite.overlay.dismiss" = "あとで";

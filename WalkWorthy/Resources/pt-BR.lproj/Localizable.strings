@@ -218,3 +218,15 @@
 "journal.rename.save" = "Salvar";
 "journal.detail.reflection_fallback" = "Continue dando passos fiéis.";
 "journal.detail.step_skipped" = "(Passo ignorado)";
+"home.hydration.title" = "Água";
+"home.hydration.status.full" = "Hidratada";
+"home.hydration.status.steady" = "Estável";
+"home.hydration.status.low" = "Precisa de água";
+"home.hydration.status.dry" = "Período seco";
+"home.reignite.title" = "Reacender sequência";
+"home.reignite.subtitle" = "Restaure sua sequência de %d dias.";
+"home.reignite.cta" = "Restaurar";
+"home.reignite.overlay.title" = "Restaure sua sequência de %d dias";
+"home.reignite.overlay.subtitle" = "Um toque. Continue crescendo.";
+"home.reignite.overlay.cta" = "Reacender";
+"home.reignite.overlay.dismiss" = "Agora não";

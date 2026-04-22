@@ -16,6 +16,8 @@ final class AppSettings {
     var reviewPromptShownAfterFirstTendAt: Date?
     var paywallShownAfterFirstTendAt: Date?
     var paywallDismissedAt: Date?
+    var appOpenHourHistogramRaw: String?
+    var lastAppOpenAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -30,7 +32,9 @@ final class AppSettings {
         firstTendCompletedAt: Date? = nil,
         reviewPromptShownAfterFirstTendAt: Date? = nil,
         paywallShownAfterFirstTendAt: Date? = nil,
-        paywallDismissedAt: Date? = nil
+        paywallDismissedAt: Date? = nil,
+        appOpenHourHistogramRaw: String? = nil,
+        lastAppOpenAt: Date? = nil
     ) {
         self.id = id
         self.firstLaunchAt = firstLaunchAt
@@ -45,6 +49,8 @@ final class AppSettings {
         self.reviewPromptShownAfterFirstTendAt = reviewPromptShownAfterFirstTendAt
         self.paywallShownAfterFirstTendAt = paywallShownAfterFirstTendAt
         self.paywallDismissedAt = paywallDismissedAt
+        self.appOpenHourHistogramRaw = appOpenHourHistogramRaw
+        self.lastAppOpenAt = lastAppOpenAt
     }
 
     var widgetJourneyID: UUID? {
@@ -91,5 +97,22 @@ final class AppSettings {
 
     func clearPaywallDismissed() {
         paywallDismissedAt = nil
+    }
+
+    var appOpenHourHistogram: [Int] {
+        get {
+            let parsed = (appOpenHourHistogramRaw ?? "")
+                .split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            if parsed.count == 24 {
+                return parsed.map { max(0, $0) }
+            }
+            return Array(repeating: 0, count: 24)
+        }
+        set {
+            let normalized = Array(newValue.prefix(24)).map { max(0, $0) }
+            let padded = normalized + Array(repeating: 0, count: max(0, 24 - normalized.count))
+            appOpenHourHistogramRaw = padded.map(String.init).joined(separator: ",")
+        }
     }
 }
