@@ -303,6 +303,7 @@ struct JourneyGrowthPage: View {
     // New states for streak overlay
     @State private var showStreakOverlay = false
     @State private var showReigniteOverlay = false
+    @State private var showReigniteCelebration = false
     @State private var particles: [CGPoint] = []
     @State private var isBottomSheetExpanded = false
     @GestureState private var bottomSheetDragOffset: CGFloat = 0
@@ -354,6 +355,14 @@ struct JourneyGrowthPage: View {
 
     private var reigniteEligibility: ReigniteEligibility {
         JourneyEngagementService.reigniteEligibility(
+            for: journey,
+            entries: entries,
+            now: TendingTestingClock.currentDate
+        )
+    }
+
+    private var shouldOfferInAppReigniteOption: Bool {
+        JourneyEngagementService.shouldOfferInAppReigniteOption(
             for: journey,
             entries: entries,
             now: TendingTestingClock.currentDate
@@ -785,12 +794,20 @@ struct JourneyGrowthPage: View {
                             triggerReignite()
                         },
                         onDismiss: {
-                            showReigniteOverlay = false
+                            dismissReigniteOverlay()
                         }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
                     .zIndex(220)
+                }
+
+                if showReigniteCelebration {
+                    ReigniteCelebrationView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .ignoresSafeArea()
+                        .zIndex(210)
+                        .transition(.opacity.combined(with: .scale(scale: 1.04)))
                 }
             }
         }
@@ -798,25 +815,30 @@ struct JourneyGrowthPage: View {
         .simultaneousGesture(pageVerticalRevealGesture, including: .all)
         .onChange(of: showStreakOverlay) { _, isVisible in
             suppressHomePageIndicator = isVisible || showReigniteOverlay
-            homeOverlayActive = isVisible || isEvolving || showReigniteOverlay
+            homeOverlayActive = isVisible || isEvolving || showReigniteOverlay || showReigniteCelebration
         }
         .onChange(of: showReigniteOverlay) { _, isVisible in
             suppressHomePageIndicator = isVisible || showStreakOverlay
-            homeOverlayActive = isVisible || isEvolving || showStreakOverlay
+            homeOverlayActive = isVisible || isEvolving || showStreakOverlay || showReigniteCelebration
+        }
+        .onChange(of: showReigniteCelebration) { _, isVisible in
+            homeOverlayActive = isVisible || isEvolving || showStreakOverlay || showReigniteOverlay
         }
         .onChange(of: isEvolving) { _, isVisible in
-            homeOverlayActive = isVisible || showStreakOverlay || showReigniteOverlay
+            homeOverlayActive = isVisible || showStreakOverlay || showReigniteOverlay || showReigniteCelebration
         }
         .onAppear {
             refreshEngagementState()
-            maybePresentReigniteOverlay()
+            handleNotificationReignitePromptIfNeeded()
         }
         .onChange(of: entries.map(\.id)) { _, _ in
             refreshEngagementState()
-            maybePresentReigniteOverlay()
+            if showReigniteOverlay, !reigniteEligibility.isEligible {
+                showReigniteOverlay = false
+            }
         }
         .onChange(of: shouldShowReignitePrompt) { _, _ in
-            maybePresentReigniteOverlay()
+            handleNotificationReignitePromptIfNeeded()
         }
         .onDisappear {
             if suppressHomePageIndicator {
@@ -914,10 +936,6 @@ struct JourneyGrowthPage: View {
 
                 streakSection
                 hydrationSection
-
-                if reigniteEligibility.isEligible {
-                    reigniteCard
-                }
                 
                 // Action or Completed State
                 if let entry = todaysEntry {
@@ -1158,6 +1176,13 @@ struct JourneyGrowthPage: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(insetCardStroke, lineWidth: 1)
         )
+        .overlay(alignment: .topTrailing) {
+            if shouldOfferInAppReigniteOption {
+                reigniteCalendarChip
+                    .padding(.top, 10)
+                    .padding(.trailing, 10)
+            }
+        }
         .padding(.horizontal, 32)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L10n.string("Streak", default: "Streak"))
@@ -1169,6 +1194,35 @@ struct JourneyGrowthPage: View {
                 ),
                 currentStreakCount
             )
+        )
+    }
+
+    private var reigniteCalendarChip: some View {
+        Button {
+            presentReigniteOverlay()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text(L10n.string("home.reignite.cta", default: "Restore"))
+                    .font(WWTypography.caption(11).weight(.bold))
+            }
+            .foregroundStyle(WWColor.growGreen)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(WWColor.growGreen.opacity(colorScheme == .dark ? 0.20 : 0.14))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(WWColor.growGreen.opacity(0.45), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.string("home.reignite.cta", default: "Restore"))
+        .accessibilityHint(
+            L10n.string("home.reignite.calendar_hint", default: "Restore your previous streak for this journey.")
         )
     }
 
@@ -1223,50 +1277,6 @@ struct JourneyGrowthPage: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L10n.string("home.hydration.title", default: "Water"))
         .accessibilityValue(hydrationStatusLabel)
-    }
-
-    private var reigniteCard: some View {
-        Button {
-            presentReigniteOverlay(markShown: true)
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(WWColor.growGreen)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.string("home.reignite.title", default: "Reignite Streak"))
-                        .font(WWTypography.caption(13).weight(.heavy))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .tracking(1.0)
-
-                    Text(
-                        String(
-                            format: L10n.string("home.reignite.subtitle", default: "Restore your %d-day streak."),
-                            reigniteEligibility.recoverableStreak
-                        )
-                    )
-                        .font(WWTypography.caption(12))
-                        .foregroundStyle(WWColor.muted)
-                }
-
-                Spacer()
-
-                Text(L10n.string("home.reignite.cta", default: "Restore"))
-                    .font(WWTypography.caption(12).weight(.bold))
-                    .foregroundStyle(WWColor.growGreen)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(streakCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(WWColor.growGreen.opacity(0.38), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 32)
     }
 
     private func weekdayLabel(for index: Int) -> String {
@@ -1535,25 +1545,29 @@ struct JourneyGrowthPage: View {
         try? modelContext.save()
     }
 
-    private func maybePresentReigniteOverlay() {
-        if shouldShowReignitePrompt {
-            presentReigniteOverlay(markShown: true)
+    private func handleNotificationReignitePromptIfNeeded() {
+        guard shouldShowReignitePrompt else { return }
+        guard reigniteEligibility.isEligible else {
             onConsumeReignitePrompt()
             return
         }
-
-        if reigniteEligibility.isEligible, journey.reigniteOverlayShownAt == nil {
-            presentReigniteOverlay(markShown: true)
-        }
+        presentReigniteOverlay()
+        onConsumeReignitePrompt()
     }
 
-    private func presentReigniteOverlay(markShown: Bool) {
+    private func presentReigniteOverlay() {
         guard reigniteEligibility.isEligible else { return }
-        if markShown, journey.reigniteOverlayShownAt == nil {
+        homeOverlayActive = true
+        showReigniteOverlay = true
+    }
+
+    private func dismissReigniteOverlay() {
+        showReigniteOverlay = false
+        if reigniteEligibility.isEligible, journey.reigniteOverlayShownAt == nil {
             journey.reigniteOverlayShownAt = TendingTestingClock.currentDate
             try? modelContext.save()
         }
-        showReigniteOverlay = true
+        onConsumeReignitePrompt()
     }
 
     private func triggerReignite() {
@@ -1567,8 +1581,25 @@ struct JourneyGrowthPage: View {
         try? modelContext.save()
         showReigniteOverlay = false
         onConsumeReignitePrompt()
-        withAnimation {
-            showStreakOverlay = true
+        triggerReigniteCelebration()
+    }
+
+    private func triggerReigniteCelebration() {
+        if reduceMotion {
+            showReigniteCelebration = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                showReigniteCelebration = false
+            }
+            return
+        }
+
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) {
+            showReigniteCelebration = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.25) {
+            withAnimation(.easeOut(duration: 0.28)) {
+                showReigniteCelebration = false
+            }
         }
     }
 
@@ -2371,5 +2402,59 @@ struct ReigniteOverlayView: View {
             }
         }
         .ignoresSafeArea()
+    }
+}
+
+struct ReigniteCelebrationView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    WWColor.growGreen.opacity(0.14),
+                    WWColor.morningGold.opacity(0.08),
+                    .clear
+                ],
+                startPoint: .bottom,
+                endPoint: .top
+            )
+            .ignoresSafeArea()
+
+            ZStack {
+                Circle()
+                    .fill(WWColor.growGreen.opacity(0.20))
+                    .frame(width: animate ? 260 : 120, height: animate ? 260 : 120)
+                    .blur(radius: 22)
+                    .opacity(animate ? 0.0 : 1.0)
+
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 64, weight: .bold))
+                    .foregroundStyle(WWColor.growGreen)
+                    .scaleEffect(animate ? 1.14 : 0.86)
+                    .shadow(color: WWColor.growGreen.opacity(0.35), radius: 20, y: 8)
+            }
+
+            HStack(spacing: 20) {
+                ForEach(0..<6, id: \.self) { idx in
+                    Circle()
+                        .fill(idx.isMultiple(of: 2) ? WWColor.growGreen : WWColor.morningGold)
+                        .frame(width: 10, height: 10)
+                        .offset(x: animate ? CGFloat((idx - 2) * 16) : 0, y: animate ? CGFloat((idx % 2 == 0 ? -56 : 56)) : 0)
+                        .opacity(animate ? 0.0 : 1.0)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            if reduceMotion {
+                animate = true
+                return
+            }
+            withAnimation(.easeOut(duration: 0.85)) {
+                animate = true
+            }
+        }
     }
 }

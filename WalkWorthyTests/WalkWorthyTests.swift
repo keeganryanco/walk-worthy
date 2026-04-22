@@ -383,4 +383,84 @@ final class WalkWorthyTests: XCTestCase {
         XCTAssertEqual(journey.hydrationStage, JourneyEngagementService.hydrationMaxStage)
         XCTAssertGreaterThanOrEqual(journey.growthProgress, 1.0)
     }
+
+    func testInAppReigniteOptionHonorsEligibilityAndDismissState() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 3_000_000)
+        let lastComplete = calendar.date(byAdding: .day, value: -2, to: now) ?? now
+
+        let journey = PrayerJourney(title: "Faith", category: "Growth")
+        let entry = PrayerEntry(
+            createdAt: lastComplete,
+            prompt: "p",
+            scriptureReference: "James 1:5",
+            scriptureText: "t",
+            actionStep: "step",
+            completedAt: lastComplete
+        )
+
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: [entry],
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertTrue(
+            JourneyEngagementService.shouldOfferInAppReigniteOption(
+                for: journey,
+                entries: [entry],
+                now: now,
+                calendar: calendar,
+                chancePercent: 100,
+                maxDelayHours: 0
+            )
+        )
+
+        journey.reigniteOverlayShownAt = now
+        XCTAssertFalse(
+            JourneyEngagementService.shouldOfferInAppReigniteOption(
+                for: journey,
+                entries: [entry],
+                now: now,
+                calendar: calendar,
+                chancePercent: 100,
+                maxDelayHours: 0
+            )
+        )
+    }
+
+    func testInAppReigniteOptionRespectsRandomGateOverride() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 4_000_000)
+        let lastComplete = calendar.date(byAdding: .day, value: -2, to: now) ?? now
+
+        let journey = PrayerJourney(title: "Patience", category: "Trust")
+        let entry = PrayerEntry(
+            createdAt: lastComplete,
+            prompt: "p",
+            scriptureReference: "James 1:5",
+            scriptureText: "t",
+            actionStep: "step",
+            completedAt: lastComplete
+        )
+
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: [entry],
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertFalse(
+            JourneyEngagementService.shouldOfferInAppReigniteOption(
+                for: journey,
+                entries: [entry],
+                now: now,
+                calendar: calendar,
+                chancePercent: 0,
+                maxDelayHours: 0
+            )
+        )
+    }
 }

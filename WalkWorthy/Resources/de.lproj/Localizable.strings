@@ -226,6 +226,7 @@
 "home.reignite.title" = "Serie neu entfachen";
 "home.reignite.subtitle" = "Stelle deine %d-Tage-Serie wieder her.";
 "home.reignite.cta" = "Wiederherstellen";
+"home.reignite.calendar_hint" = "Stelle die vorherige Serie für diese Journey wieder her.";
 "home.reignite.overlay.title" = "Stelle deine %d-Tage-Serie wieder her";
 "home.reignite.overlay.subtitle" = "Ein Tippen. Weiter wachsen.";
 "home.reignite.overlay.cta" = "Neu entfachen";

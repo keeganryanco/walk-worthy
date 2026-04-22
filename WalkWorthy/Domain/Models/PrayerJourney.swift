@@ -177,6 +177,8 @@ struct GrowthUpdateResult {
 enum JourneyEngagementService {
     static let hydrationMaxStage = 3
     static let reigniteWindowSeconds: TimeInterval = 72 * 60 * 60
+    private static let inAppReigniteChancePercent = 70
+    private static let inAppReigniteMaxDelayHours = 26
 
     static func registerAppOpen(
         in settings: AppSettings,
@@ -366,6 +368,41 @@ enum JourneyEngagementService {
         journey.reigniteOverlayShownAt = now
         journey.streakLostAt = nil
         return true
+    }
+
+    static func shouldOfferInAppReigniteOption(
+        for journey: PrayerJourney,
+        entries: [PrayerEntry],
+        now: Date,
+        calendar: Calendar = .current,
+        chancePercent: Int = inAppReigniteChancePercent,
+        maxDelayHours: Int = inAppReigniteMaxDelayHours
+    ) -> Bool {
+        let eligibility = reigniteEligibility(for: journey, entries: entries, now: now, calendar: calendar)
+        guard eligibility.isEligible else { return false }
+        guard journey.reigniteOverlayShownAt == nil else { return false }
+        guard let lossDate = journey.streakLostAt else { return false }
+
+        let boundedChance = min(max(chancePercent, 0), 100)
+        let boundedDelay = max(0, maxDelayHours)
+        let seed = deterministicReigniteSeed(journeyID: journey.id, lossDate: lossDate, calendar: calendar)
+        let chanceRoll = Int(seed % 100)
+        guard chanceRoll < boundedChance else { return false }
+
+        let unlockDelayHours = boundedDelay == 0 ? 0 : Int((seed / 101) % UInt64(boundedDelay + 1))
+        let unlockAt = lossDate.addingTimeInterval(TimeInterval(unlockDelayHours * 60 * 60))
+        return now >= unlockAt
+    }
+
+    private static func deterministicReigniteSeed(
+        journeyID: UUID,
+        lossDate: Date,
+        calendar: Calendar
+    ) -> UInt64 {
+        let hexPrefix = String(journeyID.uuidString.replacingOccurrences(of: "-", with: "").prefix(12))
+        let uuidPart = UInt64(hexPrefix, radix: 16) ?? 0
+        let dayBucket = UInt64(calendar.startOfDay(for: lossDate).timeIntervalSince1970 / 86_400)
+        return (uuidPart &* 1_103_515_245 &+ dayBucket &+ 12_345) ^ (dayBucket << 9)
     }
 
     static func growthMultiplier(for hydrationStage: Int) -> Double {

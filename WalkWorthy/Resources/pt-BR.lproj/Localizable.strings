@@ -226,6 +226,7 @@
 "home.reignite.title" = "Reacender sequência";
 "home.reignite.subtitle" = "Restaure sua sequência de %d dias.";
 "home.reignite.cta" = "Restaurar";
+"home.reignite.calendar_hint" = "Restaure a sequência anterior desta jornada.";
 "home.reignite.overlay.title" = "Restaure sua sequência de %d dias";
 "home.reignite.overlay.subtitle" = "Um toque. Continue crescendo.";
 "home.reignite.overlay.cta" = "Reacender";

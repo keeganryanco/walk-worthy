@@ -226,6 +226,7 @@
 "home.reignite.title" = "Reignite Streak";
 "home.reignite.subtitle" = "Restore your %d-day streak.";
 "home.reignite.cta" = "Restore";
+"home.reignite.calendar_hint" = "Restore your previous streak for this journey.";
 "home.reignite.overlay.title" = "Restore your %d-day streak";
 "home.reignite.overlay.subtitle" = "One tap. Keep growing.";
 "home.reignite.overlay.cta" = "Reignite";

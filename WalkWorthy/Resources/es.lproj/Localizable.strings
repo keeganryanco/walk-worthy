@@ -226,6 +226,7 @@
 "home.reignite.title" = "Reactivar racha";
 "home.reignite.subtitle" = "Recupera tu racha de %d días.";
 "home.reignite.cta" = "Recuperar";
+"home.reignite.calendar_hint" = "Recupera la racha anterior de este viaje.";
 "home.reignite.overlay.title" = "Recupera tu racha de %d días";
 "home.reignite.overlay.subtitle" = "Un toque. Sigue creciendo.";
 "home.reignite.overlay.cta" = "Reactivar";
