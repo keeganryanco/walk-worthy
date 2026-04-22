@@ -234,14 +234,22 @@ private struct JourneySwitcherSheet: View {
                             dismiss()
                         } label: {
                             HStack(spacing: 12) {
-                                Circle()
-                                    .fill(WWColor.growGreen.opacity(0.18))
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Image(systemName: "leaf.fill")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(WWColor.growGreen)
-                                    )
+                                ZStack {
+                                    Circle()
+                                        .fill(WWColor.contrastCard)
+                                        .frame(width: 44, height: 44)
+
+                                    if let image = plantImage(for: journey) {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 34, height: 34)
+                                            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                                    } else {
+                                        Text(stageEmoji(for: effectiveCompletedTends(for: journey)))
+                                            .font(.system(size: 20))
+                                    }
+                                }
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(journey.title)
                                         .font(WWTypography.body(16).weight(.semibold))
@@ -295,6 +303,58 @@ private struct JourneySwitcherSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private func effectiveCompletedTends(for journey: PrayerJourney) -> Int {
+        let stored = journey.completedTends
+        return max(stored, 0)
+    }
+
+    private func stageEmoji(for count: Int) -> String {
+        let stageNum = max(1, min(5, (count % 15) / 3 + 1))
+        switch stageNum {
+        case 1: return "🌰"
+        case 2: return "🌱"
+        case 3: return "🌿"
+        case 4: return "🪴"
+        default: return "🌳"
+        }
+    }
+
+    private func plantImage(for journey: PrayerJourney) -> UIImage? {
+        let count = effectiveCompletedTends(for: journey)
+        let stageNum = max(1, min(5, (count % 15) / 3 + 1))
+        let stageToken: String
+        switch stageNum {
+        case 1: stageToken = "seed"
+        case 2: stageToken = "sprout"
+        case 3: stageToken = "young"
+        case 4: stageToken = "mature"
+        default: stageToken = "full_bloom"
+        }
+
+        let theme = journey.themeKey.rawValue
+        let desired = "growth_stage_\(stageNum)_\(stageToken)_\(theme)"
+        let fallback = "growth_stage_\(stageNum)_\(stageToken)_basic"
+        let legacyDesired = "growth_stage_\(stageNum)_\(theme)"
+        let legacyFallback = "growth_stage_\(stageNum)_basic"
+
+        let candidates = [
+            desired,
+            "Plants/\(desired)",
+            fallback,
+            "Plants/\(fallback)",
+            legacyDesired,
+            "Plants/\(legacyDesired)",
+            legacyFallback,
+            "Plants/\(legacyFallback)"
+        ]
+        for name in candidates {
+            if let image = UIImage(named: name) {
+                return image
+            }
+        }
+        return nil
     }
 }
 
@@ -1059,7 +1119,8 @@ struct JourneyGrowthPage: View {
                     )
                 }
 
-                secondarySignalsRow
+                streakSection
+                hydrationSection
 
                 Spacer(minLength: 10)
             }
@@ -1088,105 +1149,187 @@ struct JourneyGrowthPage: View {
         }
     }
 
-    private var streakCountLabel: String {
-        String(
-            format: L10n.string(
-                currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
-                default: currentStreakCount == 1 ? "%d day" : "%d days"
-            ),
-            currentStreakCount
-        )
+    private var orderedWeekDays: [Date] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: TendingTestingClock.currentDate)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
+
+        return (0..<7).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: monday)
+        }
     }
 
-    private var growthSignalLabel: String {
-        String(
-            format: L10n.string("home.cycle.label", default: "Cycle %d"),
-            currentCycleCount + 1
-        )
+    private var completedDaysInJourney: Set<Date> {
+        let calendar = Calendar.current
+        return Set(entries.compactMap { entry in
+            guard let completedAt = entry.completedAt else { return nil }
+            return calendar.startOfDay(for: completedAt)
+        })
     }
 
-    private var secondarySignalsRow: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 10) {
-                signalBadge(
-                    icon: "sun.max.fill",
-                    title: L10n.string("Streak", default: "Streak"),
-                    value: streakCountLabel
-                )
+    private var streakSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(L10n.string("Streak", default: "Streak"))
+                    .font(WWTypography.caption(13).weight(.heavy))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(1.4)
 
-                signalBadge(
-                    icon: "drop.fill",
-                    title: L10n.string("home.hydration.title", default: "Water"),
-                    value: hydrationStatusLabel
-                )
-
-                signalBadge(
-                    icon: "leaf.fill",
-                    title: L10n.string("home.signal.growth", default: "Growth"),
-                    value: growthSignalLabel
-                )
+                Spacer()
+                if !shouldOfferInAppReigniteOption {
+                    Text(
+                        String(
+                            format: L10n.string(
+                                currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                                default: currentStreakCount == 1 ? "%d day" : "%d days"
+                            ),
+                            currentStreakCount
+                        )
+                    )
+                        .font(WWTypography.caption(12).weight(.bold))
+                        .foregroundStyle(WWColor.growGreen)
+                }
             }
 
-            if shouldOfferInAppReigniteOption {
-                Button {
-                    presentReigniteOverlay()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "flame.fill")
-                        Text(L10n.string("home.reignite.inline_title", default: "Restore this journey streak"))
-                        Spacer()
-                        Text(L10n.string("home.reignite.cta", default: "Restore"))
-                            .font(WWTypography.caption(12).weight(.bold))
+            HStack(spacing: 10) {
+                ForEach(Array(orderedWeekDays.enumerated()), id: \.offset) { index, day in
+                    let isCompleted = completedDaysInJourney.contains(day)
+                    let dayLabel = weekdayLabel(for: index)
+
+                    VStack(spacing: 6) {
+                        if let img = resolveUIImage(named: "sun_streak_icon") {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 18, height: 18)
+                                .opacity(isCompleted ? 1.0 : 0.22)
+                                .grayscale(isCompleted ? 0.0 : 1.0)
+                        } else {
+                            Image(systemName: "sun.max.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(WWColor.growGreen)
+                                .opacity(isCompleted ? 1.0 : 0.22)
+                        }
+
+                        Text(dayLabel)
+                            .font(WWTypography.caption(10).weight(.semibold))
+                            .foregroundStyle(isCompleted ? WWColor.nearBlack : WWColor.muted)
                     }
-                    .font(WWTypography.caption(13).weight(.semibold))
-                    .foregroundStyle(WWColor.growGreen)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(WWColor.growGreen.opacity(colorScheme == .dark ? 0.18 : 0.12))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(WWColor.growGreen.opacity(0.42), lineWidth: 1)
-                    )
+                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L10n.string("home.reignite.cta", default: "Restore"))
-                .accessibilityHint(
-                    L10n.string("home.reignite.calendar_hint", default: "Restore your previous streak for this journey.")
-                )
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(streakCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(insetCardStroke, lineWidth: 1)
+        )
+        .overlay(alignment: .topTrailing) {
+            if shouldOfferInAppReigniteOption {
+                reigniteCalendarChip
+                    .padding(.top, 10)
+                    .padding(.trailing, 10)
             }
         }
         .padding(.horizontal, 32)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.string("Streak", default: "Streak"))
+        .accessibilityValue(
+            String(
+                format: L10n.string(
+                    currentStreakCount == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+                    default: currentStreakCount == 1 ? "%d day" : "%d days"
+                ),
+                currentStreakCount
+            )
+        )
     }
 
-    private func signalBadge(icon: String, title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private var reigniteCalendarChip: some View {
+        Button {
+            presentReigniteOverlay()
+        } label: {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(WWColor.growGreen)
-                Text(title)
-                    .font(WWTypography.caption(11).weight(.heavy))
-                    .foregroundStyle(WWColor.muted)
-                    .tracking(1.0)
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text(L10n.string("home.reignite.cta", default: "Restore"))
+                    .font(WWTypography.caption(11).weight(.bold))
             }
-            Text(value)
-                .font(WWTypography.caption(12).weight(.bold))
-                .foregroundStyle(WWColor.nearBlack)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
+            .foregroundStyle(WWColor.growGreen)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(WWColor.growGreen.opacity(colorScheme == .dark ? 0.20 : 0.14))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(WWColor.growGreen.opacity(0.45), lineWidth: 1)
+            )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.string("home.reignite.cta", default: "Restore"))
+        .accessibilityHint(
+            L10n.string("home.reignite.calendar_hint", default: "Restore your previous streak for this journey.")
+        )
+    }
+
+    private var hydrationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L10n.string("home.hydration.title", default: "Water"))
+                    .font(WWTypography.caption(13).weight(.heavy))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(1.4)
+
+                Spacer()
+
+                Text(hydrationStatusLabel)
+                    .font(WWTypography.caption(12).weight(.bold))
+                    .foregroundStyle(WWColor.growGreen)
+            }
+
+            HStack(spacing: 10) {
+                ForEach(0..<3, id: \.self) { index in
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(WWColor.growGreen)
+                        .opacity(index < hydrationStage ? 1.0 : 0.26)
+                        .scaleEffect(index < hydrationStage ? 1.0 : 0.9)
+                }
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
         .background(streakCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(insetCardStroke, lineWidth: 1)
         )
+        .padding(.horizontal, 32)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L10n.string("home.hydration.title", default: "Water"))
+        .accessibilityValue(hydrationStatusLabel)
+    }
+
+    private func weekdayLabel(for index: Int) -> String {
+        switch index {
+        case 0: return "M"
+        case 1: return "T"
+        case 2: return "W"
+        case 3: return "Th"
+        case 4: return "F"
+        case 5: return "Sa"
+        case 6: return "Su"
+        default: return ""
+        }
     }
 
     @ViewBuilder
