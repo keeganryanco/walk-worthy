@@ -229,10 +229,6 @@ struct CreateJourneyView: View {
                             Text(L10n.string("create_journey.prayer_title", default: "What do you want God to help you tend right now?"))
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
-                            Text(L10n.string("create_journey.helper", default: "Share one focus and Tend will shape the path with you."))
-                                .font(WWTypography.body(15))
-                                .foregroundStyle(WWColor.muted)
-                                .fixedSize(horizontal: false, vertical: true)
                             TextField(L10n.string("create_journey.prayer_placeholder", default: "Share what's on your heart..."), text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
                                 .focused($focusedField, equals: .prayer)
                                 .textInputAutocapitalization(.sentences)
@@ -289,7 +285,7 @@ struct CreateJourneyView: View {
                     .padding(.bottom, 24)
                 }
             }
-            .navigationTitle(L10n.string("create_journey.title", default: "New Journey"))
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .onTapGesture {
                 focusedField = nil
