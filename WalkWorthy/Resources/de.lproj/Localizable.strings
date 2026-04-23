@@ -100,7 +100,7 @@
 "home.new_journey.accessibility_label" = "Eine neue Journey starten";
 "home.new_journey.accessibility_label_personalized" = "%@, starte eine neue Journey";
 "home.new_journey.accessibility_hint" = "Doppeltippen, um die Journey-Erstellung zu öffnen. Nach links wischen für Journal.";
-"home.switcher.button" = "Gärtnerei";
+"home.switcher.button" = "Garten";
 "home.switcher.accessibility_hint" = "Öffne deine Journeys und pflanze eine neue.";
 "home.switcher.section" = "AKTIVE JOURNEYS";
 "home.switcher.plant_new" = "Neue Journey pflanzen";
@@ -224,7 +224,7 @@
 "home.tend.close_accessibility" = "Heutiges Tend schließen";
 "home.tend.suggestion_accessibility" = "Vorgeschlagenen Schritt verwenden: %@";
 "home.tend.button" = "Tend";
-"home.tend.commit_button" = "Diesen Schritt zusagen";
+"home.tend.commit_button" = "Tend";
 "home.tend.followthrough.unlock" = "Beantworte den Follow-through-Check, um das heutige Ritual fortzusetzen.";
 "home.tend.followthrough.previous_step" = "Vorheriger Schritt";
 

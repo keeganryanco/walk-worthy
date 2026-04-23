@@ -100,7 +100,7 @@
 "home.new_journey.accessibility_label" = "Iniciar un nuevo camino";
 "home.new_journey.accessibility_label_personalized" = "%@, inicia un nuevo camino";
 "home.new_journey.accessibility_hint" = "Toca dos veces para abrir la creación de camino. Desliza a la izquierda para ir a Diario.";
-"home.switcher.button" = "Vivero";
+"home.switcher.button" = "Jardín";
 "home.switcher.accessibility_hint" = "Abre tus caminos y planta uno nuevo.";
 "home.switcher.section" = "CAMINOS ACTIVOS";
 "home.switcher.plant_new" = "Plantar nuevo camino";
@@ -224,7 +224,7 @@
 "home.tend.close_accessibility" = "Cerrar el tend de hoy";
 "home.tend.suggestion_accessibility" = "Usar paso sugerido: %@";
 "home.tend.button" = "Tende";
-"home.tend.commit_button" = "Comprometer este paso";
+"home.tend.commit_button" = "Tende";
 "home.tend.followthrough.unlock" = "Responde el seguimiento para continuar el ritual de hoy.";
 "home.tend.followthrough.previous_step" = "Paso anterior";
 

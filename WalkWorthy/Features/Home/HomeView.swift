@@ -72,7 +72,7 @@ struct HomeView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "leaf.fill")
                                 .font(.system(size: 13, weight: .bold))
-                            Text(L10n.string("home.switcher.button", default: "Nursery"))
+                            Text(L10n.string("home.switcher.button", default: "Garden"))
                                 .font(WWTypography.caption(12).weight(.semibold))
                         }
                         .foregroundStyle(.white)
@@ -84,9 +84,9 @@ struct HomeView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 58)
+                    .padding(.top, 20)
                     .padding(.trailing, 20)
-                    .accessibilityLabel(L10n.string("home.switcher.button", default: "Nursery"))
+                    .accessibilityLabel(L10n.string("home.switcher.button", default: "Garden"))
                     .accessibilityHint(
                         L10n.string(
                             "home.switcher.accessibility_hint",
@@ -1777,7 +1777,7 @@ struct TendingFlowView: View {
     }
 
     private var completionButtonTitle: String {
-        L10n.string("home.tend.commit_button", default: "Commit this step")
+        L10n.string("home.tend.commit_button", default: "Tend")
     }
 
     private var followThroughVisualAccent: Color {
@@ -1911,7 +1911,7 @@ struct TendingFlowView: View {
                     }
 
                     if revealedStageCount >= 4 {
-                        VStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 20) {
                             Text(L10n.string("TEND", default: "TEND"))
                                 .font(WWTypography.caption(14).weight(.heavy))
                                 .foregroundStyle(WWColor.muted)
@@ -2301,11 +2301,7 @@ struct TendingFlowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(WWColor.surface.opacity(0.88))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(tendCardStroke, lineWidth: 1)
+                    .fill(WWColor.surface.opacity(0.94))
             )
 
             HStack(spacing: 6) {
@@ -2316,11 +2312,7 @@ struct TendingFlowView: View {
             .padding(4)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(WWColor.surface.opacity(0.72))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(tendCardStroke, lineWidth: 1)
+                    .fill(WWColor.surface.opacity(0.7))
             )
         }
         .padding(20)
@@ -2349,15 +2341,9 @@ struct TendingFlowView: View {
                 .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
-                .background(isSelected ? WWColor.growGreen : WWColor.surface.opacity(0.82))
+                .background(isSelected ? WWColor.growGreen : WWColor.surface.opacity(0.9))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(
-                            isSelected ? WWColor.growGreen : WWColor.nearBlack.opacity(colorScheme == .dark ? 0.14 : 0.12),
-                            lineWidth: 1
-                        )
-                )
+                .shadow(color: isSelected ? WWColor.growGreen.opacity(0.22) : .clear, radius: 5, y: 2)
         }
         .buttonStyle(.plain)
         .accessibilityValue(isSelected ? L10n.string("tab.selected", default: "Selected") : "")

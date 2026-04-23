@@ -91,7 +91,7 @@
 "home.new_journey.accessibility_label" = "새 여정 시작";
 "home.new_journey.accessibility_label_personalized" = "%@님, 새 여정 시작";
 "home.new_journey.accessibility_hint" = "여정 생성 화면을 열려면 두 번 탭하세요. 저널로 가려면 왼쪽으로 쓸어넘기세요.";
-"home.switcher.button" = "온실";
+"home.switcher.button" = "정원";
 "home.switcher.accessibility_hint" = "여정을 열고 새 여정을 심으세요.";
 "home.switcher.section" = "진행 중인 여정";
 "home.switcher.plant_new" = "새 여정 심기";
@@ -209,7 +209,7 @@
 "home.tend.close_accessibility" = "오늘의 Tend 닫기";
 "home.tend.suggestion_accessibility" = "추천 단계 사용: %@";
 "home.tend.button" = "돌보기";
-"home.tend.commit_button" = "이 단계를 약속하기";
+"home.tend.commit_button" = "돌보기";
 "home.tend.followthrough.unlock" = "실천 확인에 답하면 오늘의 리추얼을 계속할 수 있어요.";
 "home.tend.followthrough.previous_step" = "이전 단계";
 "journal.recent_entries" = "최근 항목";

@@ -224,48 +224,15 @@ struct CreateJourneyView: View {
                 WWColor.white.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        ZStack(alignment: .bottomLeading) {
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            WWColor.growGreen.opacity(0.24),
-                                            WWColor.morningGold.opacity(0.18),
-                                            WWColor.surface
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(height: 168)
-
-                            HStack(spacing: 14) {
-                                Image(systemName: "leaf.fill")
-                                    .font(.system(size: 28, weight: .semibold))
-                                    .foregroundStyle(WWColor.growGreen)
-                                    .frame(width: 52, height: 52)
-                                    .background(
-                                        Circle()
-                                            .fill(WWColor.white.opacity(0.84))
-                                    )
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(L10n.string("create_journey.header_title", default: "Plant a New Journey"))
-                                        .font(WWTypography.heading(24))
-                                        .foregroundStyle(WWColor.nearBlack)
-                                    Text(L10n.string("create_journey.helper", default: "Share one focus and Tend will shape the path with you."))
-                                        .font(WWTypography.body(15))
-                                        .foregroundStyle(WWColor.muted)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            .padding(20)
-                        }
-
+                    VStack(alignment: .leading, spacing: 24) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text(L10n.string("create_journey.prayer_title", default: "What do you want God to help you tend right now?"))
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
+                            Text(L10n.string("create_journey.helper", default: "Share one focus and Tend will shape the path with you."))
+                                .font(WWTypography.body(15))
+                                .foregroundStyle(WWColor.muted)
+                                .fixedSize(horizontal: false, vertical: true)
                             TextField(L10n.string("create_journey.prayer_placeholder", default: "Share what's on your heart..."), text: newlineDismissBinding(for: $prayerIntentText), axis: .vertical)
                                 .focused($focusedField, equals: .prayer)
                                 .textInputAutocapitalization(.sentences)

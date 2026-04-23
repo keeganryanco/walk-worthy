@@ -100,7 +100,7 @@
 "home.new_journey.accessibility_label" = "新しい旅路を開始";
 "home.new_journey.accessibility_label_personalized" = "%@さん、新しい旅路を開始";
 "home.new_journey.accessibility_hint" = "ダブルタップで旅路作成を開きます。左にスワイプでジャーナルへ。";
-"home.switcher.button" = "苗床";
+"home.switcher.button" = "庭";
 "home.switcher.accessibility_hint" = "旅路を開き、新しい旅路を植えましょう。";
 "home.switcher.section" = "進行中の旅路";
 "home.switcher.plant_new" = "新しい旅路を植える";
@@ -230,7 +230,7 @@
 "home.tend.close_accessibility" = "今日のTendを閉じる";
 "home.tend.suggestion_accessibility" = "提案ステップを使う: %@";
 "home.tend.button" = "実践する";
-"home.tend.commit_button" = "この一歩にコミットする";
+"home.tend.commit_button" = "実践";
 "home.tend.followthrough.unlock" = "フォロー状況に答えると、今日のリチュアルを続けられます。";
 "home.tend.followthrough.previous_step" = "前回の一歩";
 

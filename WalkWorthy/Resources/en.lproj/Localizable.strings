@@ -100,7 +100,7 @@
 "home.new_journey.accessibility_label" = "Start a new journey";
 "home.new_journey.accessibility_label_personalized" = "%@, start a new journey";
 "home.new_journey.accessibility_hint" = "Double-tap to open journey creation. Swipe left to go to Journal.";
-"home.switcher.button" = "Nursery";
+"home.switcher.button" = "Garden";
 "home.switcher.accessibility_hint" = "Open your journeys and plant a new one.";
 "home.switcher.section" = "ACTIVE JOURNEYS";
 "home.switcher.plant_new" = "Plant New Journey";
@@ -224,7 +224,7 @@
 "home.tend.close_accessibility" = "Close today's tend";
 "home.tend.suggestion_accessibility" = "Use suggested step: %@";
 "home.tend.button" = "Tend";
-"home.tend.commit_button" = "Commit this step";
+"home.tend.commit_button" = "Tend";
 "home.tend.followthrough.unlock" = "Answer the follow-through checkpoint to continue today's ritual.";
 "home.tend.followthrough.previous_step" = "Previous step";
 

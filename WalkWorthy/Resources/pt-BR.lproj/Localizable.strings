@@ -100,7 +100,7 @@
 "home.new_journey.accessibility_label" = "Iniciar nova jornada";
 "home.new_journey.accessibility_label_personalized" = "%@, iniciar nova jornada";
 "home.new_journey.accessibility_hint" = "Toque duas vezes para abrir a criação de jornada. Deslize para a esquerda para ir ao Diário.";
-"home.switcher.button" = "Viveiro";
+"home.switcher.button" = "Jardim";
 "home.switcher.accessibility_hint" = "Abra suas jornadas e plante uma nova.";
 "home.switcher.section" = "JORNADAS ATIVAS";
 "home.switcher.plant_new" = "Plantar nova jornada";
@@ -224,7 +224,7 @@
 "home.tend.close_accessibility" = "Fechar o tend de hoje";
 "home.tend.suggestion_accessibility" = "Usar passo sugerido: %@";
 "home.tend.button" = "Cultivar";
-"home.tend.commit_button" = "Assumir este passo";
+"home.tend.commit_button" = "Tend";
 "home.tend.followthrough.unlock" = "Responda ao check-in de compromisso para continuar o ritual de hoje.";
 "home.tend.followthrough.previous_step" = "Passo anterior";
 
