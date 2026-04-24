@@ -14,6 +14,9 @@ struct SettingsView: View {
     @State private var showDownsellPaywall = false
     @State private var showResubscribePaywall = false
     @State private var showStandardPaywall = false
+#if DEBUG
+    @State private var showOnboardingSimulator = false
+#endif
 
     @Query(sort: \AppSettings.id) private var settingsRows: [AppSettings]
     @Query(sort: \ReminderSchedule.sortOrder) private var reminderRows: [ReminderSchedule]
@@ -204,13 +207,24 @@ struct SettingsView: View {
 
 #if DEBUG
                 Section("Debug Testing") {
-                    Toggle("Bypass Paywall (Debug)", isOn: $debugBypassPaywallOverride)
-                    Toggle("Fast-Day Tending (Debug)", isOn: $debugFastDayTestingOverride)
+                    if AppConstants.Debug.debugTestingEnabled {
+                        Toggle("Bypass Paywall (Debug)", isOn: $debugBypassPaywallOverride)
+                        Toggle("Fast-Day Tending (Debug)", isOn: $debugFastDayTestingOverride)
 
-                    Button(L10n.string("settings.debug.reset_fast_day_offset", default: "Reset Fast-Day Offset")) {
-                        AppConstants.Debug.resetFastDayOffset()
+                        Button("Launch Onboarding Simulator") {
+                            showOnboardingSimulator = true
+                        }
+                        .foregroundStyle(WWColor.growGreen)
+
+                        Button(L10n.string("settings.debug.reset_fast_day_offset", default: "Reset Fast-Day Offset")) {
+                            AppConstants.Debug.resetFastDayOffset()
+                        }
+                        .foregroundStyle(WWColor.growGreen)
+                    } else {
+                        Text("Enable with `-TEND_DEBUG_TESTING 1` in your Run scheme arguments/environment.")
+                            .font(WWTypography.caption(14))
+                            .foregroundStyle(WWColor.muted)
                     }
-                    .foregroundStyle(WWColor.growGreen)
                 }
                 .listRowBackground(WWColor.surface)
 #endif
@@ -254,6 +268,11 @@ struct SettingsView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
+#if DEBUG
+            .fullScreenCover(isPresented: $showOnboardingSimulator) {
+                DebugOnboardingSimulatorView()
+            }
+#endif
             .onChange(of: subscriptionService.isPremium) { _, isPremium in
                 if isPremium {
                     showStandardPaywall = false
@@ -315,6 +334,106 @@ struct SettingsView: View {
         return row
     }
 }
+
+#if DEBUG
+private struct DebugOnboardingSimulatorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var debugNotificationService = NotificationService()
+
+    var body: some View {
+        Group {
+            if let container = makeInMemoryContainer() {
+                ExperimentalOnboardingFlowView(
+                    onGenerate: { name, prayer in
+                        debugBootstrapResult(name: name, prayer: prayer)
+                    },
+                    onComplete: { _ in
+                        dismiss()
+                    },
+                    onRequirePaywall: { _ in
+                        // Intentionally no-op for simulator.
+                    },
+                    experimentConfig: OnboardingExperimentConfig(
+                        variant: "debug-sim",
+                        preJourneyOrder: ["name", "prayerIntent"],
+                        postJourneyOrder: ["backgroundSelection", "review"],
+                        copyOverrides: ["intro_title": "Onboarding Simulator"]
+                    )
+                )
+                .modelContainer(container)
+                .environmentObject(debugNotificationService)
+                .onDisappear {
+                    AppConstants.Debug.resetFastDayOffset()
+                }
+            } else {
+                VStack(spacing: 18) {
+                    Text("Unable to load onboarding simulator.")
+                        .font(WWTypography.heading(20))
+                        .foregroundStyle(WWColor.nearBlack)
+                    Button("Close") {
+                        dismiss()
+                    }
+                    .font(WWTypography.heading(18))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: 220)
+                    .padding(.vertical, 12)
+                    .background(WWColor.growGreen)
+                    .clipShape(Capsule())
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(WWColor.white.ignoresSafeArea())
+            }
+        }
+    }
+
+    private func makeInMemoryContainer() -> ModelContainer? {
+        do {
+            let schema = Schema([
+                PrayerJourney.self,
+                PrayerEntry.self,
+                AnsweredPrayer.self,
+                OnboardingProfile.self,
+                AppSettings.self,
+                ReminderSchedule.self,
+                JourneyMemorySnapshot.self,
+                GlobalLightMemory.self,
+                JourneyProgressEvent.self,
+                DailyJourneyPackageRecord.self
+            ])
+            let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            return nil
+        }
+    }
+
+    private func debugBootstrapResult(name: String, prayer: String) -> OnboardingBootstrapResult {
+        let intent = prayer.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayIntent = intent.isEmpty ? "Trusting God one step at a time" : intent
+        let package = DailyJourneyPackageRecord(
+            journeyID: UUID(),
+            dayKey: JourneyContentService.dayKey(for: .now),
+            reflectionThought: "Faith grows when one small step is chosen with intention.",
+            scriptureReference: "Proverbs 3:5-6",
+            scriptureParaphrase: "Trust in the Lord with all your heart, and He will make your path straight.",
+            prayer: "Lord, I place this journey in Your hands today. Give me wisdom, courage, and steady faith for my next step. Amen.",
+            smallStepQuestion: "What is one small step you can take today?",
+            suggestedSteps: [
+                "Pause and pray for one minute before your next decision.",
+                "Write one fear and surrender it in prayer.",
+                "Choose one faithful action before noon."
+            ],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            generatedAt: .now,
+            source: .template
+        )
+        return OnboardingBootstrapResult(
+            package: package,
+            inferredGrowthFocus: displayIntent
+        )
+    }
+}
+#endif
 
 private struct DownsellPaywallView: View {
     @EnvironmentObject private var subscriptionService: SubscriptionService

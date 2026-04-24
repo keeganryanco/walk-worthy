@@ -45,14 +45,8 @@ Create a feature flag named:
 
 - `onboarding_flow_config`
 
-Add variants, for example:
-- `control`
-- `a`
-- `b`
-
-Set rollout split to match your test plan (examples):
-- 50/50 (`control` vs `a`), or
-- 34/33/33 (`control`, `a`, `b`).
+Recommended during onboarding migration:
+- run updated `a` at **100% rollout** until baseline metrics stabilize.
 
 ## 4) Payload Contract (Per Variant)
 
@@ -63,19 +57,13 @@ Set each variant payload as JSON. Example:
   "variant": "a",
   "pre_journey_order": [
     "name",
-    "bannerName",
-    "bannerTruth",
-    "bannerChange",
-    "method",
-    "grounding",
-    "prayerIntent",
-    "goalIntent"
+    "prayerIntent"
   ],
   "post_journey_order": [
     "backgroundSelection",
-    "review",
+    "widget",
     "reminder",
-    "widget"
+    "review"
   ],
   "copy_overrides": {
     "intro_title": "Welcome to Tend",
@@ -102,7 +90,9 @@ You can provide additional copy keys in `copy_overrides`; missing keys fall back
 - `method`
 - `grounding`
 - `prayerIntent`
-- `goalIntent`
+
+Compatibility:
+- legacy `goalIntent` / `goal_intent` token aliases to `prayerIntent`.
 
 ### Post-journey order (after generation)
 - `backgroundSelection`
@@ -113,7 +103,7 @@ You can provide additional copy keys in `copy_overrides`; missing keys fall back
 App behavior safety:
 - step tokens are normalized case-insensitively,
 - if a variant provides no custom order, app uses built-in control order,
-- missing required pre-journey inputs are re-added in safe order (`name`, `prayerIntent`, `goalIntent`),
+- missing required pre-journey inputs are re-added in safe order (`name`, `prayerIntent`),
 - optional pre/post steps can be omitted by not including them in the variant order arrays,
 - progress tracker recalculates from the active sequence so step removal/reordering does not break progress UI.
 

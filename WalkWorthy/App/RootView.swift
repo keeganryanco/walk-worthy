@@ -55,8 +55,8 @@ struct RootView: View {
                 )
             } else {
                 ExperimentalOnboardingFlowView(
-                    onGenerate: { name, prayer, goal in
-                        return await generateJourneyInline(name: name, prayer: prayer, goal: goal, reminderWindow: "System")
+                    onGenerate: { name, prayer in
+                        return await generateJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
                     },
                     onComplete: { completedProfile in
                         Task { await completeOnboarding(with: completedProfile) }
@@ -251,7 +251,11 @@ struct RootView: View {
         }
     }
 
-    private func generateJourneyInline(name: String, prayer: String, goal: String, reminderWindow: String) async -> DailyJourneyPackageRecord? {
+    private func generateJourneyInline(
+        name: String,
+        prayer: String,
+        reminderWindow: String
+    ) async -> OnboardingBootstrapResult? {
         guard connectivityService.isOnline else {
             rootLogger.log("inline bootstrap skipped: offline")
             return nil
@@ -269,17 +273,18 @@ struct RootView: View {
             let payload = try await bootstrapProvider.bootstrap(
                 name: name,
                 prayerIntentText: prayer,
-                goalIntentText: goal,
+                goalIntentText: nil,
                 reminderWindow: reminderWindow
             )
             let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
+            let inferredGrowthFocus = payload.growthFocus ?? payload.journeyCategory
 
             let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
             let firstJourney = PrayerJourney(
                 title: payload.journeyTitle,
                 category: payload.journeyCategory,
                 themeKey: theme,
-                growthFocus: payload.growthFocus ?? payload.journeyCategory,
+                growthFocus: inferredGrowthFocus,
                 status: .active
             )
             modelContext.insert(firstJourney)
@@ -330,7 +335,10 @@ struct RootView: View {
             syncWidgetSnapshot()
             rootLogger.log("inline bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public)")
             analytics.track(.journeyCreated, properties: ["source": "inline_bootstrap"])
-            return record
+            return OnboardingBootstrapResult(
+                package: record,
+                inferredGrowthFocus: inferredGrowthFocus
+            )
         } catch {
             let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             rootLogger.error("inline bootstrap failed error=\(details, privacy: .public)")

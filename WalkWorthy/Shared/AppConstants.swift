@@ -166,6 +166,7 @@ enum AppConstants {
 
         static var bypassPaywall: Bool {
 #if DEBUG
+            guard debugTestingEnabled else { return false }
             if UserDefaults.standard.bool(forKey: bypassPaywallOverrideStorageKey) {
                 return true
             }
@@ -177,10 +178,19 @@ enum AppConstants {
 
         static var fastDayTesting: Bool {
 #if DEBUG
+            guard debugTestingEnabled else { return false }
             if UserDefaults.standard.bool(forKey: fastDayTestingOverrideStorageKey) {
                 return true
             }
             return isEnabled(argument: "-TEND_FAST_DAYS", environmentKey: "TEND_FAST_DAYS")
+#else
+            return false
+#endif
+        }
+
+        static var debugTestingEnabled: Bool {
+#if DEBUG
+            return isEnabled(argument: "-TEND_DEBUG_TESTING", environmentKey: "TEND_DEBUG_TESTING")
 #else
             return false
 #endif
