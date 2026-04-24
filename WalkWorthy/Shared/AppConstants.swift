@@ -190,7 +190,7 @@ enum AppConstants {
 
         static var debugTestingEnabled: Bool {
 #if DEBUG
-            return isEnabled(argument: "-TEND_DEBUG_TESTING", environmentKey: "TEND_DEBUG_TESTING")
+            return true
 #else
             return false
 #endif
