@@ -162,6 +162,7 @@
 "onboarding.tend_step_title" = "最初の一歩を選びましょう。";
 "onboarding.tend_step_question_fallback" = "今日できる小さな一歩は何ですか？";
 "onboarding.tend_step_placeholder" = "私の次の一歩は...";
+"onboarding.tend_step_suggestions_title" = "ヒントが必要ですか？";
 "onboarding.banner_name_title" = "{{firstName}}さん、あなたの祈りには意味があります。";
 "onboarding.banner_name_subtitle" = "あなたの次の一歩にも。";
 "onboarding.banner_truth_title" = "あなたの祈りは

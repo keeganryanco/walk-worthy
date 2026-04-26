@@ -160,6 +160,7 @@
 "onboarding.tend_step_title" = "Choose your first step.";
 "onboarding.tend_step_question_fallback" = "What is one small step you can take today?";
 "onboarding.tend_step_placeholder" = "My next step is...";
+"onboarding.tend_step_suggestions_title" = "Need a starter?";
 "onboarding.banner_name_title" = "{{firstName}}, your prayers matter.";
 "onboarding.banner_name_subtitle" = "so does your next step.";
 "onboarding.banner_truth_title" = "What you pray can shape\nhow you live.";

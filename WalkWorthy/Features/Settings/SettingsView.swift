@@ -339,13 +339,17 @@ struct SettingsView: View {
 private struct DebugOnboardingSimulatorView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var debugNotificationService = NotificationService()
+    @State private var debugContainer = DebugOnboardingSimulatorView.makeInMemoryContainer()
+    @State private var generationErrorMessage: String?
+
+    private let bootstrapProvider = BackendJourneyBootstrapProvider()
 
     var body: some View {
         Group {
-            if let container = makeInMemoryContainer() {
+            if let container = debugContainer {
                 ExperimentalOnboardingFlowView(
                     onGenerate: { name, prayer in
-                        debugBootstrapResult(name: name, prayer: prayer)
+                        await debugBootstrapResult(name: name, prayer: prayer, container: container)
                     },
                     onComplete: { _ in
                         dismiss()
@@ -364,6 +368,17 @@ private struct DebugOnboardingSimulatorView: View {
                 .environmentObject(debugNotificationService)
                 .onDisappear {
                     AppConstants.Debug.resetFastDayOffset()
+                }
+                .alert(
+                    "Unable to Generate Journey",
+                    isPresented: Binding(
+                        get: { generationErrorMessage != nil },
+                        set: { if !$0 { generationErrorMessage = nil } }
+                    )
+                ) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(generationErrorMessage ?? "")
                 }
             } else {
                 VStack(spacing: 18) {
@@ -386,7 +401,7 @@ private struct DebugOnboardingSimulatorView: View {
         }
     }
 
-    private func makeInMemoryContainer() -> ModelContainer? {
+    private static func makeInMemoryContainer() -> ModelContainer? {
         do {
             let schema = Schema([
                 PrayerJourney.self,
@@ -407,30 +422,83 @@ private struct DebugOnboardingSimulatorView: View {
         }
     }
 
-    private func debugBootstrapResult(name: String, prayer: String) -> OnboardingBootstrapResult {
-        let intent = prayer.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayIntent = intent.isEmpty ? "Trusting God one step at a time" : intent
-        let package = DailyJourneyPackageRecord(
-            journeyID: UUID(),
-            dayKey: JourneyContentService.dayKey(for: .now),
-            reflectionThought: "Faith grows when one small step is chosen with intention.",
-            scriptureReference: "Proverbs 3:5-6",
-            scriptureParaphrase: "Trust in the Lord with all your heart, and He will make your path straight.",
-            prayer: "Lord, I place this journey in Your hands today. Give me wisdom, courage, and steady faith for my next step. Amen.",
-            smallStepQuestion: "What is one small step you can take today?",
-            suggestedSteps: [
-                "Pause and pray for one minute before your next decision.",
-                "Write one fear and surrender it in prayer.",
-                "Choose one faithful action before noon."
-            ],
-            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
-            generatedAt: .now,
-            source: .template
-        )
-        return OnboardingBootstrapResult(
-            package: package,
-            inferredGrowthFocus: displayIntent
-        )
+    private func debugBootstrapResult(
+        name: String,
+        prayer: String,
+        container: ModelContainer
+    ) async -> OnboardingBootstrapResult? {
+        do {
+            let payload = try await bootstrapProvider.bootstrap(
+                name: name,
+                prayerIntentText: prayer,
+                goalIntentText: nil,
+                reminderWindow: "Debug Simulator"
+            )
+            let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
+            let inferredGrowthFocus = payload.growthFocus ?? payload.journeyCategory
+
+            return await MainActor.run {
+                let modelContext = container.mainContext
+                let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
+                let journey = PrayerJourney(
+                    title: payload.journeyTitle,
+                    category: payload.journeyCategory,
+                    themeKey: theme,
+                    growthFocus: inferredGrowthFocus,
+                    status: .active
+                )
+                modelContext.insert(journey)
+
+                let entry = PrayerEntry(
+                    prompt: initialPackage.prayer,
+                    scriptureReference: initialPackage.scriptureReference,
+                    scriptureText: initialPackage.scriptureParaphrase,
+                    actionStep: "",
+                    journey: journey
+                )
+                modelContext.insert(entry)
+
+                let record = DailyJourneyPackageRecord(
+                    journeyID: journey.id,
+                    dayKey: JourneyContentService.dayKey(for: .now),
+                    reflectionThought: initialPackage.reflectionThought,
+                    scriptureReference: initialPackage.scriptureReference,
+                    scriptureParaphrase: initialPackage.scriptureParaphrase,
+                    prayer: initialPackage.prayer,
+                    smallStepQuestion: initialPackage.smallStepQuestion,
+                    suggestedSteps: initialPackage.suggestedSteps,
+                    completionSuggestion: initialPackage.completionSuggestion,
+                    generatedAt: initialPackage.generatedAt,
+                    source: .remote,
+                    linkedEntryID: entry.id
+                )
+                modelContext.insert(record)
+
+                let snapshot = JourneyMemorySnapshot(
+                    journeyID: journey.id,
+                    summary: payload.initialMemory.summary,
+                    winsSummary: payload.initialMemory.winsSummary,
+                    blockersSummary: payload.initialMemory.blockersSummary,
+                    preferredTone: payload.initialMemory.preferredTone
+                )
+                modelContext.insert(snapshot)
+                try? modelContext.save()
+
+                generationErrorMessage = nil
+                return OnboardingBootstrapResult(
+                    package: record,
+                    inferredGrowthFocus: inferredGrowthFocus
+                )
+            }
+        } catch {
+            await MainActor.run {
+                let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                generationErrorMessage = details.isEmpty
+                    ? "The debug simulator could not reach the journey generator."
+                    : details
+            }
+            return nil
+        }
     }
 }
 #endif

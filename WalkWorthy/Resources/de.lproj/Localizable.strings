@@ -160,6 +160,7 @@
 "onboarding.tend_step_title" = "Wähle deinen ersten Schritt.";
 "onboarding.tend_step_question_fallback" = "Welchen kleinen Schritt kannst du heute gehen?";
 "onboarding.tend_step_placeholder" = "Mein nächster Schritt ist...";
+"onboarding.tend_step_suggestions_title" = "Brauchst du einen Start?";
 "onboarding.banner_name_title" = "{{firstName}}, deine Gebete zählen.";
 "onboarding.banner_name_subtitle" = "genauso wie dein nächster Schritt.";
 "onboarding.banner_truth_title" = "Wofür du betest, kann prägen,\nwie du lebst.";

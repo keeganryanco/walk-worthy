@@ -70,6 +70,13 @@ struct ExperimentalOnboardingFlowView: View {
         "Wisdom for a hard decision"
     ]
 
+    private var firstStepSuggestions: [String] {
+        Array((generatedPackage?.suggestedSteps ?? [])
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .prefix(4))
+    }
+
     private var firstJourneyThemeSuffix: String {
         guard let entryID = generatedPackage?.linkedEntryID else { return "basic" }
         let descriptor = FetchDescriptor<PrayerEntry>(
@@ -581,6 +588,51 @@ struct ExperimentalOnboardingFlowView: View {
                         .stroke(WWColor.growGreen.opacity(actionStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0 : 1), lineWidth: 1)
                 )
                 .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
+
+            if !firstStepSuggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(copy("tend_step_suggestions_title", fallback: "Need a starter?"))
+                        .font(WWTypography.caption(16).weight(.semibold))
+                        .foregroundStyle(WWColor.muted)
+
+                    VStack(spacing: 10) {
+                        ForEach(firstStepSuggestions, id: \.self) { suggestion in
+                            Button {
+                                actionStepText = suggestion
+                                focusedField = nil
+                            } label: {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(WWColor.growGreen)
+
+                                    Text(suggestion)
+                                        .font(WWTypography.heading(18))
+                                        .foregroundStyle(WWColor.nearBlack)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(WWColor.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(
+                                            actionStepText.trimmingCharacters(in: .whitespacesAndNewlines) == suggestion
+                                                ? WWColor.growGreen.opacity(0.8)
+                                                : WWColor.nearBlack.opacity(0.08),
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
         }
     }
 

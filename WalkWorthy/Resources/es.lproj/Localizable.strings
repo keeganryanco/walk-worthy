@@ -160,6 +160,7 @@
 "onboarding.tend_step_title" = "Elige tu primer paso.";
 "onboarding.tend_step_question_fallback" = "¿Cuál es un paso pequeño que puedes dar hoy?";
 "onboarding.tend_step_placeholder" = "Mi próximo paso es...";
+"onboarding.tend_step_suggestions_title" = "¿Necesitas una idea?";
 "onboarding.banner_name_title" = "{{firstName}}, tus oraciones importan.";
 "onboarding.banner_name_subtitle" = "también importa tu próximo paso.";
 "onboarding.banner_truth_title" = "Lo que oras puede moldear\ncómo vives.";
