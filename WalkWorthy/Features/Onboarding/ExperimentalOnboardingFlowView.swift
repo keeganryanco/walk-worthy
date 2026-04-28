@@ -59,6 +59,12 @@ struct ExperimentalOnboardingFlowView: View {
 
     @State private var reviewActionTaken = false
     @State private var resolvedExperimentConfig: OnboardingExperimentConfig = .default
+    @State private var celebrationSceneVisible = false
+    @State private var celebrationStepSettled = false
+    @State private var celebrationWaterDropY: CGFloat = -96
+    @State private var celebrationWaterDropOpacity = 0.0
+    @State private var celebrationSoilGlow = 0.0
+    @State private var celebrationPlantScale = 0.92
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -91,6 +97,14 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var firstStagePlantImageName: String {
         "growth_stage_1_seed_\(firstJourneyThemeSuffix)"
+    }
+
+    private var celebrationBackgroundAssetName: String {
+        backgroundTheme.assetName ?? HomeBackgroundTheme.morningGarden.assetName ?? "home_plant_background_morning_garden"
+    }
+
+    private var celebrationStepText: String {
+        actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var supportsWidgetsOnCurrentDevice: Bool {
@@ -291,11 +305,7 @@ struct ExperimentalOnboardingFlowView: View {
                 }
                 .frame(height: 180)
             case .firstTendCelebration:
-                Image(firstStagePlantImageName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: min(height * 0.62, 180))
-                    .shadow(color: WWColor.growGreen.opacity(0.26), radius: 16, y: 8)
+                celebrationGardenArrivalVisual(metrics: metrics, height: height)
             case .backgroundSelection:
                 ZStack(alignment: .bottom) {
                     if let assetName = backgroundTheme.assetName {
@@ -637,33 +647,183 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var firstTendCelebrationContent: some View {
-        VStack(alignment: .center, spacing: 18) {
-            Text(copy("celebration_title", fallback: "1 day strong."))
-                .font(WWTypography.display(40))
+        VStack(alignment: .center, spacing: 6) {
+            Text(copy("celebration_title", fallback: "Day 1"))
+                .font(WWTypography.display(52))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
-
-            HStack(spacing: 14) {
-                celebrationPill(
-                    icon: "sun.max.fill",
-                    title: copy("celebration_streak_title", fallback: "Streak"),
-                    value: copy("celebration_streak_value", fallback: "1 day")
-                )
-
-                celebrationPill(
-                    icon: "drop.fill",
-                    title: copy("celebration_water_title", fallback: "Water"),
-                    value: copy("celebration_water_value", fallback: "Hydrated")
-                )
-            }
-
-            Text(copy("celebration_cta_hint", fallback: "Keep tending and your plant keeps growing."))
-                .font(WWTypography.heading(17))
-                .foregroundStyle(WWColor.muted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func celebrationGardenArrivalVisual(metrics: GeometryProxy, height: CGFloat) -> some View {
+        let sceneWidth = metrics.size.width - 40
+        let sceneHeight = max(300, min(height - 10, 430))
+
+        return ZStack(alignment: .bottom) {
+            Image(celebrationBackgroundAssetName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: sceneWidth, height: sceneHeight)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .overlay(
+                    LinearGradient(
+                        colors: [
+                            WWColor.nearBlack.opacity(0.04),
+                            WWColor.nearBlack.opacity(0.10),
+                            WWColor.nearBlack.opacity(0.18)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                )
+
+            VStack {
+                HStack(spacing: 8) {
+                    celebrationStatusBadge(
+                        systemName: "sun.max.fill",
+                        text: copy("celebration_streak_value", fallback: "1 day")
+                    )
+                    celebrationStatusBadge(
+                        systemName: "drop.fill",
+                        text: copy("celebration_water_value", fallback: "Hydrated")
+                    )
+                }
+                .padding(.top, 16)
+                .padding(.horizontal, 16)
+                .opacity(celebrationSceneVisible ? 1 : 0)
+
+                Spacer()
+            }
+            .frame(width: sceneWidth, height: sceneHeight, alignment: .top)
+
+            if !celebrationStepText.isEmpty {
+                plantedStepTag
+                    .frame(maxWidth: sceneWidth - 40)
+                    .offset(y: celebrationStepSettled ? -106 : -62)
+                    .opacity(celebrationSceneVisible ? 1 : 0)
+                    .scaleEffect(celebrationStepSettled ? 0.92 : 1.0)
+            }
+
+            Circle()
+                .fill(WWColor.morningGold.opacity(0.50 * celebrationSoilGlow))
+                .frame(width: 170, height: 90)
+                .blur(radius: 28)
+                .offset(y: -28)
+
+            Image(systemName: "drop.fill")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(WWColor.growGreen)
+                .shadow(color: WWColor.growGreen.opacity(0.5), radius: 10, y: 6)
+                .offset(y: celebrationWaterDropY)
+                .opacity(celebrationWaterDropOpacity)
+
+            Image(firstStagePlantImageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: min(sceneHeight * 0.34, 142))
+                .offset(y: -30)
+                .scaleEffect(celebrationPlantScale)
+                .shadow(color: WWColor.growGreen.opacity(0.36 * celebrationSoilGlow), radius: 22, y: 8)
+        }
+        .frame(width: sceneWidth, height: sceneHeight)
+        .opacity(celebrationSceneVisible ? 1 : 0.92)
+        .onAppear {
+            runCelebrationArrivalSequence()
+        }
+        .onDisappear {
+            resetCelebrationArrivalSequence()
+        }
+    }
+
+    private var plantedStepTag: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(WWColor.growGreen)
+
+            Text(celebrationStepText)
+                .font(WWTypography.heading(16))
+                .foregroundStyle(WWColor.nearBlack)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: WWColor.nearBlack.opacity(0.18), radius: 14, y: 8)
+    }
+
+    private func celebrationStatusBadge(systemName: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .bold))
+            Text(text)
+                .font(WWTypography.caption(12).weight(.bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(WWColor.nearBlack.opacity(0.42))
+        .clipShape(Capsule())
+    }
+
+    private func resetCelebrationArrivalSequence() {
+        celebrationSceneVisible = false
+        celebrationStepSettled = false
+        celebrationWaterDropY = -96
+        celebrationWaterDropOpacity = 0.0
+        celebrationSoilGlow = 0.0
+        celebrationPlantScale = 0.92
+    }
+
+    private func runCelebrationArrivalSequence() {
+        resetCelebrationArrivalSequence()
+
+        guard !reduceMotion else {
+            celebrationSceneVisible = true
+            celebrationStepSettled = true
+            celebrationWaterDropY = -18
+            celebrationWaterDropOpacity = 0.0
+            celebrationSoilGlow = 1.0
+            celebrationPlantScale = 1.0
+            return
+        }
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            celebrationSceneVisible = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            withAnimation(.spring(response: 0.72, dampingFraction: 0.82)) {
+                celebrationStepSettled = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
+            celebrationWaterDropOpacity = 1.0
+            withAnimation(.easeIn(duration: 0.56)) {
+                celebrationWaterDropY = -18
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.24) {
+            withAnimation(.easeOut(duration: 0.18)) {
+                celebrationWaterDropOpacity = 0.0
+            }
+            withAnimation(.spring(response: 0.62, dampingFraction: 0.58)) {
+                celebrationSoilGlow = 1.0
+                celebrationPlantScale = 1.05
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.72) {
+            withAnimation(.easeOut(duration: 0.42)) {
+                celebrationPlantScale = 1.0
+            }
+        }
     }
     
     private var bannerNameContent: some View {
@@ -1096,7 +1256,7 @@ struct ExperimentalOnboardingFlowView: View {
         case .intro:
             return copy("intro_primary_cta", fallback: "Get started")
         case .firstTendCelebration:
-            return copy("celebration_primary_cta", fallback: "Continue")
+            return copy("celebration_primary_cta", fallback: "Enter Tend")
         default:
             return isFinalStep
                 ? copy("final_primary_cta", fallback: "Enter Tend")
@@ -1148,31 +1308,6 @@ struct ExperimentalOnboardingFlowView: View {
         }
     }
 
-    private func celebrationPill(icon: String, title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(title)
-                    .font(WWTypography.caption(13).weight(.semibold))
-            }
-            .foregroundStyle(WWColor.growGreen)
-
-            Text(value)
-                .font(WWTypography.heading(18))
-                .foregroundStyle(WWColor.nearBlack)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(WWColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(WWColor.growGreen.opacity(0.24), lineWidth: 1)
-        )
-    }
-    
     private func featureBullet(lead: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Circle()
@@ -1308,8 +1443,10 @@ struct ExperimentalOnboardingFlowView: View {
             return compact ? 0.45 : 0.52
         case .method, .grounding, .reminder, .generating:
             return compact ? 0.30 : 0.36
-        case .bannerName, .bannerTruth, .bannerChange, .review, .firstTendCelebration:
+        case .bannerName, .bannerTruth, .bannerChange, .review:
             return compact ? 0.20 : 0.25
+        case .firstTendCelebration:
+            return compact ? 0.48 : 0.54
         case .creationSprout:
             return compact ? 0.52 : 0.58
         case .intro:
@@ -1347,7 +1484,7 @@ struct ExperimentalOnboardingFlowView: View {
         case .creationSprout, .generating:
             return 24
         case .firstTendCelebration:
-            return 110
+            return 120
         case .tendReflection, .tendPrayer, .tendNextStep:
             // Reserve more space for the persistent CTA row so long generated text
             // can scroll fully above it without appearing truncated.

@@ -183,13 +183,13 @@
 "onboarding.widget_title" = "Halte deine Journey nah.";
 "onboarding.widget_subtitle" = "Sieh aktuelles Gebet, Vers und nächsten Schritt direkt auf deinem Homescreen.";
 "onboarding.creation_sprout_title" = "Dein Samen wird gepflanzt...";
-"onboarding.celebration_title" = "1 Tag stark.";
+"onboarding.celebration_title" = "Tag 1";
 "onboarding.celebration_streak_title" = "Serie";
 "onboarding.celebration_streak_value" = "1 Tag";
 "onboarding.celebration_water_title" = "Wasser";
 "onboarding.celebration_water_value" = "Hydriert";
 "onboarding.celebration_cta_hint" = "Bleib dran, dann wächst deine Pflanze weiter.";
-"onboarding.celebration_primary_cta" = "Weiter";
+"onboarding.celebration_primary_cta" = "Tend öffnen";
 "onboarding.background_selection_title" = "Wähle deine Szene.";
 "onboarding.background_selection_subtitle" = "Wähle ein Hintergrundthema für deinen Homescreen.";
 "onboarding.review_title" = "Gefällt dir Tend bisher?";

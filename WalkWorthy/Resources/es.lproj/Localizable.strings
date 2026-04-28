@@ -183,13 +183,13 @@
 "onboarding.widget_title" = "Mantén tu camino cerca.";
 "onboarding.widget_subtitle" = "Mira tu oración, versículo y próximo paso actual desde la pantalla de inicio.";
 "onboarding.creation_sprout_title" = "Plantando tu semilla...";
-"onboarding.celebration_title" = "1 día firme.";
+"onboarding.celebration_title" = "Día 1";
 "onboarding.celebration_streak_title" = "Racha";
 "onboarding.celebration_streak_value" = "1 día";
 "onboarding.celebration_water_title" = "Agua";
 "onboarding.celebration_water_value" = "Hidratada";
 "onboarding.celebration_cta_hint" = "Sigue tendiendo y tu planta seguirá creciendo.";
-"onboarding.celebration_primary_cta" = "Continuar";
+"onboarding.celebration_primary_cta" = "Entrar a Tend";
 "onboarding.background_selection_title" = "Define tu ambiente.";
 "onboarding.background_selection_subtitle" = "Elige un tema de fondo para tu pantalla de inicio.";
 "onboarding.review_title" = "¿Te está gustando Tend?";

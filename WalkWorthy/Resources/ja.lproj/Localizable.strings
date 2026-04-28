@@ -189,13 +189,13 @@
 "onboarding.widget_title" = "旅路を身近に。";
 "onboarding.widget_subtitle" = "ホーム画面から現在の祈り、聖句、次の一歩を確認できます。";
 "onboarding.creation_sprout_title" = "種を植えています...";
-"onboarding.celebration_title" = "1日目、順調です。";
+"onboarding.celebration_title" = "1日目";
 "onboarding.celebration_streak_title" = "連続";
 "onboarding.celebration_streak_value" = "1日";
 "onboarding.celebration_water_title" = "水";
 "onboarding.celebration_water_value" = "うるおい十分";
 "onboarding.celebration_cta_hint" = "続けるほど、あなたの植物は育ちます。";
-"onboarding.celebration_primary_cta" = "続ける";
+"onboarding.celebration_primary_cta" = "Tendへ";
 "onboarding.background_selection_title" = "背景を選びましょう。";
 "onboarding.background_selection_subtitle" = "ホーム画面の背景テーマを選択してください。";
 "onboarding.review_title" = "ここまでのTendはいかがですか？";
