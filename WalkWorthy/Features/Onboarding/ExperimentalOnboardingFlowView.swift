@@ -65,6 +65,7 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var celebrationWaterDropOpacity = 0.0
     @State private var celebrationSoilGlow = 0.0
     @State private var celebrationPlantScale = 0.92
+    @State private var generationSequencePhase = 0
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -105,6 +106,13 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var celebrationStepText: String {
         actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var prayerPreviewText: String {
+        let trimmed = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return copy("generating_prayer_fallback", fallback: "Your prayer") }
+        if trimmed.count <= 72 { return trimmed }
+        return String(trimmed.prefix(69)) + "..."
     }
 
     private var supportsWidgetsOnCurrentDevice: Bool {
@@ -228,13 +236,14 @@ struct ExperimentalOnboardingFlowView: View {
                 OnboardingIntroLoopView(size: min(height * 0.7, 220))
             case .generating:
                 onboardingAnticipationVisual(height: height)
-            case .name, .prayerIntent, .tendReflection, .tendPrayer, .tendNextStep:
-                // Placeholder graphic for input steps
+            case .name, .prayerIntent:
                 Image("TendMark")
                     .resizable()
                     .scaledToFit()
                     .frame(width: min(height * 0.48, 116))
                     .opacity(0.8)
+            case .tendReflection, .tendPrayer, .tendNextStep:
+                tendRitualThreadVisual(height: height)
             case .method:
                  Image("TendMark")
                     .resizable()
@@ -423,7 +432,7 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var nameContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(copy("name_title", fallback: "What's your name?"))
+            Text(copy("name_title", fallback: "What should Tend call you?"))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
             
@@ -442,12 +451,12 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var prayerIntentContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(copy("prayer_intent_title", fallback: "What do you want to pray about right now?"))
+            Text(copy("prayer_intent_title", fallback: "Bring what’s real."))
                 .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(copy("prayer_intent_helper", fallback: "Keep it simple. One focus is enough."))
+            Text(copy("prayer_intent_helper", fallback: "What do you want to pray about right now?"))
                 .font(WWTypography.heading(18))
                 .foregroundStyle(WWColor.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -505,11 +514,11 @@ struct ExperimentalOnboardingFlowView: View {
     }
     
     private var generatingContent: some View {
-        VStack(spacing: 14) {
-            Text(copy("generating_title", fallback: "Preparing your first Tend..."))
-                .font(WWTypography.heading(24))
+        VStack(spacing: 10) {
+            Text(copy("generating_title", fallback: "Tend shaped it."))
+                .font(WWTypography.display(30))
                 .foregroundStyle(WWColor.nearBlack)
-            Text(copy("generating_subtitle", fallback: "Pairing Scripture, prayer, and one faithful step."))
+            Text(copy("generating_subtitle", fallback: "Scripture. Prayer. Step."))
                 .font(WWTypography.heading(17))
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
@@ -519,49 +528,56 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var tendReflectionContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(copy("tend_reflection_title", fallback: "Your first step is ready."))
+            ritualStageLabel(copy("tend_ritual_stage_scripture", fallback: "Scripture"))
+
+            Text(copy("tend_reflection_title", fallback: "Receive today’s Tend."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
-            
-            WWCard {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(generatedPackage?.scriptureReference ?? copy("tend_scripture_label", fallback: "Scripture"))
-                        .font(WWTypography.caption(12).weight(.bold))
-                        .foregroundStyle(WWColor.growGreen)
-                        .tracking(1.0)
-                    
-                    Text(generatedPackage?.scriptureParaphrase ?? "...")
-                        .font(WWTypography.heading(20))
-                        .foregroundStyle(WWColor.nearBlack)
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
-                    
-                    Divider()
-                    
+
+            ritualSurface {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(generatedPackage?.scriptureReference ?? copy("tend_scripture_label", fallback: "Scripture"))
+                            .font(WWTypography.caption(12).weight(.bold))
+                            .foregroundStyle(WWColor.growGreen)
+                            .tracking(1.0)
+
+                        Text(generatedPackage?.scriptureParaphrase ?? "...")
+                            .font(WWTypography.heading(22))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
+                    }
+
+                    Rectangle()
+                        .fill(WWColor.growGreen.opacity(0.28))
+                        .frame(width: 44, height: 2)
+
                     Text(generatedPackage?.reflectionThought ?? "...")
-                        .font(WWTypography.body(17))
+                        .font(WWTypography.body(18))
                         .foregroundStyle(WWColor.muted)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
 
     private var tendPrayerContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(copy("tend_prayer_title", fallback: "Take a moment to pray."))
+            ritualStageLabel(copy("tend_ritual_stage_prayer", fallback: "Prayer"))
+
+            Text(copy("tend_prayer_title", fallback: "Pray it back."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
-            
-            WWCard {
+
+            ritualSurface {
                 Text(generatedPackage?.prayer ?? "...")
-                    .font(WWTypography.body(17))
+                    .font(WWTypography.body(20))
                     .foregroundStyle(WWColor.nearBlack)
                     .italic()
                     .lineLimit(nil)
@@ -573,70 +589,71 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var tendNextStepContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(copy("tend_step_title", fallback: "Choose your first step."))
-                .font(WWTypography.display(34))
+        VStack(alignment: .leading, spacing: 18) {
+            ritualStageLabel(copy("tend_ritual_stage_step", fallback: "Step"))
+
+            Text(copy("tend_step_title", fallback: "Today I will..."))
+                .font(WWTypography.display(38))
                 .foregroundStyle(WWColor.nearBlack)
             
             Text(generatedPackage?.smallStepQuestion ?? copy("tend_step_question_fallback", fallback: "What is one small step you can take today?"))
-                .font(WWTypography.heading(20))
-                .foregroundStyle(WWColor.nearBlack)
+                .font(WWTypography.heading(19))
+                .foregroundStyle(WWColor.muted)
+                .fixedSize(horizontal: false, vertical: true)
             
-            TextField(copy("tend_step_placeholder", fallback: "My next step is..."), text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
-                .focused($focusedField, equals: .action)
-                .submitLabel(.done)
-                .onSubmit { focusedField = nil }
-                .font(WWTypography.heading(20))
-                .foregroundStyle(WWColor.nearBlack)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .frame(minHeight: 130, alignment: .top)
-                .background(WWColor.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(WWColor.growGreen.opacity(actionStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0 : 1), lineWidth: 1)
-                )
-                .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(copy("tend_step_commitment_label", fallback: "Today I will"))
+                    .font(WWTypography.caption(13).weight(.bold))
+                    .foregroundStyle(WWColor.growGreen)
+                    .tracking(1.2)
+
+                TextField(copy("tend_step_placeholder", fallback: "write one lived response..."), text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
+                    .focused($focusedField, equals: .action)
+                    .submitLabel(.done)
+                    .onSubmit { focusedField = nil }
+                    .font(WWTypography.heading(22))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .frame(minHeight: 92, alignment: .top)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(WWColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(WWColor.growGreen.opacity(actionStepText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.12 : 0.75), lineWidth: 1)
+            )
 
             if !firstStepSuggestions.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(copy("tend_step_suggestions_title", fallback: "Need a starter?"))
+                    Text(copy("tend_step_suggestions_title", fallback: "Or start here"))
                         .font(WWTypography.caption(16).weight(.semibold))
                         .foregroundStyle(WWColor.muted)
 
                     VStack(spacing: 10) {
                         ForEach(firstStepSuggestions, id: \.self) { suggestion in
+                            let selected = actionStepText.trimmingCharacters(in: .whitespacesAndNewlines) == suggestion
                             Button {
                                 actionStepText = suggestion
                                 focusedField = nil
                             } label: {
-                                HStack(alignment: .top, spacing: 10) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(WWColor.growGreen)
-
+                                HStack(alignment: .center, spacing: 12) {
                                     Text(suggestion)
-                                        .font(WWTypography.heading(18))
+                                        .font(WWTypography.heading(17))
                                         .foregroundStyle(WWColor.nearBlack)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .multilineTextAlignment(.leading)
                                         .fixedSize(horizontal: false, vertical: true)
+
+                                    Circle()
+                                        .fill(selected ? WWColor.growGreen : WWColor.muted.opacity(0.20))
+                                        .frame(width: 7, height: 7)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 15)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(WWColor.surface)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(
-                                            actionStepText.trimmingCharacters(in: .whitespacesAndNewlines) == suggestion
-                                                ? WWColor.growGreen.opacity(0.8)
-                                                : WWColor.nearBlack.opacity(0.08),
-                                            lineWidth: 1
-                                        )
-                                )
+                                .background(selected ? WWColor.growGreen.opacity(0.12) : WWColor.nearBlack.opacity(0.04))
+                                .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
                         }
@@ -644,6 +661,31 @@ struct ExperimentalOnboardingFlowView: View {
                 }
             }
         }
+    }
+
+    private func ritualStageLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(WWTypography.caption(13).weight(.bold))
+            .foregroundStyle(WWColor.growGreen)
+            .tracking(2.4)
+    }
+
+    private func ritualSurface<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 22)
+            .padding(.vertical, 22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [
+                        WWColor.surface.opacity(0.92),
+                        WWColor.surface.opacity(0.58)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     private var firstTendCelebrationContent: some View {
@@ -987,28 +1029,119 @@ struct ExperimentalOnboardingFlowView: View {
 
     @ViewBuilder
     private func onboardingAnticipationVisual(height: CGFloat) -> some View {
-        ZStack {
+        let fragmentVisible = generationSequencePhase >= 1
+        let seedDropped = generationSequencePhase >= 2
+
+        VStack(spacing: 18) {
             Circle()
                 .fill(WWColor.growGreen.opacity(anticipationGlow ? 0.22 : 0.10))
-                .frame(width: min(height * 0.9, 180), height: min(height * 0.9, 180))
+                .frame(width: min(height * 0.42, 96), height: min(height * 0.42, 96))
                 .blur(radius: anticipationGlow ? 18 : 8)
+                .overlay(
+                    Image("generic_seed")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: min(height * 0.16, 42))
+                        .offset(y: seedDropped ? 48 : -4)
+                        .opacity(generationSequencePhase >= 1 ? 1 : 0)
+                        .scaleEffect(seedDropped ? 0.82 : 1.0)
+                )
 
-            Image("generic_seed")
-                .resizable()
-                .scaledToFit()
-                .frame(width: min(height * 0.34, 74))
-                .rotationEffect(.degrees(anticipationGlow ? 2 : -2))
-                .offset(y: anticipationGlow ? -5 : 2)
+            Text("“\(prayerPreviewText)”")
+                .font(WWTypography.heading(15))
+                .foregroundStyle(WWColor.nearBlack)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(WWColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .opacity(generationSequencePhase >= 0 ? 1 : 0)
+                .scaleEffect(fragmentVisible ? 0.92 : 1.0)
+
+            HStack(spacing: 10) {
+                generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"))
+                generationFragmentLabel(copy("generating_fragment_prayer", fallback: "Prayer"))
+                generationFragmentLabel(copy("generating_fragment_step", fallback: "Step"))
+            }
+            .opacity(fragmentVisible ? 1 : 0)
+            .offset(y: fragmentVisible ? 0 : 10)
         }
         .onAppear {
-            guard !reduceMotion else { return }
+            generationSequencePhase = reduceMotion ? 2 : 0
+            guard !reduceMotion else {
+                anticipationGlow = true
+                return
+            }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
                 anticipationGlow = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                withAnimation(.easeOut(duration: 0.35)) {
+                    generationSequencePhase = 1
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
+                    generationSequencePhase = 2
+                }
             }
         }
         .onDisappear {
             anticipationGlow = false
+            generationSequencePhase = 0
         }
+    }
+
+    private func generationFragmentLabel(_ text: String) -> some View {
+        Text(text)
+            .font(WWTypography.caption(12).weight(.semibold))
+            .foregroundStyle(WWColor.growGreen)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(WWColor.growGreen.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
+    private func tendRitualThreadVisual(height: CGFloat) -> some View {
+        VStack(spacing: 14) {
+            Image("TendMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: min(height * 0.34, 72))
+                .opacity(0.72)
+
+            HStack(spacing: 9) {
+                ritualThreadDot(isActive: step == .tendReflection, isPast: ritualStepIndex >= 0)
+                ritualThreadLine(isActive: ritualStepIndex >= 1)
+                ritualThreadDot(isActive: step == .tendPrayer, isPast: ritualStepIndex >= 1)
+                ritualThreadLine(isActive: ritualStepIndex >= 2)
+                ritualThreadDot(isActive: step == .tendNextStep, isPast: ritualStepIndex >= 2)
+            }
+            .opacity(0.9)
+        }
+    }
+
+    private var ritualStepIndex: Int {
+        switch step {
+        case .tendReflection: return 0
+        case .tendPrayer: return 1
+        case .tendNextStep: return 2
+        default: return -1
+        }
+    }
+
+    private func ritualThreadDot(isActive: Bool, isPast: Bool) -> some View {
+        Circle()
+            .fill(isPast ? WWColor.growGreen : WWColor.muted.opacity(0.22))
+            .frame(width: isActive ? 12 : 8, height: isActive ? 12 : 8)
+            .shadow(color: isActive ? WWColor.growGreen.opacity(0.45) : .clear, radius: 8)
+    }
+
+    private func ritualThreadLine(isActive: Bool) -> some View {
+        Capsule()
+            .fill(isActive ? WWColor.growGreen.opacity(0.75) : WWColor.muted.opacity(0.18))
+            .frame(width: 34, height: 2)
     }
     
     // Seed Animation States
@@ -1024,9 +1157,9 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var creationSproutContent: some View {
         VStack {
-            Text(copy("creation_sprout_title", fallback: "Planting your seed..."))
+            Text(copy("creation_sprout_title", fallback: "See it planted."))
                 .font(WWTypography.heading(24))
-                .foregroundStyle(WWColor.white)
+                .foregroundStyle(WWColor.nearBlack)
                 .opacity(soilOpacity > 0 ? 1.0 : 0.0)
                 .multilineTextAlignment(.center)
         }
@@ -1324,11 +1457,11 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var defaultPreJourneySteps: [Step] {
-        [.name, .bannerName, .bannerTruth, .bannerChange, .method, .grounding, .prayerIntent]
+        [.prayerIntent, .name, .bannerName, .bannerTruth, .bannerChange, .method, .grounding]
     }
 
     private var requiredPreJourneySteps: [Step] {
-        [.name, .prayerIntent]
+        [.prayerIntent, .name]
     }
 
     private var fixedFirstJourneySteps: [Step] {
@@ -1348,10 +1481,12 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var onboardingFlowSequence: [Step] {
-        let pre = mergeConfiguredSteps(
-            configured: resolvedExperimentConfig.preJourneyOrder,
-            defaults: defaultPreJourneySteps,
-            required: requiredPreJourneySteps
+        let pre = canonicalPreJourneyOrder(
+            mergeConfiguredSteps(
+                configured: resolvedExperimentConfig.preJourneyOrder,
+                defaults: defaultPreJourneySteps,
+                required: requiredPreJourneySteps
+            )
         )
         let post = mergeConfiguredSteps(
             configured: resolvedExperimentConfig.postJourneyOrder,
@@ -1359,6 +1494,15 @@ struct ExperimentalOnboardingFlowView: View {
             required: requiredPostJourneySteps
         )
         return [.intro] + pre + fixedFirstJourneySteps + [.firstTendCelebration] + enforceReviewAsLastPostStep(post)
+    }
+
+    private func canonicalPreJourneyOrder(_ steps: [Step]) -> [Step] {
+        var reordered: [Step] = []
+        for requiredStep in requiredPreJourneySteps where steps.contains(requiredStep) {
+            reordered.append(requiredStep)
+        }
+        reordered.append(contentsOf: steps.filter { !reordered.contains($0) })
+        return reordered
     }
 
     private var isFinalStep: Bool {

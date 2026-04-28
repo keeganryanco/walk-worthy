@@ -359,7 +359,7 @@ private struct DebugOnboardingSimulatorView: View {
                     },
                     experimentConfig: OnboardingExperimentConfig(
                         variant: "debug-sim",
-                        preJourneyOrder: ["name", "prayerIntent"],
+                        preJourneyOrder: ["prayerIntent", "name"],
                         postJourneyOrder: ["backgroundSelection", "review"],
                         copyOverrides: ["intro_title": "Onboarding Simulator"]
                     )

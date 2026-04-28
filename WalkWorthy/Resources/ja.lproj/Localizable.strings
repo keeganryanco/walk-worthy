@@ -141,10 +141,10 @@
 現実の成長につながる
 小さな一歩に変えよう";
 "onboarding.intro.logo_accessibility" = "Tendロゴのアニメーション";
-"onboarding.name_title" = "お名前を教えてください";
+"onboarding.name_title" = "Tendでは何と呼びますか？";
 "onboarding.name_placeholder" = "名前を入力";
-"onboarding.prayer_intent_title" = "今、何について祈りたいですか？";
-"onboarding.prayer_intent_helper" = "シンプルで大丈夫。ひとつの焦点で十分です。";
+"onboarding.prayer_intent_title" = "ありのままを。";
+"onboarding.prayer_intent_helper" = "今、何について祈りたいですか？";
 "onboarding.prayer_intent_placeholder" = "私の祈りは...";
 "onboarding.prayer_intent_suggestions_title" = "ヒントが必要ですか？";
 "onboarding.prayer_intent_suggestion_1" = "不安を神様にゆだねる";
@@ -153,16 +153,24 @@
 "onboarding.prayer_intent_suggestion_4" = "難しい決断への知恵";
 "onboarding.goal_intent_title" = "今、神と共にどの目標へ向かっていますか？";
 "onboarding.goal_intent_placeholder" = "私の目標は...";
-"onboarding.generating_title" = "最初のTendを準備しています...";
-"onboarding.generating_subtitle" = "聖書、祈り、そして忠実な一歩を結びます。";
-"onboarding.tend_reflection_title" = "最初の一歩の準備ができました。";
-"onboarding.tend_scripture_label" = "聖書箇所";
-"onboarding.tend_prayer_title" = "少し祈る時間を持ちましょう。";
+"onboarding.generating_title" = "Tendが形にしました。";
+"onboarding.generating_subtitle" = "聖書。祈り。一歩。";
+"onboarding.generating_prayer_fallback" = "あなたの祈り";
+"onboarding.generating_fragment_scripture" = "聖書";
+"onboarding.generating_fragment_prayer" = "祈り";
+"onboarding.generating_fragment_step" = "一歩";
+"onboarding.tend_reflection_title" = "今日のTendを受け取りましょう。";
+"onboarding.tend_scripture_label" = "聖書";
+"onboarding.tend_ritual_stage_scripture" = "聖書";
+"onboarding.tend_ritual_stage_prayer" = "祈り";
+"onboarding.tend_ritual_stage_step" = "一歩";
+"onboarding.tend_prayer_title" = "祈りにしましょう。";
 "onboarding.tend_prayer_subtitle" = "あなたの旅路と今日の聖書に基づいた個人的な祈りを読みましょう。";
-"onboarding.tend_step_title" = "最初の一歩を選びましょう。";
+"onboarding.tend_step_title" = "今日、私は...";
 "onboarding.tend_step_question_fallback" = "今日できる小さな一歩は何ですか？";
-"onboarding.tend_step_placeholder" = "私の次の一歩は...";
-"onboarding.tend_step_suggestions_title" = "ヒントが必要ですか？";
+"onboarding.tend_step_placeholder" = "生活に移す一歩を書く...";
+"onboarding.tend_step_commitment_label" = "今日、私は";
+"onboarding.tend_step_suggestions_title" = "ここから始める";
 "onboarding.banner_name_title" = "{{firstName}}さん、あなたの祈りには意味があります。";
 "onboarding.banner_name_subtitle" = "あなたの次の一歩にも。";
 "onboarding.banner_truth_title" = "あなたの祈りは
@@ -188,7 +196,7 @@
 "onboarding.reminder_add_button" = "リマインダーを追加";
 "onboarding.widget_title" = "旅路を身近に。";
 "onboarding.widget_subtitle" = "ホーム画面から現在の祈り、聖句、次の一歩を確認できます。";
-"onboarding.creation_sprout_title" = "種を植えています...";
+"onboarding.creation_sprout_title" = "植えられました。";
 "onboarding.celebration_title" = "1日目";
 "onboarding.celebration_streak_title" = "連続";
 "onboarding.celebration_streak_value" = "1日";
