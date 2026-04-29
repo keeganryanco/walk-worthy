@@ -159,15 +159,15 @@
 "onboarding.generating_fragment_scripture" = "聖書";
 "onboarding.generating_fragment_prayer" = "祈り";
 "onboarding.generating_fragment_step" = "今日すること";
-"onboarding.tend_reflection_title" = "今日のTendを受け取りましょう。";
+"onboarding.tend_reflection_title" = "聖書から始めましょう。";
 "onboarding.tend_scripture_label" = "聖書";
 "onboarding.tend_ritual_stage_scripture" = "聖書";
 "onboarding.tend_ritual_stage_prayer" = "祈り";
 "onboarding.tend_ritual_stage_step" = "一歩";
-"onboarding.tend_prayer_title" = "祈りにしましょう。";
+"onboarding.tend_prayer_title" = "今日のために祈りましょう。";
 "onboarding.tend_prayer_subtitle" = "あなたの旅路と今日の聖書に基づいた個人的な祈りを読みましょう。";
 "onboarding.tend_step_title" = "今日、私は...";
-"onboarding.tend_step_question_fallback" = "今日できる小さな一歩は何ですか？";
+"onboarding.tend_step_question_fallback" = "今日、この祈りに応えてできることは何ですか？";
 "onboarding.tend_step_placeholder" = "生活に移す一歩を書く...";
 "onboarding.tend_step_commitment_label" = "今日、私は";
 "onboarding.tend_step_suggestions_title" = "ここから始める";
@@ -202,7 +202,7 @@
 "onboarding.celebration_streak_value" = "1日";
 "onboarding.celebration_water_title" = "水";
 "onboarding.celebration_water_value" = "うるおい十分";
-"onboarding.celebration_cta_hint" = "続けるほど、あなたの植物は育ちます。";
+"onboarding.celebration_cta_hint" = "戻ってきて、植物が育つのを見ましょう。";
 "onboarding.celebration_primary_cta" = "続ける";
 "onboarding.background_selection_title" = "背景を選びましょう。";
 "onboarding.background_selection_subtitle" = "あなたの歩みが育つ場所を選びましょう。";

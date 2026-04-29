@@ -157,15 +157,15 @@
 "onboarding.generating_fragment_scripture" = "Escritura";
 "onboarding.generating_fragment_prayer" = "Oración";
 "onboarding.generating_fragment_step" = "Hoy voy a";
-"onboarding.tend_reflection_title" = "Recibe el Tend de hoy.";
+"onboarding.tend_reflection_title" = "Comienza con la Escritura.";
 "onboarding.tend_scripture_label" = "Escritura";
 "onboarding.tend_ritual_stage_scripture" = "Escritura";
 "onboarding.tend_ritual_stage_prayer" = "Oración";
 "onboarding.tend_ritual_stage_step" = "Paso";
-"onboarding.tend_prayer_title" = "Ora con esto.";
+"onboarding.tend_prayer_title" = "Ora por hoy.";
 "onboarding.tend_prayer_subtitle" = "Lee una oración personal formada por tu camino y la escritura de hoy.";
 "onboarding.tend_step_title" = "Hoy voy a...";
-"onboarding.tend_step_question_fallback" = "¿Cuál es un paso pequeño que puedes dar hoy?";
+"onboarding.tend_step_question_fallback" = "¿Qué puedes hacer hoy para colaborar con esta oración?";
 "onboarding.tend_step_placeholder" = "escribe una respuesta vivida...";
 "onboarding.tend_step_commitment_label" = "Hoy voy a";
 "onboarding.tend_step_suggestions_title" = "O empieza aquí";
@@ -196,7 +196,7 @@
 "onboarding.celebration_streak_value" = "1 día";
 "onboarding.celebration_water_title" = "Agua";
 "onboarding.celebration_water_value" = "Hidratada";
-"onboarding.celebration_cta_hint" = "Sigue tendiendo y tu planta seguirá creciendo.";
+"onboarding.celebration_cta_hint" = "Vuelve cada día para ver crecer tu planta.";
 "onboarding.celebration_primary_cta" = "Continuar";
 "onboarding.background_selection_title" = "Define tu ambiente.";
 "onboarding.background_selection_subtitle" = "Elige dónde crecerá tu camino.";

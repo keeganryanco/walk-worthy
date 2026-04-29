@@ -235,7 +235,10 @@ struct ExperimentalOnboardingFlowView: View {
             case .intro:
                 OnboardingIntroLoopView(size: min(height * 0.7, 220))
             case .generating:
-                onboardingAnticipationVisual(height: height)
+                VStack(spacing: 30) {
+                    onboardingAnticipationVisual(height: height)
+                    generatingContent
+                }
             case .name, .prayerIntent:
                 Image("TendMark")
                     .resizable()
@@ -255,10 +258,7 @@ struct ExperimentalOnboardingFlowView: View {
                     .scaledToFit()
                     .frame(width: min(height * 0.48, 116))
             case .reminder:
-                Image("OnboardingReminderClock")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: min(height * 0.48, 132))
+                EmptyView()
             case .widget:
                 Image("OnboardingWidgetScreenshot")
                     .resizable()
@@ -370,7 +370,7 @@ struct ExperimentalOnboardingFlowView: View {
                 case .prayerIntent:
                     prayerIntentContent
                 case .generating:
-                    generatingContent
+                    EmptyView()
                 case .tendReflection:
                     tendReflectionContent
                 case .tendPrayer:
@@ -526,7 +526,7 @@ struct ExperimentalOnboardingFlowView: View {
         VStack(alignment: .leading, spacing: 16) {
             ritualStageLabel(copy("tend_ritual_stage_scripture", fallback: "Scripture"))
 
-            Text(copy("tend_reflection_title", fallback: "Receive today’s Tend."))
+            Text(copy("tend_reflection_title", fallback: "Begin with Scripture."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
@@ -566,7 +566,7 @@ struct ExperimentalOnboardingFlowView: View {
         VStack(alignment: .leading, spacing: 16) {
             ritualStageLabel(copy("tend_ritual_stage_prayer", fallback: "Prayer"))
 
-            Text(copy("tend_prayer_title", fallback: "Pray it back."))
+            Text(copy("tend_prayer_title", fallback: "Pray for today."))
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .fixedSize(horizontal: false, vertical: true)
@@ -592,7 +592,7 @@ struct ExperimentalOnboardingFlowView: View {
                 .font(WWTypography.display(38))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text(generatedPackage?.smallStepQuestion ?? copy("tend_step_question_fallback", fallback: "What is one small step you can take today?"))
+            Text(copy("tend_step_question_fallback", fallback: "What is one thing you can do to partner with this prayer today?"))
                 .font(WWTypography.heading(19))
                 .foregroundStyle(WWColor.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -689,6 +689,11 @@ struct ExperimentalOnboardingFlowView: View {
             Text(copy("celebration_title", fallback: "Day 1"))
                 .font(WWTypography.display(52))
                 .foregroundStyle(WWColor.nearBlack)
+                .multilineTextAlignment(.center)
+
+            Text(copy("celebration_cta_hint", fallback: "Keep coming back to see your plant grow."))
+                .font(WWTypography.heading(18))
+                .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -1048,17 +1053,6 @@ struct ExperimentalOnboardingFlowView: View {
                     .frame(width: markSize, height: markSize)
                     .blur(radius: anticipationGlow ? 20 : 10)
 
-                VStack(spacing: 0) {
-                    formedLineMark(rotation: -18, phase: generationSequencePhase)
-                        .offset(x: -18, y: fragmentVisible ? 6 : 20)
-                    formedLineMark(rotation: 0, phase: generationSequencePhase)
-                        .offset(y: fragmentVisible ? -2 : 18)
-                    formedLineMark(rotation: 18, phase: generationSequencePhase)
-                        .offset(x: 18, y: fragmentVisible ? -10 : 16)
-                }
-                .opacity(fragmentVisible ? 1 : 0)
-                .scaleEffect(fragmentVisible ? 1 : 0.84)
-
                 VStack {
                     Image("generic_seed")
                         .resizable()
@@ -1084,7 +1078,7 @@ struct ExperimentalOnboardingFlowView: View {
                 .scaleEffect(fragmentVisible ? 0.88 : 1.0)
                 .blur(radius: fragmentVisible ? 0.35 : 0)
 
-            HStack(spacing: 18) {
+            HStack(spacing: 16) {
                 generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"), index: 0)
                 generationFragmentLabel(copy("generating_fragment_prayer", fallback: "Prayer"), index: 1)
                 generationFragmentLabel(copy("generating_fragment_step", fallback: "Today I will"), index: 2)
@@ -1118,26 +1112,17 @@ struct ExperimentalOnboardingFlowView: View {
         }
     }
 
-    private func formedLineMark(rotation: Double, phase: Int) -> some View {
-        Capsule()
-            .fill(WWColor.growGreen.opacity(0.72))
-            .frame(width: 26, height: 4)
-            .rotationEffect(.degrees(rotation))
-            .shadow(color: WWColor.growGreen.opacity(phase >= 2 ? 0.32 : 0.16), radius: phase >= 2 ? 8 : 3)
-    }
-
     private func generationFragmentLabel(_ text: String, index: Int) -> some View {
-        VStack(spacing: 7) {
-            Capsule()
+        HStack(spacing: 5) {
+            Circle()
                 .fill(WWColor.growGreen.opacity(0.62))
-                .frame(width: 22, height: 3)
-                .rotationEffect(.degrees(index == 0 ? -10 : index == 2 ? 10 : 0))
-
+                .frame(width: 5, height: 5)
             Text(text)
                 .font(WWTypography.caption(12).weight(.semibold))
                 .foregroundStyle(WWColor.growGreen)
         }
         .opacity(generationSequencePhase >= 1 ? 1 : 0)
+        .offset(y: generationSequencePhase >= 1 ? 0 : 8)
     }
 
     private func tendRitualThreadVisual(height: CGFloat) -> some View {
@@ -1622,7 +1607,11 @@ struct ExperimentalOnboardingFlowView: View {
             return compact ? 0.24 : 0.30
         case .backgroundSelection:
             return compact ? 0.45 : 0.52
-        case .method, .grounding, .reminder, .generating:
+        case .generating:
+            return compact ? 0.72 : 0.76
+        case .reminder:
+            return compact ? 0.14 : 0.18
+        case .method, .grounding:
             return compact ? 0.30 : 0.36
         case .bannerName, .bannerTruth, .bannerChange, .review:
             return compact ? 0.20 : 0.25
