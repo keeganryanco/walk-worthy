@@ -153,7 +153,8 @@
 "onboarding.prayer_intent_suggestion_4" = "難しい決断への知恵";
 "onboarding.goal_intent_title" = "今、神と共にどの目標へ向かっていますか？";
 "onboarding.goal_intent_placeholder" = "私の目標は...";
-"onboarding.generating_title" = "Tendが形にしました。";
+"onboarding.generating_title" = "あなたの旅を整えています...";
+"onboarding.generating_ready_title" = "あなたの旅の準備ができました。";
 "onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "あなたの祈り";
 "onboarding.generating_fragment_scripture" = "聖書";
@@ -202,7 +203,7 @@
 "onboarding.celebration_streak_value" = "1日";
 "onboarding.celebration_water_title" = "水";
 "onboarding.celebration_water_value" = "うるおい十分";
-"onboarding.celebration_cta_hint" = "戻ってきて、植物が育つのを見ましょう。";
+"onboarding.celebration_cta_hint" = "明日戻って、育つ様子を見ましょう。";
 "onboarding.celebration_primary_cta" = "続ける";
 "onboarding.background_selection_title" = "背景を選びましょう。";
 "onboarding.background_selection_subtitle" = "あなたの歩みが育つ場所を選びましょう。";

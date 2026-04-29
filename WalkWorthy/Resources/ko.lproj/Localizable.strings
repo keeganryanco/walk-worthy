@@ -137,7 +137,8 @@
 "onboarding.prayer_intent_suggestion_4" = "어려운 결정에 대한 지혜";
 "onboarding.goal_intent_title" = "지금 하나님과 함께 어떤 목표를 향해 나아가고 있나요?";
 "onboarding.goal_intent_placeholder" = "제 목표는...";
-"onboarding.generating_title" = "Tend가 형태를 잡았어요.";
+"onboarding.generating_title" = "여정을 빚고 있어요...";
+"onboarding.generating_ready_title" = "여정이 준비됐어요.";
 "onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "당신의 기도";
 "onboarding.generating_fragment_scripture" = "말씀";
@@ -182,7 +183,7 @@
 "onboarding.celebration_streak_value" = "1일";
 "onboarding.celebration_water_title" = "물";
 "onboarding.celebration_water_value" = "충분히 촉촉함";
-"onboarding.celebration_cta_hint" = "다시 돌아와 식물이 자라는 모습을 보세요.";
+"onboarding.celebration_cta_hint" = "내일 다시 와서 자라는 모습을 보세요.";
 "onboarding.celebration_primary_cta" = "계속";
 "onboarding.background_selection_title" = "배경을 설정하세요.";
 "onboarding.background_selection_subtitle" = "당신의 여정이 자랄 곳을 선택하세요.";

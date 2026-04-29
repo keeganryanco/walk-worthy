@@ -151,7 +151,8 @@
 "onboarding.prayer_intent_suggestion_4" = "Weisheit für eine schwere Entscheidung";
 "onboarding.goal_intent_title" = "Welches Ziel verfolgst du mit Gott gerade?";
 "onboarding.goal_intent_placeholder" = "Mein Ziel ist...";
-"onboarding.generating_title" = "Tend hat es geformt.";
+"onboarding.generating_title" = "Deine Reise nimmt Form an...";
+"onboarding.generating_ready_title" = "Deine Reise ist bereit.";
 "onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "Dein Gebet";
 "onboarding.generating_fragment_scripture" = "Schrift";
@@ -196,7 +197,7 @@
 "onboarding.celebration_streak_value" = "1 Tag";
 "onboarding.celebration_water_title" = "Wasser";
 "onboarding.celebration_water_value" = "Hydriert";
-"onboarding.celebration_cta_hint" = "Komm wieder, um deine Pflanze wachsen zu sehen.";
+"onboarding.celebration_cta_hint" = "Komm morgen zurück, um sie wachsen zu sehen.";
 "onboarding.celebration_primary_cta" = "Weiter";
 "onboarding.background_selection_title" = "Wähle deine Szene.";
 "onboarding.background_selection_subtitle" = "Wähle, wo dein Weg wächst.";

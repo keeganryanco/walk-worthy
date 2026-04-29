@@ -65,7 +65,9 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var celebrationWaterDropOpacity = 0.0
     @State private var celebrationSoilGlow = 0.0
     @State private var celebrationPlantScale = 0.92
+    @State private var celebrationTomorrowCueVisible = false
     @State private var generationSequencePhase = 0
+    @State private var generationIsReady = false
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -515,9 +517,14 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var generatingContent: some View {
         VStack(spacing: 10) {
-            Text(copy("generating_title", fallback: "Tend shaped it."))
+            Text(
+                generationIsReady
+                    ? copy("generating_ready_title", fallback: "Your journey is ready.")
+                    : copy("generating_title", fallback: "Shaping your journey...")
+            )
                 .font(WWTypography.display(30))
                 .foregroundStyle(WWColor.nearBlack)
+                .contentTransition(.opacity)
         }
         .frame(maxWidth: .infinity)
     }
@@ -756,6 +763,11 @@ struct ExperimentalOnboardingFlowView: View {
                 .scaleEffect(celebrationStepSettled ? 0.94 : 1.0)
             }
 
+            futureGrowthCue
+                .offset(x: sceneWidth * 0.16, y: -178)
+                .opacity(celebrationTomorrowCueVisible ? 1 : 0)
+                .scaleEffect(celebrationTomorrowCueVisible ? 1.0 : 0.78)
+
             Circle()
                 .fill(WWColor.morningGold.opacity(0.50 * celebrationSoilGlow))
                 .frame(width: 170, height: 90)
@@ -806,6 +818,32 @@ struct ExperimentalOnboardingFlowView: View {
         .shadow(color: WWColor.nearBlack.opacity(0.10), radius: 12, y: 6)
     }
 
+    private var futureGrowthCue: some View {
+        ZStack {
+            Circle()
+                .fill(WWColor.growGreen.opacity(0.18))
+                .frame(width: 48, height: 34)
+                .blur(radius: 12)
+
+            VStack(spacing: -2) {
+                HStack(spacing: -1) {
+                    Capsule()
+                        .fill(WWColor.growGreen.opacity(0.58))
+                        .frame(width: 9, height: 5)
+                        .rotationEffect(.degrees(-32))
+                    Capsule()
+                        .fill(WWColor.growGreen.opacity(0.58))
+                        .frame(width: 9, height: 5)
+                        .rotationEffect(.degrees(32))
+                }
+                Capsule()
+                    .fill(WWColor.growGreen.opacity(0.48))
+                    .frame(width: 2, height: 12)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
     private func celebrationStatusBadge(systemName: String, text: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemName)
@@ -827,6 +865,7 @@ struct ExperimentalOnboardingFlowView: View {
         celebrationWaterDropOpacity = 0.0
         celebrationSoilGlow = 0.0
         celebrationPlantScale = 0.92
+        celebrationTomorrowCueVisible = false
     }
 
     private func runCelebrationArrivalSequence() {
@@ -839,6 +878,7 @@ struct ExperimentalOnboardingFlowView: View {
             celebrationWaterDropOpacity = 0.0
             celebrationSoilGlow = 1.0
             celebrationPlantScale = 1.0
+            celebrationTomorrowCueVisible = true
             return
         }
 
@@ -872,6 +912,12 @@ struct ExperimentalOnboardingFlowView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.72) {
             withAnimation(.easeOut(duration: 0.42)) {
                 celebrationPlantScale = 1.0
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.94) {
+            withAnimation(.spring(response: 0.72, dampingFraction: 0.82)) {
+                celebrationTomorrowCueVisible = true
             }
         }
     }
@@ -1043,7 +1089,7 @@ struct ExperimentalOnboardingFlowView: View {
     @ViewBuilder
     private func onboardingAnticipationVisual(height: CGFloat) -> some View {
         let fragmentVisible = generationSequencePhase >= 1
-        let seedDropped = generationSequencePhase >= 2
+        let seedVisible = generationSequencePhase >= 1 || generationIsReady
         let markSize = min(height * 0.34, 78)
 
         VStack(spacing: 20) {
@@ -1052,15 +1098,17 @@ struct ExperimentalOnboardingFlowView: View {
                     .fill(WWColor.growGreen.opacity(anticipationGlow ? 0.18 : 0.08))
                     .frame(width: markSize, height: markSize)
                     .blur(radius: anticipationGlow ? 20 : 10)
+                    .scaleEffect(anticipationGlow ? 1.18 : 0.88)
 
                 VStack {
                     Image("generic_seed")
                         .resizable()
                         .scaledToFit()
                         .frame(width: min(height * 0.15, 38))
-                        .offset(y: seedDropped ? 38 : -10)
-                        .opacity(generationSequencePhase >= 1 ? 1 : 0)
-                        .scaleEffect(seedDropped ? 0.82 : 1.0)
+                        .offset(y: generationIsReady ? 38 : (anticipationGlow ? -16 : -6))
+                        .opacity(seedVisible ? 1 : 0)
+                        .scaleEffect(generationIsReady ? 0.82 : (anticipationGlow ? 1.04 : 0.96))
+                        .shadow(color: WWColor.growGreen.opacity(generationIsReady ? 0.12 : 0.28), radius: 10, y: 5)
                 }
             }
             .frame(height: markSize + 26)
@@ -1075,8 +1123,8 @@ struct ExperimentalOnboardingFlowView: View {
                 .background(WWColor.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .opacity(generationSequencePhase >= 0 ? 1 : 0)
-                .scaleEffect(fragmentVisible ? 0.88 : 1.0)
-                .blur(radius: fragmentVisible ? 0.35 : 0)
+                .scaleEffect(fragmentVisible ? 0.9 : 1.0)
+                .blur(radius: generationIsReady ? 0.45 : (fragmentVisible ? 0.25 : 0))
 
             HStack(spacing: 16) {
                 generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"), index: 0)
@@ -1089,7 +1137,7 @@ struct ExperimentalOnboardingFlowView: View {
         .onAppear {
             generationSequencePhase = reduceMotion ? 2 : 0
             guard !reduceMotion else {
-                anticipationGlow = true
+                anticipationGlow = generationIsReady
                 return
             }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
@@ -1101,7 +1149,7 @@ struct ExperimentalOnboardingFlowView: View {
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
+                withAnimation(.easeOut(duration: 0.28)) {
                     generationSequencePhase = 2
                 }
             }
@@ -1719,16 +1767,32 @@ struct ExperimentalOnboardingFlowView: View {
         let nextStep = nextStepInFlow()
 
         if nextStep == .generating {
+            generatedPackage = nil
+            inferredGrowthFocus = ""
+            generationIsReady = false
+            generationSequencePhase = 0
             withAnimation(.default) { step = .generating }
             Task {
                 if let result = await onGenerate(firstNameDisplay, prayerIntentText) {
                     await MainActor.run {
                         self.generatedPackage = result.package
                         self.inferredGrowthFocus = result.inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
+                        withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                            self.generationIsReady = true
+                            self.generationSequencePhase = 2
+                        }
+                    }
+                    let readyHoldNanoseconds: UInt64 = reduceMotion ? 450_000_000 : 850_000_000
+                    try? await Task.sleep(nanoseconds: readyHoldNanoseconds)
+                    await MainActor.run {
+                        guard self.step == .generating else { return }
                         self.advance()
                     }
                 } else {
-                    await MainActor.run { step = .prayerIntent }
+                    await MainActor.run {
+                        generationIsReady = false
+                        step = .prayerIntent
+                    }
                 }
             }
             return

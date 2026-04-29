@@ -151,7 +151,8 @@
 "onboarding.prayer_intent_suggestion_4" = "Sabedoria para uma decisão difícil";
 "onboarding.goal_intent_title" = "Qual meta você está buscando com Deus agora?";
 "onboarding.goal_intent_placeholder" = "Minha meta é...";
-"onboarding.generating_title" = "Tend deu forma a isso.";
+"onboarding.generating_title" = "Dando forma à sua jornada...";
+"onboarding.generating_ready_title" = "Sua jornada está pronta.";
 "onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "Sua oração";
 "onboarding.generating_fragment_scripture" = "Escritura";
@@ -196,7 +197,7 @@
 "onboarding.celebration_streak_value" = "1 dia";
 "onboarding.celebration_water_title" = "Água";
 "onboarding.celebration_water_value" = "Hidratada";
-"onboarding.celebration_cta_hint" = "Volte sempre para ver sua planta crescer.";
+"onboarding.celebration_cta_hint" = "Volte amanhã para vê-la crescer.";
 "onboarding.celebration_primary_cta" = "Continuar";
 "onboarding.background_selection_title" = "Defina seu cenário.";
 "onboarding.background_selection_subtitle" = "Escolha onde sua jornada cresce.";
