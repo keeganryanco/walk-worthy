@@ -152,11 +152,11 @@
 "onboarding.goal_intent_title" = "Welches Ziel verfolgst du mit Gott gerade?";
 "onboarding.goal_intent_placeholder" = "Mein Ziel ist...";
 "onboarding.generating_title" = "Tend hat es geformt.";
-"onboarding.generating_subtitle" = "Schrift. Gebet. Schritt.";
+"onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "Dein Gebet";
 "onboarding.generating_fragment_scripture" = "Schrift";
 "onboarding.generating_fragment_prayer" = "Gebet";
-"onboarding.generating_fragment_step" = "Schritt";
+"onboarding.generating_fragment_step" = "Heute werde ich";
 "onboarding.tend_reflection_title" = "Empfange dein Tend für heute.";
 "onboarding.tend_scripture_label" = "Schrift";
 "onboarding.tend_ritual_stage_scripture" = "Schrift";
@@ -185,8 +185,8 @@
 "onboarding.method_bullet_grow_text" = "durch tägliche Treue";
 "onboarding.grounding_title" = "Glaube wächst, wenn er gelebt wird.";
 "onboarding.grounding_body" = "Wofür du betest, kann prägen, wie du lebst, und kleine treue Schritte können mit der Zeit echte Frucht bringen.";
-"onboarding.reminder_title" = "Wachstum fällt leichter, wenn es sichtbar bleibt.";
-"onboarding.reminder_subtitle" = "Stelle eine Erinnerung ein, um zu deiner Gebets-Journey zurückzukehren und deinen nächsten kleinen Schritt zu gehen.";
+"onboarding.reminder_title" = "Kehre zu dem zurück, was zählt.";
+"onboarding.reminder_subtitle" = "Wähle eine sanfte Erinnerung für dein Tend morgen.";
 "onboarding.reminder_add_button" = "Erinnerung hinzufügen";
 "onboarding.widget_title" = "Halte deine Journey nah.";
 "onboarding.widget_subtitle" = "Sieh aktuelles Gebet, Vers und nächsten Schritt direkt auf deinem Homescreen.";
@@ -197,9 +197,9 @@
 "onboarding.celebration_water_title" = "Wasser";
 "onboarding.celebration_water_value" = "Hydriert";
 "onboarding.celebration_cta_hint" = "Bleib dran, dann wächst deine Pflanze weiter.";
-"onboarding.celebration_primary_cta" = "Tend öffnen";
+"onboarding.celebration_primary_cta" = "Weiter";
 "onboarding.background_selection_title" = "Wähle deine Szene.";
-"onboarding.background_selection_subtitle" = "Wähle ein Hintergrundthema für deinen Homescreen.";
+"onboarding.background_selection_subtitle" = "Wähle, wo dein Weg wächst.";
 "onboarding.review_title" = "Gefällt dir Tend bisher?";
 "onboarding.review_subtitle" = "Eine kurze App-Store-Bewertung hilft mehr Menschen, Tend zu entdecken.";
 "onboarding.review_primary_button" = "Tend bewerten";
@@ -207,7 +207,7 @@
 "onboarding.review_thanks_note" = "Danke, dass du beim Wachsen von Tend hilfst.";
 "onboarding.intro_primary_cta" = "Loslegen";
 "onboarding.default_next_cta" = "Weiter";
-"onboarding.final_primary_cta" = "Tend öffnen";
+"onboarding.final_primary_cta" = "Weiter";
 
 "Today's Tend" = "Heutiges Tend";
 "View today's journal entry" = "Heutigen Journal-Eintrag anzeigen";

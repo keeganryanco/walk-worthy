@@ -152,11 +152,11 @@
 "onboarding.goal_intent_title" = "Qual meta você está buscando com Deus agora?";
 "onboarding.goal_intent_placeholder" = "Minha meta é...";
 "onboarding.generating_title" = "Tend deu forma a isso.";
-"onboarding.generating_subtitle" = "Escritura. Oração. Passo.";
+"onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "Sua oração";
 "onboarding.generating_fragment_scripture" = "Escritura";
 "onboarding.generating_fragment_prayer" = "Oração";
-"onboarding.generating_fragment_step" = "Passo";
+"onboarding.generating_fragment_step" = "Hoje eu vou";
 "onboarding.tend_reflection_title" = "Receba o Tend de hoje.";
 "onboarding.tend_scripture_label" = "Escritura";
 "onboarding.tend_ritual_stage_scripture" = "Escritura";
@@ -185,8 +185,8 @@
 "onboarding.method_bullet_grow_text" = "com fidelidade diária";
 "onboarding.grounding_title" = "A fé cresce quando é vivida.";
 "onboarding.grounding_body" = "O que você ora pode moldar como você vive, e pequenos passos fiéis podem gerar frutos reais com o tempo.";
-"onboarding.reminder_title" = "Crescer é mais fácil quando isso fica diante de você.";
-"onboarding.reminder_subtitle" = "Defina um lembrete para voltar à sua jornada de oração e dar seu próximo pequeno passo.";
+"onboarding.reminder_title" = "Volte ao que importa.";
+"onboarding.reminder_subtitle" = "Escolha um lembrete gentil para o Tend de amanhã.";
 "onboarding.reminder_add_button" = "Adicionar lembrete";
 "onboarding.widget_title" = "Mantenha sua jornada por perto.";
 "onboarding.widget_subtitle" = "Veja sua oração atual, verso e próximo passo direto na tela inicial.";
@@ -197,9 +197,9 @@
 "onboarding.celebration_water_title" = "Água";
 "onboarding.celebration_water_value" = "Hidratada";
 "onboarding.celebration_cta_hint" = "Continue cuidando e sua planta continuará crescendo.";
-"onboarding.celebration_primary_cta" = "Entrar no Tend";
+"onboarding.celebration_primary_cta" = "Continuar";
 "onboarding.background_selection_title" = "Defina seu cenário.";
-"onboarding.background_selection_subtitle" = "Escolha um tema de plano de fundo para sua tela inicial.";
+"onboarding.background_selection_subtitle" = "Escolha onde sua jornada cresce.";
 "onboarding.review_title" = "Está gostando do Tend?";
 "onboarding.review_subtitle" = "Uma avaliação rápida na App Store ajuda mais pessoas a descobrirem o Tend.";
 "onboarding.review_primary_button" = "Avaliar o Tend";
@@ -207,7 +207,7 @@
 "onboarding.review_thanks_note" = "Obrigado por ajudar o Tend a crescer.";
 "onboarding.intro_primary_cta" = "Começar";
 "onboarding.default_next_cta" = "Próximo";
-"onboarding.final_primary_cta" = "Entrar no Tend";
+"onboarding.final_primary_cta" = "Continuar";
 
 "Today's Tend" = "Tend de hoje";
 "View today's journal entry" = "Ver entrada de hoje no diário";

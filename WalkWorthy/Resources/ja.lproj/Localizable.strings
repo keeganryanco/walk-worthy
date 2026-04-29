@@ -154,11 +154,11 @@
 "onboarding.goal_intent_title" = "今、神と共にどの目標へ向かっていますか？";
 "onboarding.goal_intent_placeholder" = "私の目標は...";
 "onboarding.generating_title" = "Tendが形にしました。";
-"onboarding.generating_subtitle" = "聖書。祈り。一歩。";
+"onboarding.generating_subtitle" = "";
 "onboarding.generating_prayer_fallback" = "あなたの祈り";
 "onboarding.generating_fragment_scripture" = "聖書";
 "onboarding.generating_fragment_prayer" = "祈り";
-"onboarding.generating_fragment_step" = "一歩";
+"onboarding.generating_fragment_step" = "今日すること";
 "onboarding.tend_reflection_title" = "今日のTendを受け取りましょう。";
 "onboarding.tend_scripture_label" = "聖書";
 "onboarding.tend_ritual_stage_scripture" = "聖書";
@@ -191,8 +191,8 @@
 "onboarding.method_bullet_grow_text" = "日々の忠実さを通して";
 "onboarding.grounding_title" = "信仰は生きることで育ちます。";
 "onboarding.grounding_body" = "祈りは生き方を形づくり、小さな忠実な一歩は、時を経て本当の実りを結びます。";
-"onboarding.reminder_title" = "前に置き続けると成長しやすくなります。";
-"onboarding.reminder_subtitle" = "祈りの旅路に戻り、次の小さな一歩を取るためのリマインダーを設定しましょう。";
+"onboarding.reminder_title" = "大切なことに戻りましょう。";
+"onboarding.reminder_subtitle" = "明日のTendのために、やさしいリマインダーを選びましょう。";
 "onboarding.reminder_add_button" = "リマインダーを追加";
 "onboarding.widget_title" = "旅路を身近に。";
 "onboarding.widget_subtitle" = "ホーム画面から現在の祈り、聖句、次の一歩を確認できます。";
@@ -203,9 +203,9 @@
 "onboarding.celebration_water_title" = "水";
 "onboarding.celebration_water_value" = "うるおい十分";
 "onboarding.celebration_cta_hint" = "続けるほど、あなたの植物は育ちます。";
-"onboarding.celebration_primary_cta" = "Tendへ";
+"onboarding.celebration_primary_cta" = "続ける";
 "onboarding.background_selection_title" = "背景を選びましょう。";
-"onboarding.background_selection_subtitle" = "ホーム画面の背景テーマを選択してください。";
+"onboarding.background_selection_subtitle" = "あなたの歩みが育つ場所を選びましょう。";
 "onboarding.review_title" = "ここまでのTendはいかがですか？";
 "onboarding.review_subtitle" = "App Storeでの短いレビューが、より多くの人にTendを届けます。";
 "onboarding.review_primary_button" = "Tendを評価";
@@ -213,7 +213,7 @@
 "onboarding.review_thanks_note" = "Tendの成長を支えてくれてありがとうございます。";
 "onboarding.intro_primary_cta" = "はじめる";
 "onboarding.default_next_cta" = "次へ";
-"onboarding.final_primary_cta" = "Tendに入る";
+"onboarding.final_primary_cta" = "続ける";
 
 "Today's Tend" = "今日のTend";
 "View today's journal entry" = "今日のジャーナルを見る";

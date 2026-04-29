@@ -518,10 +518,6 @@ struct ExperimentalOnboardingFlowView: View {
             Text(copy("generating_title", fallback: "Tend shaped it."))
                 .font(WWTypography.display(30))
                 .foregroundStyle(WWColor.nearBlack)
-            Text(copy("generating_subtitle", fallback: "Scripture. Prayer. Step."))
-                .font(WWTypography.heading(17))
-                .foregroundStyle(WWColor.muted)
-                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
     }
@@ -722,7 +718,7 @@ struct ExperimentalOnboardingFlowView: View {
                 )
 
             VStack {
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     celebrationStatusBadge(
                         systemName: "sun.max.fill",
                         text: copy("celebration_streak_value", fallback: "1 day")
@@ -733,19 +729,26 @@ struct ExperimentalOnboardingFlowView: View {
                     )
                 }
                 .padding(.top, 16)
-                .padding(.horizontal, 16)
+                .padding(.trailing, 16)
                 .opacity(celebrationSceneVisible ? 1 : 0)
 
                 Spacer()
             }
-            .frame(width: sceneWidth, height: sceneHeight, alignment: .top)
+            .frame(width: sceneWidth, height: sceneHeight, alignment: .topTrailing)
 
             if !celebrationStepText.isEmpty {
-                plantedStepTag
-                    .frame(maxWidth: sceneWidth - 40)
-                    .offset(y: celebrationStepSettled ? -106 : -62)
-                    .opacity(celebrationSceneVisible ? 1 : 0)
-                    .scaleEffect(celebrationStepSettled ? 0.92 : 1.0)
+                VStack(spacing: 8) {
+                    Capsule()
+                        .fill(WWColor.growGreen.opacity(0.42))
+                        .frame(width: 2, height: 34)
+                        .opacity(celebrationStepSettled ? 1 : 0)
+
+                    plantedStepTag
+                        .frame(maxWidth: sceneWidth - 88)
+                }
+                .offset(y: celebrationStepSettled ? -82 : -42)
+                .opacity(celebrationSceneVisible ? 1 : 0)
+                .scaleEffect(celebrationStepSettled ? 0.94 : 1.0)
             }
 
             Circle()
@@ -782,33 +785,33 @@ struct ExperimentalOnboardingFlowView: View {
     private var plantedStepTag: some View {
         HStack(spacing: 10) {
             Image(systemName: "leaf.fill")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(WWColor.growGreen)
 
             Text(celebrationStepText)
-                .font(WWTypography.heading(16))
+                .font(WWTypography.heading(15))
                 .foregroundStyle(WWColor.nearBlack)
                 .lineLimit(2)
-                .multilineTextAlignment(.leading)
+                .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: WWColor.nearBlack.opacity(0.18), radius: 14, y: 8)
+        .padding(.horizontal, 15)
+        .padding(.vertical, 10)
+        .background(WWColor.surface.opacity(0.86))
+        .clipShape(Capsule())
+        .shadow(color: WWColor.nearBlack.opacity(0.10), radius: 12, y: 6)
     }
 
     private func celebrationStatusBadge(systemName: String, text: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             Image(systemName: systemName)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
             Text(text)
-                .font(WWTypography.caption(12).weight(.bold))
+                .font(WWTypography.caption(10).weight(.bold))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(WWColor.nearBlack.opacity(0.42))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(WWColor.nearBlack.opacity(0.26))
         .clipShape(Capsule())
     }
 
@@ -951,13 +954,13 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var reminderContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(copy("reminder_title", fallback: "Growth is easier when it stays in front of you."))
+            Text(copy("reminder_title", fallback: "Return to what matters."))
                 .font(WWTypography.display(32))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text(copy("reminder_subtitle", fallback: "Set a reminder to return to your prayer journey and take your next small step."))
+            Text(copy("reminder_subtitle", fallback: "Choose a gentle reminder for tomorrow’s Tend."))
                 .font(WWTypography.heading(18))
-                .foregroundStyle(WWColor.nearBlack.opacity(0.8))
+                .foregroundStyle(WWColor.muted)
 
             List {
                 ForEach(reminderRows) { reminder in
@@ -985,7 +988,7 @@ struct ExperimentalOnboardingFlowView: View {
                         .labelsHidden()
                         .tint(WWColor.growGreen)
                     }
-                    .listRowBackground(WWColor.white)
+                    .listRowBackground(WWColor.surface)
                 }
                 .onDelete { indexSet in
                     for index in indexSet {
@@ -1003,12 +1006,17 @@ struct ExperimentalOnboardingFlowView: View {
                         .foregroundStyle(WWColor.growGreen)
                         .font(WWTypography.heading(16))
                 }
-                .listRowBackground(WWColor.white)
+                .listRowBackground(WWColor.surface)
             }
             .listStyle(.plain)
-            .background(WWColor.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: WWColor.nearBlack.opacity(0.04), radius: 10, x: 0, y: 4)
+            .scrollContentBackground(.hidden)
+            .background(WWColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(WWColor.growGreen.opacity(0.10), lineWidth: 1)
+            )
+            .shadow(color: WWColor.growGreen.opacity(0.08), radius: 18, x: 0, y: 10)
             .frame(height: 180)
         }
     }
@@ -1031,21 +1039,37 @@ struct ExperimentalOnboardingFlowView: View {
     private func onboardingAnticipationVisual(height: CGFloat) -> some View {
         let fragmentVisible = generationSequencePhase >= 1
         let seedDropped = generationSequencePhase >= 2
+        let markSize = min(height * 0.34, 78)
 
-        VStack(spacing: 18) {
-            Circle()
-                .fill(WWColor.growGreen.opacity(anticipationGlow ? 0.22 : 0.10))
-                .frame(width: min(height * 0.42, 96), height: min(height * 0.42, 96))
-                .blur(radius: anticipationGlow ? 18 : 8)
-                .overlay(
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(WWColor.growGreen.opacity(anticipationGlow ? 0.18 : 0.08))
+                    .frame(width: markSize, height: markSize)
+                    .blur(radius: anticipationGlow ? 20 : 10)
+
+                VStack(spacing: 0) {
+                    formedLineMark(rotation: -18, phase: generationSequencePhase)
+                        .offset(x: -18, y: fragmentVisible ? 6 : 20)
+                    formedLineMark(rotation: 0, phase: generationSequencePhase)
+                        .offset(y: fragmentVisible ? -2 : 18)
+                    formedLineMark(rotation: 18, phase: generationSequencePhase)
+                        .offset(x: 18, y: fragmentVisible ? -10 : 16)
+                }
+                .opacity(fragmentVisible ? 1 : 0)
+                .scaleEffect(fragmentVisible ? 1 : 0.84)
+
+                VStack {
                     Image("generic_seed")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: min(height * 0.16, 42))
-                        .offset(y: seedDropped ? 48 : -4)
+                        .frame(width: min(height * 0.15, 38))
+                        .offset(y: seedDropped ? 38 : -10)
                         .opacity(generationSequencePhase >= 1 ? 1 : 0)
                         .scaleEffect(seedDropped ? 0.82 : 1.0)
-                )
+                }
+            }
+            .frame(height: markSize + 26)
 
             Text("“\(prayerPreviewText)”")
                 .font(WWTypography.heading(15))
@@ -1057,12 +1081,13 @@ struct ExperimentalOnboardingFlowView: View {
                 .background(WWColor.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .opacity(generationSequencePhase >= 0 ? 1 : 0)
-                .scaleEffect(fragmentVisible ? 0.92 : 1.0)
+                .scaleEffect(fragmentVisible ? 0.88 : 1.0)
+                .blur(radius: fragmentVisible ? 0.35 : 0)
 
-            HStack(spacing: 10) {
-                generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"))
-                generationFragmentLabel(copy("generating_fragment_prayer", fallback: "Prayer"))
-                generationFragmentLabel(copy("generating_fragment_step", fallback: "Step"))
+            HStack(spacing: 18) {
+                generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"), index: 0)
+                generationFragmentLabel(copy("generating_fragment_prayer", fallback: "Prayer"), index: 1)
+                generationFragmentLabel(copy("generating_fragment_step", fallback: "Today I will"), index: 2)
             }
             .opacity(fragmentVisible ? 1 : 0)
             .offset(y: fragmentVisible ? 0 : 10)
@@ -1093,14 +1118,26 @@ struct ExperimentalOnboardingFlowView: View {
         }
     }
 
-    private func generationFragmentLabel(_ text: String) -> some View {
-        Text(text)
-            .font(WWTypography.caption(12).weight(.semibold))
-            .foregroundStyle(WWColor.growGreen)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(WWColor.growGreen.opacity(0.12))
-            .clipShape(Capsule())
+    private func formedLineMark(rotation: Double, phase: Int) -> some View {
+        Capsule()
+            .fill(WWColor.growGreen.opacity(0.72))
+            .frame(width: 26, height: 4)
+            .rotationEffect(.degrees(rotation))
+            .shadow(color: WWColor.growGreen.opacity(phase >= 2 ? 0.32 : 0.16), radius: phase >= 2 ? 8 : 3)
+    }
+
+    private func generationFragmentLabel(_ text: String, index: Int) -> some View {
+        VStack(spacing: 7) {
+            Capsule()
+                .fill(WWColor.growGreen.opacity(0.62))
+                .frame(width: 22, height: 3)
+                .rotationEffect(.degrees(index == 0 ? -10 : index == 2 ? 10 : 0))
+
+            Text(text)
+                .font(WWTypography.caption(12).weight(.semibold))
+                .foregroundStyle(WWColor.growGreen)
+        }
+        .opacity(generationSequencePhase >= 1 ? 1 : 0)
     }
 
     private func tendRitualThreadVisual(height: CGFloat) -> some View {
@@ -1251,7 +1288,7 @@ struct ExperimentalOnboardingFlowView: View {
                 .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
             
-            Text(copy("background_selection_subtitle", fallback: "Choose a background theme for your home screen."))
+            Text(copy("background_selection_subtitle", fallback: "Choose where your journey grows."))
                 .font(WWTypography.heading(20))
                 .foregroundStyle(WWColor.muted)
                 
@@ -1389,10 +1426,10 @@ struct ExperimentalOnboardingFlowView: View {
         case .intro:
             return copy("intro_primary_cta", fallback: "Get started")
         case .firstTendCelebration:
-            return copy("celebration_primary_cta", fallback: "Enter Tend")
+            return copy("celebration_primary_cta", fallback: "Continue")
         default:
             return isFinalStep
-                ? copy("final_primary_cta", fallback: "Enter Tend")
+                ? copy("final_primary_cta", fallback: "Continue")
                 : copy("default_next_cta", fallback: "Next")
         }
     }
@@ -1646,7 +1683,7 @@ struct ExperimentalOnboardingFlowView: View {
     
     private var backgroundColor: Color {
         switch step {
-        case .reminder: return WWColor.morningGold
+        case .reminder: return WWColor.white
         case .widget: return WWColor.surface
         case .creationSprout:
             return colorScheme == .dark ? WWColor.darkBackground : WWColor.white
