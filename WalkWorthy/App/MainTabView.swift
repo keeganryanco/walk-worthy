@@ -5,6 +5,7 @@ struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("homeOverlayActive") private var homeOverlayActive = false
     @Binding var selectedTab: RootTab
+    @State private var suppressHorizontalTabSwipe = false
 
     let profile: OnboardingProfile
     let isPremium: Bool
@@ -21,7 +22,11 @@ struct MainTabView: View {
                     .tag(RootTab.home)
                     .toolbar(.hidden, for: .tabBar)
                 
-                JournalView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+                JournalView(
+                    isPremium: isPremium,
+                    onRequirePaywall: onRequirePaywall,
+                    suppressHorizontalTabSwipe: $suppressHorizontalTabSwipe
+                )
                     .tag(RootTab.journal)
                     .toolbar(.hidden, for: .tabBar)
                 
@@ -109,6 +114,7 @@ struct MainTabView: View {
 
                 // Home handles horizontal journey+tab progression internally.
                 guard selectedTab != .home else { return }
+                guard !suppressHorizontalTabSwipe else { return }
 
                 if horizontal < -56 {
                     switch selectedTab {

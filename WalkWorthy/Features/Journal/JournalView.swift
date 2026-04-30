@@ -7,12 +7,14 @@ struct JournalView: View {
     
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
+    @Binding var suppressHorizontalTabSwipe: Bool
     
     @Query(sort: \PrayerJourney.createdAt, order: .reverse)
     private var allJourneys: [PrayerJourney]
     
     @State private var isCreating = false
     @State private var journeyPendingDeletion: PrayerJourney?
+    @State private var journeyPendingNavigation: PrayerJourney?
     
     var body: some View {
         NavigationStack {
@@ -83,37 +85,26 @@ struct JournalView: View {
             .sheet(isPresented: $isCreating) {
                 CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
             }
-            .alert(
-                L10n.string("journal.delete_journey_title", default: "Delete this journey?"),
-                isPresented: Binding(
-                    get: { journeyPendingDeletion != nil },
-                    set: { if !$0 { journeyPendingDeletion = nil } }
-                ),
-                presenting: journeyPendingDeletion
-            ) { journey in
-                Button(L10n.string("common.cancel", default: "Cancel"), role: .cancel) {
-                    journeyPendingDeletion = nil
+            .navigationDestination(item: $journeyPendingNavigation) { journey in
+                JourneyDetailView(journey: journey)
+            }
+            .overlay {
+                if let journeyPendingDeletion {
+                    deleteConfirmationOverlay(for: journeyPendingDeletion)
                 }
-                Button(L10n.string("journal.delete_journey_confirm", default: "Delete Journey"), role: .destructive) {
-                    deleteJourney(journey)
-                }
-            } message: { journey in
-                Text(
-                    String(
-                        format: L10n.string("journal.delete_journey_message", default: "Are you sure you want to delete “%@”? This will also delete its journal entries."),
-                        journey.title
-                    )
-                )
             }
         }
     }
 
     @ViewBuilder
     private func journeyRow(_ journey: PrayerJourney) -> some View {
-        NavigationLink(destination: JourneyDetailView(journey: journey)) {
+        Button {
+            journeyPendingNavigation = journey
+        } label: {
             journeyCard(journey)
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 journeyPendingDeletion = journey
@@ -124,6 +115,83 @@ struct JournalView: View {
         .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
         .listRowSeparator(.hidden)
         .listRowBackground(WWColor.white)
+        .simultaneousGesture(journeySwipeSuppressionGesture)
+    }
+
+    private var journeySwipeSuppressionGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                let horizontal = abs(value.translation.width)
+                let vertical = abs(value.translation.height)
+                if horizontal > vertical + 8 {
+                    suppressHorizontalTabSwipe = true
+                }
+            }
+            .onEnded { _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    suppressHorizontalTabSwipe = false
+                }
+            }
+    }
+
+    private func deleteConfirmationOverlay(for journey: PrayerJourney) -> some View {
+        ZStack {
+            Color.black.opacity(0.22)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    journeyPendingDeletion = nil
+                }
+
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.string("journal.delete_journey_title", default: "Delete this journey?"))
+                        .font(WWTypography.heading(22))
+                        .foregroundStyle(WWColor.nearBlack)
+                    Text(L10n.string("journal.delete_journey_message", default: "This journey and all its entries will be permanently deleted."))
+                        .font(WWTypography.body(16))
+                        .foregroundStyle(WWColor.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 12) {
+                    Button {
+                        journeyPendingDeletion = nil
+                    } label: {
+                        Text(L10n.string("common.cancel", default: "Cancel"))
+                            .font(WWTypography.body(17).weight(.semibold))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(WWColor.surface)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        deleteJourney(journey)
+                    } label: {
+                        Text(L10n.string("common.delete", default: "Delete"))
+                            .font(WWTypography.body(17).weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.red)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(24)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(.white.opacity(0.35), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 28, y: 14)
+            .padding(.horizontal, 32)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
     }
 
     private func sectionHeader(_ title: String) -> some View {
