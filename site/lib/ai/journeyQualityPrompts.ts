@@ -48,13 +48,15 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest, repairNo
     APPROVED_SCRIPTURE_REFERENCES.join(", "),
     "Scripture paraphrase must be near-quote style: close to the selected verse, faithful to one cited reference, no blended verse ideas, no translation label.",
     "Reflection must be exactly 4-5 complete sentences. It teaches/interprets Scripture in relation to the journey and today's lesson.",
+    "Use this reflection structure: sentence 1 anchors in the selected Scripture; sentence 2 explains what the Scripture reveals; sentence 3 connects that truth to the user's journey; sentence 4 names today's lesson or movement; optional sentence 5 deepens the point without commanding action.",
     "Reflection is not the action step. Do not assign practical actions in reflection.",
     "Do not tell the user to send, buy, schedule, text, call, ask, apologize, plan, do, take, write, choose, or finish anything in reflection.",
     "Rare reflective language is allowed only when internal and interpretive, such as 'Notice how...' or 'Consider how...'; do not use 'Notice one area...' or 'Let that awareness lead...'.",
     "Reflection must not use first-person pronouns (I/me/my/we/us/our).",
     "Prayer must be exactly 3-4 complete sentences, strictly first-person, plain, concrete, and Christian.",
     "Ban empty Christianese filler such as 'reflect your grace more and more', 'deeper reliance', 'divine care', 'higher purpose', 'profound sense', 'inner stability', or similar phrases unless immediately made concrete.",
-    "Daily title must be short, concrete, story-like, and sequential, for example: Learning Sacrificial Love, Choosing Peace Today, Practicing Prayer When Distracted."
+    "Daily title must be short, concrete, story-like, and sequential, for example: Learning Sacrificial Love, Choosing Peace Today, Practicing Prayer When Distracted.",
+    "Reject generic titles like Growing in Faith, Trusting God More, Daily Peace, A Step Toward Love, or Today's Faithful Step."
   ].join(" ");
 
   const user = JSON.stringify({
@@ -81,6 +83,7 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest, repairNo
     repairNotes: repairNotes ?? null,
     instructions: [
       "Build the devotional around the selected Scripture first, then the user's journey purpose.",
+      "Before returning JSON, privately check that the reflection contains no practical assignment, the title is not generic, the prayer names concrete realities from the journey, and the arc fields are all present.",
       "If the prompt is broad, infer a concrete first lesson without pretending to know private details.",
       "For marriage/spouse journeys, Scripture/reflection/prayer should connect directly to sacrificial love, humility, patience, listening, service, or tenderness.",
       "For anxiety/peace journeys, avoid vague calm language; connect prayer, trust, and one steady thought from Scripture.",

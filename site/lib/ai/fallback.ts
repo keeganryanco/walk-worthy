@@ -318,11 +318,17 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
       : "Bring your requests to God with trust, and take one faithful step today.");
   const dailyTitle = fallbackDailyTitle(input);
   const todayAim = fallbackTodayAim(input);
+  const isEnglishMarriageJourney =
+    language === "en" &&
+    /(husband|wife|spouse|marriage)/i.test(
+      `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`
+    );
 
   return {
     dailyTitle,
-    reflectionThought:
-      language === "es"
+    reflectionThought: isEnglishMarriageJourney
+      ? "Paul presents love as patient, humble, and willing to seek another person's good. In marriage, that kind of love becomes visible through attentiveness rather than sentiment alone. A husband grows when his habits are shaped less by passivity or defensiveness and more by Christlike service. Today's lesson is to see marriage as a daily place where sacrificial love is learned."
+      : language === "es"
         ? "La fe puede formar un camino paciente en esta área de oración. Dios suele obrar en el corazón antes de que todo se vea resuelto. Un paso pequeño puede revelar qué parte de la vida necesita atención y cuidado. El crecimiento verdadero se forma con fidelidad, no con presión."
         : language === "pt"
           ? "A fé pode formar um caminho paciente nesta área de oração. Deus muitas vezes trabalha no coração antes que tudo pareça resolvido. Um pequeno passo pode revelar que parte da vida precisa de atenção e cuidado. O crescimento verdadeiro se forma com fidelidade, não com pressão."
@@ -335,8 +341,9 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         : "Faith can form a patient path in this area of prayer. God often works in the heart before everything looks resolved. A small step can reveal which part of life needs attention and care. Real growth is shaped by faithfulness, not pressure.",
     scriptureReference: reference,
     scriptureParaphrase,
-    prayer:
-      language === "es"
+    prayer: isEnglishMarriageJourney
+      ? "Jesus, I bring my marriage and my role as a husband to You today. Teach me to love my wife with patience, humility, and attention. Show me where selfishness or passivity has shaped my habits. Help me take one concrete step of love today."
+      : language === "es"
         ? "Señor, pongo esta jornada en Tus manos hoy. Ayúdame a ver un paso concreto que pueda dar con fidelidad. Dame humildad para empezar pequeño en vez de quedarme solo en intención. Guía mi acción hacia el crecimiento que te estoy pidiendo."
         : language === "pt"
           ? "Senhor, coloco esta jornada em Tuas mãos hoje. Ajuda-me a enxergar um passo concreto que posso dar com fidelidade. Dá-me humildade para começar pequeno em vez de ficar apenas na intenção. Guia minha ação em direção ao crescimento que estou Te pedindo."
@@ -348,8 +355,9 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
             ? "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 제가 신실하게 할 수 있는 구체적인 한 걸음을 보게 해 주세요. 마음만 품고 멈추지 않고 작게 시작할 겸손을 주세요. 제가 구하는 성장으로 이어지는 행동을 인도해 주세요."
         : "Lord, I place this journey in Your hands today. Help me see one concrete step I can take faithfully. Give me humility to start small instead of staying in intention. Guide my action toward the growth I am asking You for.",
     todayAim,
-    smallStepQuestion:
-      followThroughStatus(input) === "partial" ||
+    smallStepQuestion: isEnglishMarriageJourney
+      ? "What is one simple way to show love to your wife today?"
+      : followThroughStatus(input) === "partial" ||
       followThroughStatus(input) === "no"
         ? language === "es"
             ? "¿Qué paso pequeño sí puedes completar hoy?"

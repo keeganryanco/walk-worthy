@@ -1,5 +1,7 @@
 import {
   DAILY_JOURNEY_PACKAGE_QUALITY_VERSION,
+} from "./types";
+import type {
   DailyJourneyPackage,
   DevotionalCore,
   ActionLayerOutput,
@@ -762,6 +764,19 @@ function fallbackSmallStepQuestion(input?: JourneyPackageRequest): string {
   }
 
   const signals = contextSignals(input);
+  if (/(husband|wife|spouse|marriage)/i.test(signals)) {
+    return language === "es"
+      ? "¿Cómo puedes mostrar amor concreto hoy?"
+      : language === "pt"
+        ? "Como você pode demonstrar amor concreto hoje?"
+        : language === "de"
+          ? "Wie kannst du heute konkrete Liebe zeigen?"
+        : language === "ja"
+          ? "今日、具体的な愛をどう示せますか？"
+        : language === "ko"
+          ? "오늘 구체적인 사랑을 어떻게 보일 수 있나요?"
+          : "What is one simple way to show love today?";
+  }
   if (/(peace|anx|worr|fear|paz|ansied|preocup|medo|frieden|angst|sorge|平安|不安|心配|평안|불안|걱정)/i.test(signals)) {
     return language === "es"
       ? "¿Cómo puedes practicar paz hoy?"
@@ -1210,10 +1225,13 @@ function normalizeJourneyArcFromObject(
 }
 
 const EMPTY_CHRISTIANESE_REGEX =
-  /\b(reflect your grace more and more|deeper reliance|divine care|higher purpose|profound sense|inner stability|spiritual breakthrough|walk in victory)\b/i;
+  /\b(reflect your grace more and more|deeper reliance|divine care|higher purpose|profound sense|inner stability|spiritual breakthrough|walk in victory|walk in your truth|align my heart|grow closer to you)\b/i;
 
 const REFLECTION_ACTION_ASSIGNMENT_REGEX =
   /\b(send|buy|schedule|text|call|write|ask|apologize|plan|do|take|clean|cook|bring|serve|finish|start)\b/i;
+
+const GENERIC_DAILY_TITLE_REGEX =
+  /^(growing in faith|trusting god more|daily peace|a step toward love|today'?s faithful step|one faithful step today|faithful growth|daily faith|walking in faith|god'?s guidance|a faithful step|the next step)$/i;
 
 function reflectionAssignsAction(value: string, language: SupportedLanguageCode): boolean {
   if (language !== "en") return false;
@@ -1237,6 +1255,15 @@ function hasEmptyChristianese(value: string): boolean {
   return EMPTY_CHRISTIANESE_REGEX.test(value);
 }
 
+function isGenericDailyTitle(value: string, language: SupportedLanguageCode): boolean {
+  const normalized = value.trim().replace(/[’`]/g, "'").replace(/\s+/g, " ");
+  if (!normalized) return true;
+  if (language !== "en") return false;
+  if (GENERIC_DAILY_TITLE_REGEX.test(normalized)) return true;
+  if (wordCount(normalized) < 2 || wordCount(normalized) > 6) return true;
+  return false;
+}
+
 function isMarriageContext(input?: JourneyPackageRequest): boolean {
   return /(husband|wife|spouse|marriage)/i.test(contextSignals(input));
 }
@@ -1256,6 +1283,10 @@ function actionLayerMatchesContext(suggested: string[], input?: JourneyPackageRe
   return true;
 }
 
+function hasOffContextMarriageStep(step: string): boolean {
+  return /friend|generic check-?in|next step|community|neighbor|coworker|church member/i.test(step) || !isMarriageStep(step);
+}
+
 export function parseAndNormalizeDevotionalCore(rawText: string, input?: JourneyPackageRequest): DevotionalCore | null {
   const parsed = extractJSON(rawText);
   if (!parsed || typeof parsed !== "object") return null;
@@ -1271,8 +1302,8 @@ export function normalizeDevotionalCoreFromObject(
   const uniqueReference = nonRepeatingReference(referenceCandidate, input);
   const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
   const prayer = normalizeFirstPersonPrayer(source.prayer, input);
-  const todayAim = cleanText(source.todayAim, 160) || fallbackTodayAim(input);
-  const dailyTitle = cleanText(source.dailyTitle, 80) || fallbackDailyTitle(input);
+  const todayAim = cleanText(source.todayAim, 160);
+  const dailyTitle = cleanText(source.dailyTitle, 80);
   const arcSource =
     source.updatedJourneyArc && typeof source.updatedJourneyArc === "object"
       ? (source.updatedJourneyArc as Record<string, unknown>)
@@ -1281,6 +1312,10 @@ export function normalizeDevotionalCoreFromObject(
         : undefined;
 
   if (
+    !dailyTitle ||
+    isGenericDailyTitle(dailyTitle, language) ||
+    !todayAim ||
+    !arcSource ||
     !hasSentenceCount(reflectionThought, 4, 5) ||
     reflectionUsesFirstPerson(reflectionThought, language) ||
     reflectionAssignsAction(reflectionThought, language) ||
@@ -1326,6 +1361,13 @@ export function normalizeActionLayerFromObject(
   core?: DevotionalCore
 ): ActionLayerOutput | null {
   const suggestedRaw = Array.isArray(source.suggestedSteps) ? source.suggestedSteps : [];
+  const language = languageCode(input);
+  const generatedSuggested = dedupeChips(
+    suggestedRaw.map((item) => normalizeChip(item, language)).filter(Boolean)
+  ).slice(0, CHIP_LIMIT);
+  if (isMarriageContext(input) && generatedSuggested.some(hasOffContextMarriageStep)) {
+    return null;
+  }
   const suggested = normalizedChips(suggestedRaw, input);
   const completionRaw =
     source.completionSuggestion && typeof source.completionSuggestion === "object"
@@ -1339,7 +1381,7 @@ export function normalizeActionLayerFromObject(
     return null;
   }
 
-  if (core?.todayAim && languageCode(input) === "en" && wordCount(question) > 16) {
+  if (core?.todayAim && language === "en" && wordCount(question) > 16) {
     return null;
   }
 

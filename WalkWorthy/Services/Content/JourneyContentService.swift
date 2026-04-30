@@ -78,6 +78,15 @@ final class JourneyContentService {
                     remote,
                     followThroughStatus: recentFollowThroughStatus
                 )
+                guard validated.qualityVersion >= DailyJourneyPackage.currentQualityVersion else {
+                    throw NSError(
+                        domain: "Tend.AI",
+                        code: -2,
+                        userInfo: [
+                            NSLocalizedDescriptionKey: "Remote package quality version is stale."
+                        ]
+                    )
+                }
                 let uniqueScripturePackage = enforceUniqueScriptureReference(
                     in: validated,
                     journeyID: journey.id,

@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { normalizePackageFromObject } from "./validate";
 import { estimateCostUSD } from "./cost";
+import { devotionalModel as configuredDevotionalModel, repairModel as configuredRepairModel } from "./modelRouting";
 import type { ProviderGenerationResult } from "./providers/openai";
 
 const THEME_KEYS: JourneyThemeKey[] = [
@@ -238,7 +239,7 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
   };
 }
 
-function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: string; user: string } {
+function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: string): { system: string; user: string } {
   const language = targetLanguage(request);
   const system = [
     "You are generating initial journey setup for a Christian prayer-and-action app.",
@@ -250,6 +251,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Do not include inflammatory denominational commentary, sectarian attacks, or arguments about which Christian tradition is superior.",
     "Keep religious language respectful, invitational, and non-coercive. Do not shame, threaten, or pressure the user spiritually.",
     "reflectionThought is teaching and interpretation, not assignment.",
+    "reflectionThought must follow this structure: anchor in Scripture, explain what Scripture reveals, connect to the user's journey, name today's lesson, and optionally deepen the same point.",
     "Do not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action inside reflectionThought.",
     "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
     "reflectionThought must be exactly 4-5 complete sentences.",
@@ -258,7 +260,9 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Keep scriptureParaphrase to 1-2 sentences and faithful to the cited verse’s central meaning.",
     "Do not blend ideas from unrelated verses into one paraphrase.",
     "Prayer must be exactly 3-4 complete sentences and strict first-person voice (I/me/my/we/us/our).",
+    "Prayer must name concrete realities from the user's journey and avoid empty Christianese such as reflect your grace more and more, deeper reliance, divine care, higher purpose, align my heart, walk in your truth, or grow closer to you.",
     "dailyTitle must be short, concrete, and story-like.",
+    "Reject generic daily titles like Growing in Faith, Trusting God More, Daily Peace, A Step Toward Love, or Today's Faithful Step.",
     "smallStepQuestion must be one simple question, usually under 14 words, asking what the user can do today.",
     "Suggested step chips must include at least one concrete practical action when context supports it, plus a lower-friction option and a prayer/spiritual option when appropriate.",
     "For relationship or marriage contexts, specific actions like buying flowers, writing a note, apologizing, asking a direct question, or planning a short check-in are allowed when context supports them.",
@@ -308,9 +312,11 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
             shouldPrompt: false,
             reason: "string",
             confidence: "number"
-          }
+          },
+          updatedJourneyArc: "same structure as journeyArc"
         }
       },
+      repairNotes: repairNotes ?? null,
       context: request
     },
     null,
@@ -380,7 +386,8 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
     source.initialPackage && typeof source.initialPackage === "object"
       ? (source.initialPackage as Record<string, unknown>)
       : null;
-  const normalizedPackage = packageSource ? normalizePackageFromObject(packageSource, normalizationContext) : null;
+  const packageWithArc = packageSource ? { ...packageSource, updatedJourneyArc: packageSource.updatedJourneyArc ?? journeyArc } : null;
+  const normalizedPackage = packageWithArc ? normalizePackageFromObject(packageWithArc, normalizationContext) : null;
 
   return {
     journeyTitle: cleanText(source.journeyTitle, 60) || fallback.journeyTitle,
@@ -409,16 +416,10 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
 export async function generateJourneyBootstrap(
   request: JourneyBootstrapRequest
 ): Promise<BootstrapOrchestratedResult> {
-  const { system, user } = buildBootstrapPrompt(request);
-
   const openAIKey = process.env.OPENAI_API_KEY?.trim();
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  const devotionalModel =
-    process.env.OPENAI_DEVOTIONAL_MODEL?.trim() ||
-    process.env.OPENAI_ESCALATION_MODEL?.trim() ||
-    process.env.OPENAI_PRIMARY_MODEL?.trim() ||
-    "gpt-5.5";
-  const repairModel = process.env.OPENAI_REPAIR_MODEL?.trim() || devotionalModel;
+  const devotionalModel = configuredDevotionalModel();
+  const repairModel = configuredRepairModel();
 
   const candidates: Array<{
     provider: "openai" | "gemini";
@@ -432,7 +433,10 @@ export async function generateJourneyBootstrap(
       provider: "openai",
       model: devotionalModel,
       escalated: false,
-      call: () => generateWithOpenAIPrompt(system, user, devotionalModel, openAIKey)
+      call: () => {
+        const { system, user } = buildBootstrapPrompt(request);
+        return generateWithOpenAIPrompt(system, user, devotionalModel, openAIKey);
+      }
     });
   }
 
@@ -441,7 +445,13 @@ export async function generateJourneyBootstrap(
       provider: "openai",
       model: repairModel,
       escalated: true,
-      call: () => generateWithOpenAIPrompt(system, user, repairModel, openAIKey)
+      call: () => {
+        const { system, user } = buildBootstrapPrompt(
+          request,
+          "Previous bootstrap package failed validation. Repair generic title, missing arc fields, reflection action commands, vague Christianese, sentence counts, scripture fidelity, and action relevance."
+        );
+        return generateWithOpenAIPrompt(system, user, repairModel, openAIKey);
+      }
     });
   }
 
@@ -451,7 +461,10 @@ export async function generateJourneyBootstrap(
       provider: "gemini",
       model: primaryModel,
       escalated: false,
-      call: () => generateWithGeminiPrompt(system, user, primaryModel, geminiKey)
+      call: () => {
+        const { system, user } = buildBootstrapPrompt(request);
+        return generateWithGeminiPrompt(system, user, primaryModel, geminiKey);
+      }
     });
   }
 

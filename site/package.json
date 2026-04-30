@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:ai-quality": "node --loader ./scripts/ts-extension-loader.mjs --test lib/ai/qualityValidation.test.ts"
   },
   "dependencies": {
     "next": "16.1.6",

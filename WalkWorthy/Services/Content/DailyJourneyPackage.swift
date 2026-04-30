@@ -20,7 +20,7 @@ struct CompletionSuggestion: Codable, Equatable {
 }
 
 struct DailyJourneyPackage: Codable, Equatable {
-    static let currentQualityVersion = 3
+    static let currentQualityVersion = 4
 
     let dailyTitle: String
     let reflectionThought: String
@@ -337,7 +337,7 @@ enum DailyJourneyPackageValidation {
             suggestedSteps: mergedSuggestedSteps,
             completionSuggestion: normalizedCompletionSuggestion,
             updatedJourneyArc: package.updatedJourneyArc,
-            qualityVersion: max(package.qualityVersion, DailyJourneyPackage.currentQualityVersion),
+            qualityVersion: package.qualityVersion,
             generatedAt: package.generatedAt
         )
     }
@@ -664,6 +664,22 @@ enum DailyJourneyPackageValidation {
                         : language == .korean
                             ? ["천천히 다섯 번 숨 쉬세요", "이 걱정을 두고 기도하세요"]
                         : ["Take five calm breaths", "Pray through this specific worry"],
+                at: 0
+            )
+        }
+        if signal.contains("husband") || signal.contains("wife") || signal.contains("spouse") || signal.contains("marriage") {
+            chips.insert(
+                contentsOf: language == .spanish
+                    ? ["Escribe una nota amable", "Haz una pregunta cariñosa", "Ora por tu cónyuge"]
+                    : language == .portugueseBrazil
+                        ? ["Escreva uma nota bondosa", "Faça uma pergunta carinhosa", "Ore por seu cônjuge"]
+                        : language == .german
+                            ? ["Schreibe eine liebevolle Notiz", "Stelle eine fürsorgliche Frage", "Bete für deinen Ehepartner"]
+                        : language == .japanese
+                            ? ["優しい言葉を一つ書きましょう", "思いやりのある質問を一つしましょう", "配偶者のために祈りましょう"]
+                        : language == .korean
+                            ? ["다정한 메모 하나를 쓰세요", "배려 깊은 질문 하나를 하세요", "배우자를 위해 기도하세요"]
+                            : ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"],
                 at: 0
             )
         }
