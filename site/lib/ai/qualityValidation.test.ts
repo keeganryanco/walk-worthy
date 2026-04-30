@@ -55,7 +55,7 @@ const validCoreSource = {
   scriptureReference: "John 15:12",
   scriptureParaphrase: "Jesus commands His disciples to love one another as He has loved them.",
   reflectionThought:
-    "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. For a husband, this turns marriage into a daily place where Christlike love becomes visible. Sacrificial love grows in the ordinary places where attention, humility, and tenderness become steady.",
+    "Jesus shows that love for God is tied to love for the person close beside you. His command makes love more than a feeling because it becomes patient, humble, and ready to serve. For a husband, this turns marriage into a daily place where Christlike love becomes real. Sacrificial love grows in ordinary moments of care, listening, and humility.",
   prayer:
     "Jesus, I bring my marriage and my role as a husband to You today. Teach me to love my wife with patience, humility, and attention. Show me where selfishness or passivity has shaped my habits.",
   todayAim: "practice concrete love toward your wife",
@@ -133,6 +133,19 @@ test("meta-devotional reflection framing fails validation", () => {
       ...validCoreSource,
       reflectionThought:
         "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. For a husband, this turns marriage into a daily place where Christlike love becomes visible. Today's lesson is learning to let love become attentive, humble, and steady."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+});
+
+test("overly dense abstract reflection language fails validation", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      reflectionThought:
+        "Jesus joins love for God with love for the person placed near enough to receive it. In marriage, that love becomes more than sentiment when it is patient, humble, and attentive. A husband grows when his habits are shaped less by passivity or defensiveness and more by Christlike service. Sacrificial love is learned in the ordinary places where tenderness and humility become visible."
     },
     husbandRequest
   );

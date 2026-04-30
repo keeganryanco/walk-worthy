@@ -1236,6 +1236,17 @@ const GENERIC_DAILY_TITLE_REGEX =
 const META_DEVOTIONAL_REFLECTION_REGEX =
   /\b(today'?s lesson|the lesson is|this lesson|the takeaway|this devotional|this reflection|in conclusion|today'?s aim)\b/i;
 
+const DENSE_ABSTRACT_REFLECTION_WORDS = [
+  /\bsentiment\b/i,
+  /\bpassivity\b/i,
+  /\bdefensiveness\b/i,
+  /\bposture\b/i,
+  /\bimplication\b/i,
+  /\battentiveness\b/i,
+  /\babstraction\b/i,
+  /\bformation\b/i
+];
+
 function reflectionAssignsAction(value: string, language: SupportedLanguageCode): boolean {
   if (language !== "en") return false;
   const sentences = value.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
@@ -1260,6 +1271,15 @@ function hasEmptyChristianese(value: string): boolean {
 
 function hasMetaDevotionalFraming(value: string): boolean {
   return META_DEVOTIONAL_REFLECTION_REGEX.test(value);
+}
+
+function hasOverlyDenseAbstractLanguage(value: string, language: SupportedLanguageCode): boolean {
+  if (language !== "en") return false;
+  const denseWordCount = DENSE_ABSTRACT_REFLECTION_WORDS.reduce(
+    (count, pattern) => count + (pattern.test(value) ? 1 : 0),
+    0
+  );
+  return denseWordCount >= 3;
 }
 
 function isGenericDailyTitle(value: string, language: SupportedLanguageCode): boolean {
@@ -1327,6 +1347,7 @@ export function normalizeDevotionalCoreFromObject(
     reflectionUsesFirstPerson(reflectionThought, language) ||
     reflectionAssignsAction(reflectionThought, language) ||
     hasMetaDevotionalFraming(reflectionThought) ||
+    hasOverlyDenseAbstractLanguage(reflectionThought, language) ||
     hasEmptyChristianese(reflectionThought) ||
     !hasSentenceCount(prayer, 3, 4) ||
     hasEmptyChristianese(prayer)

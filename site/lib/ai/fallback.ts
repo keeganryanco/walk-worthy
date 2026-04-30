@@ -327,7 +327,7 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
   return {
     dailyTitle,
     reflectionThought: isEnglishMarriageJourney
-      ? "Jesus joins love for God with love for the person placed near enough to receive it. In marriage, that love becomes more than sentiment when it is patient, humble, and attentive. A husband grows when his habits are shaped less by passivity or defensiveness and more by Christlike service. Sacrificial love is learned in the ordinary places where tenderness and humility become visible."
+      ? "Jesus shows that love for God is tied to love for the person close beside you. In marriage, love becomes real when it is patient, humble, and willing to serve. A husband is growing in the right direction when his daily choices look less selfish and more like the way Christ loves. Sacrificial love is learned in ordinary moments of care, listening, and humility."
       : language === "es"
         ? "La fe puede formar un camino paciente en esta área de oración. Dios suele obrar en el corazón antes de que todo se vea resuelto. Un paso pequeño puede revelar qué parte de la vida necesita atención y cuidado. El crecimiento verdadero se forma con fidelidad, no con presión."
         : language === "pt"
