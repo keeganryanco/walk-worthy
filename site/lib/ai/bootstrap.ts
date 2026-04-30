@@ -160,10 +160,14 @@ function fallbackJourneyArc(request: JourneyBootstrapRequest, themeKey: JourneyT
 
   return {
     purpose,
+    journeyPurpose: purpose,
     currentStage: stageByTheme[themeKey] ?? stageByTheme.basic,
+    todayAim: `Practice ${growthFocus || "faith"} through one concrete response today.`,
     nextMovement: `Move from prayer about ${growthFocus || "this need"} into one concrete act today.`,
     tone: "grounded, sincere, practical, hopeful",
     practicalActionDirection: "Prefer specific real-life actions when the user's context supports them.",
+    recentDayTitles: [],
+    specificContextSignals: [growthFocus, request.prayerIntentText].filter(Boolean).slice(0, 4),
     lastFollowThroughInterpretation: ""
   };
 }
@@ -245,9 +249,8 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Create a flexible journeyArc that gives the journey an ongoing story and practical direction without locking a fixed day-by-day plan.",
     "Do not include inflammatory denominational commentary, sectarian attacks, or arguments about which Christian tradition is superior.",
     "Keep religious language respectful, invitational, and non-coercive. Do not shame, threaten, or pressure the user spiritually.",
-    "reflectionThought should be a natural concise reflection statement or gentle directive, not a question.",
-    "Do not force a fixed opening phrase for reflectionThought.",
-    "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
+    "reflectionThought is teaching and interpretation, not assignment.",
+    "Do not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action inside reflectionThought.",
     "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
     "reflectionThought must be exactly 4-5 complete sentences.",
     "Keep reflectionThought concrete, practical, and tied to this journey's next movement.",
@@ -255,6 +258,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Keep scriptureParaphrase to 1-2 sentences and faithful to the cited verse’s central meaning.",
     "Do not blend ideas from unrelated verses into one paraphrase.",
     "Prayer must be exactly 3-4 complete sentences and strict first-person voice (I/me/my/we/us/our).",
+    "dailyTitle must be short, concrete, and story-like.",
     "smallStepQuestion must be one simple question, usually under 14 words, asking what the user can do today.",
     "Suggested step chips must include at least one concrete practical action when context supports it, plus a lower-friction option and a prayer/spiritual option when appropriate.",
     "For relationship or marriage contexts, specific actions like buying flowers, writing a note, apologizing, asking a direct question, or planning a short check-in are allowed when context supports them.",
@@ -275,11 +279,15 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
         growthFocus: "short inferred growth direction string",
         journeyArc: {
           purpose: "string",
+          journeyPurpose: "string",
           currentStage: "string",
+          todayAim: "string",
           nextMovement: "string",
           tone: "string",
           practicalActionDirection: "string",
-          lastFollowThroughInterpretation: "string"
+          recentDayTitles: ["string"],
+          lastFollowThroughInterpretation: "string",
+          specificContextSignals: ["string"]
         },
         initialMemory: {
           summary: "string",
@@ -288,10 +296,12 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
           preferredTone: "string"
         },
         initialPackage: {
+          dailyTitle: "string",
           reflectionThought: "string",
           scriptureReference: "string",
           scriptureParaphrase: "string",
           prayer: "string",
+          todayAim: "string",
           smallStepQuestion: "string",
           suggestedSteps: ["string", "string", "string"],
           completionSuggestion: {
@@ -327,10 +337,22 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
   const fallbackArc = fallbackJourneyArc(request, themeKey, growthFocus);
   const journeyArc: JourneyArc = {
     purpose: cleanText(arcSource.purpose, 180) || fallbackArc.purpose,
+    journeyPurpose:
+      cleanText(arcSource.journeyPurpose, 180) ||
+      cleanText(arcSource.purpose, 180) ||
+      fallbackArc.journeyPurpose ||
+      fallbackArc.purpose,
     currentStage: cleanText(arcSource.currentStage, 140) || fallbackArc.currentStage,
+    todayAim: cleanText(arcSource.todayAim, 140) || fallbackArc.todayAim,
     nextMovement: cleanText(arcSource.nextMovement, 180) || fallbackArc.nextMovement,
     tone: cleanText(arcSource.tone, 100) || fallbackArc.tone,
     practicalActionDirection: cleanText(arcSource.practicalActionDirection, 180) || fallbackArc.practicalActionDirection,
+    recentDayTitles: Array.isArray(arcSource.recentDayTitles)
+      ? arcSource.recentDayTitles.map((item) => cleanText(item, 80)).filter(Boolean).slice(0, 8)
+      : fallbackArc.recentDayTitles,
+    specificContextSignals: Array.isArray(arcSource.specificContextSignals)
+      ? arcSource.specificContextSignals.map((item) => cleanText(item, 80)).filter(Boolean).slice(0, 8)
+      : fallbackArc.specificContextSignals,
     lastFollowThroughInterpretation: cleanText(arcSource.lastFollowThroughInterpretation, 160) || ""
   };
 
@@ -391,6 +413,12 @@ export async function generateJourneyBootstrap(
 
   const openAIKey = process.env.OPENAI_API_KEY?.trim();
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const devotionalModel =
+    process.env.OPENAI_DEVOTIONAL_MODEL?.trim() ||
+    process.env.OPENAI_ESCALATION_MODEL?.trim() ||
+    process.env.OPENAI_PRIMARY_MODEL?.trim() ||
+    "gpt-5.5";
+  const repairModel = process.env.OPENAI_REPAIR_MODEL?.trim() || devotionalModel;
 
   const candidates: Array<{
     provider: "openai" | "gemini";
@@ -400,22 +428,20 @@ export async function generateJourneyBootstrap(
   }> = [];
 
   if (openAIKey) {
-    const escalationModel = process.env.OPENAI_ESCALATION_MODEL?.trim() || "gpt-5.1";
     candidates.push({
       provider: "openai",
-      model: escalationModel,
-      escalated: true,
-      call: () => generateWithOpenAIPrompt(system, user, escalationModel, openAIKey)
+      model: devotionalModel,
+      escalated: false,
+      call: () => generateWithOpenAIPrompt(system, user, devotionalModel, openAIKey)
     });
   }
 
   if (openAIKey) {
-    const primaryModel = process.env.OPENAI_PRIMARY_MODEL?.trim() || "gpt-5-mini";
     candidates.push({
       provider: "openai",
-      model: primaryModel,
-      escalated: false,
-      call: () => generateWithOpenAIPrompt(system, user, primaryModel, openAIKey)
+      model: repairModel,
+      escalated: true,
+      call: () => generateWithOpenAIPrompt(system, user, repairModel, openAIKey)
     });
   }
 

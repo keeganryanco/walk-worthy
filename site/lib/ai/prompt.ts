@@ -1,4 +1,4 @@
-import { JourneyPackageRequest } from "./types";
+import { DevotionalCore, JourneyPackageRequest } from "./types";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 
 function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt" | "de" | "ja" | "ko"; label: string; localeIdentifier: string } {
@@ -117,6 +117,140 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         cycleCount: input.cycleCount ?? 0,
         completionCount: input.completionCount ?? 0,
         recentJourneySignals: input.recentJourneySignals ?? []
+      }
+    },
+    null,
+    2
+  );
+
+  return { system, user };
+}
+
+export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { system: string; user: string } {
+  const language = targetLanguage(input);
+  const recent = (input.recentEntries ?? [])
+    .slice(0, 8)
+    .map((entry) => ({
+      actionStep: entry.actionStep ?? "",
+      userReflection: entry.userReflection ?? "",
+      scriptureReference: entry.scriptureReference ?? "",
+      completed: Boolean(entry.completedAt),
+      followThroughStatus: entry.followThroughStatus ?? ""
+    }));
+  const usedScriptureReferences = Array.from(
+    new Set((input.usedScriptureReferences ?? []).map((value) => value.trim()).filter(Boolean))
+  ).slice(0, 140);
+
+  const system = [
+    "You are the devotional authoring layer for Tend, a Christian prayer-and-action app.",
+    "Return strict JSON only.",
+    "Use the highest-quality, intentional reasoning: this should feel authored, sequential, biblical, and worth the user's time.",
+    "Create only the devotional core: title, scripture, reflection, prayer, todayAim, and updatedJourneyArc.",
+    "Do not write the action question or suggested actions here.",
+    "The reflection is teaching and interpretation, not assignment. It must not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action.",
+    "Rare reflective directives like Notice or Consider are allowed only when they point inward to understanding, not outward to a task.",
+    "Reflection must be exactly 4-5 complete sentences, concrete, biblically anchored, and not first-person.",
+    "Prayer must be exactly 3-4 complete sentences, first-person only, plain, concrete Christian language.",
+    "Ban empty Christianese: do not use phrases like reflect your grace more and more, deeper reliance, divine care, higher purpose, profound sense, inner stability, or walk in victory unless immediately made concrete.",
+    "Scripture paraphrase must be near-quote style, anchored to one cited verse only, with no translation label and no blended verse ideas.",
+    "Daily title must be short, concrete, and story-like, making this feel like the next day in an arc.",
+    "Use one scripture reference from this curated list when possible:",
+    APPROVED_SCRIPTURE_REFERENCES.join(", "),
+    `Write all user-facing text in ${language.label} (${language.code}).`,
+    "Do not include translation notes, bilingual output, or markdown."
+  ].join(" ");
+
+  const user = JSON.stringify(
+    {
+      outputSchema: {
+        dailyTitle: "string",
+        scriptureReference: "string",
+        scriptureParaphrase: "string",
+        reflectionThought: "string",
+        prayer: "string",
+        todayAim: "string",
+        updatedJourneyArc: {
+          purpose: "string",
+          journeyPurpose: "string",
+          currentStage: "string",
+          todayAim: "string",
+          nextMovement: "string",
+          tone: "string",
+          practicalActionDirection: "string",
+          recentDayTitles: ["string"],
+          lastFollowThroughInterpretation: "string",
+          specificContextSignals: ["string"]
+        }
+      },
+      context: {
+        dateISO: input.dateISO ?? new Date().toISOString(),
+        languageCode: language.code,
+        localeIdentifier: language.localeIdentifier,
+        journey: input.journey,
+        profile: input.profile,
+        memory: input.memory ?? {},
+        journeyArc: input.journeyArc ?? null,
+        followThroughContext: input.followThroughContext ?? {},
+        usedScriptureReferences,
+        recentEntries: recent,
+        cycleCount: input.cycleCount ?? 0,
+        completionCount: input.completionCount ?? 0,
+        recentJourneySignals: input.recentJourneySignals ?? []
+      }
+    },
+    null,
+    2
+  );
+
+  return { system, user };
+}
+
+export function buildActionLayerPrompt(input: JourneyPackageRequest, core: DevotionalCore): { system: string; user: string } {
+  const language = targetLanguage(input);
+  const system = [
+    "You are the practical action layer for Tend.",
+    "Return strict JSON only.",
+    "Use the devotional core to create one simple action question and four suggested steps.",
+    "Every suggested step must match the journey context and today's aim.",
+    "Question must be one practical question, usually under 14 words, flowing from todayAim.",
+    "For specific contexts, include at least two specific real-world actions.",
+    "Include one lower-friction option when helpful.",
+    "Include one prayer/spiritual option only if it directly relates to the specific journey.",
+    "For a husband, wife, spouse, or marriage journey, valid actions include writing a kind note, asking one caring question, doing one helpful chore, buying flowers, listening without distraction, apologizing specifically, or praying for the wife/spouse.",
+    "For a husband, wife, spouse, or marriage journey, invalid actions include praying for one friend, a generic check-in, or praying over one next step.",
+    "Avoid unsafe, manipulative, expensive, shaming, or conflict-escalating suggestions.",
+    "Suggested steps must be complete short phrases and never dangling fragments.",
+    `Write all user-facing text in ${language.label} (${language.code}).`,
+    "Do not include translation notes, bilingual output, or markdown."
+  ].join(" ");
+
+  const recentActions = (input.recentEntries ?? [])
+    .slice(0, 8)
+    .map((entry) => entry.actionStep ?? "")
+    .filter(Boolean);
+
+  const user = JSON.stringify(
+    {
+      outputSchema: {
+        smallStepQuestion: "string",
+        suggestedSteps: ["string", "string", "string", "string"],
+        completionSuggestion: {
+          shouldPrompt: "boolean",
+          reason: "string",
+          confidence: "number 0..1"
+        }
+      },
+      devotionalCore: core,
+      context: {
+        languageCode: language.code,
+        localeIdentifier: language.localeIdentifier,
+        journey: input.journey,
+        profile: input.profile,
+        journeyArc: input.journeyArc ?? null,
+        followThroughContext: input.followThroughContext ?? {},
+        recentActions,
+        recentJourneySignals: input.recentJourneySignals ?? [],
+        completionCount: input.completionCount ?? 0
       }
     },
     null,

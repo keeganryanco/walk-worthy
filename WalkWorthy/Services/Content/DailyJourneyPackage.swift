@@ -20,45 +20,63 @@ struct CompletionSuggestion: Codable, Equatable {
 }
 
 struct DailyJourneyPackage: Codable, Equatable {
+    static let currentQualityVersion = 3
+
+    let dailyTitle: String
     let reflectionThought: String
     let scriptureReference: String
     let scriptureParaphrase: String
     let prayer: String
+    let todayAim: String
     let smallStepQuestion: String
     let suggestedSteps: [String]
     let completionSuggestion: CompletionSuggestion
+    let updatedJourneyArc: JourneyArcPayload?
+    let qualityVersion: Int
     let generatedAt: Date
 
     init(
+        dailyTitle: String = DailyJourneyPackageValidation.defaultDailyTitle,
         reflectionThought: String,
         scriptureReference: String,
         scriptureParaphrase: String,
         prayer: String,
+        todayAim: String = DailyJourneyPackageValidation.defaultTodayAim,
         smallStepQuestion: String,
         suggestedSteps: [String],
         completionSuggestion: CompletionSuggestion,
+        updatedJourneyArc: JourneyArcPayload? = nil,
+        qualityVersion: Int = DailyJourneyPackage.currentQualityVersion,
         generatedAt: Date
     ) {
+        self.dailyTitle = dailyTitle
         self.reflectionThought = reflectionThought
         self.scriptureReference = scriptureReference
         self.scriptureParaphrase = scriptureParaphrase
         self.prayer = prayer
+        self.todayAim = todayAim
         self.smallStepQuestion = smallStepQuestion
         self.suggestedSteps = suggestedSteps
         self.completionSuggestion = completionSuggestion
+        self.updatedJourneyArc = updatedJourneyArc
+        self.qualityVersion = qualityVersion
         self.generatedAt = generatedAt
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        dailyTitle = try container.decodeIfPresent(String.self, forKey: .dailyTitle) ?? DailyJourneyPackageValidation.defaultDailyTitle
         reflectionThought = try container.decodeIfPresent(String.self, forKey: .reflectionThought) ?? ""
         scriptureReference = try container.decodeIfPresent(String.self, forKey: .scriptureReference) ?? ""
         scriptureParaphrase = try container.decodeIfPresent(String.self, forKey: .scriptureParaphrase) ?? ""
         prayer = try container.decodeIfPresent(String.self, forKey: .prayer) ?? ""
+        todayAim = try container.decodeIfPresent(String.self, forKey: .todayAim) ?? DailyJourneyPackageValidation.defaultTodayAim
         smallStepQuestion = try container.decodeIfPresent(String.self, forKey: .smallStepQuestion) ?? ""
         suggestedSteps = try container.decodeIfPresent([String].self, forKey: .suggestedSteps) ?? []
         completionSuggestion = try container.decodeIfPresent(CompletionSuggestion.self, forKey: .completionSuggestion)
             ?? CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0)
+        updatedJourneyArc = try container.decodeIfPresent(JourneyArcPayload.self, forKey: .updatedJourneyArc)
+        qualityVersion = try container.decodeIfPresent(Int.self, forKey: .qualityVersion) ?? 0
 
         if let unix = try container.decodeIfPresent(Double.self, forKey: .generatedAt) {
             generatedAt = Date(timeIntervalSince1970: unix)
@@ -95,6 +113,40 @@ enum DailyJourneyPackageValidation {
             return .korean
         default:
             return .english
+        }
+    }
+
+    static var defaultDailyTitle: String {
+        switch currentLanguage() {
+        case .english:
+            return "Today’s Faithful Step"
+        case .spanish:
+            return "El paso de hoy"
+        case .portugueseBrazil:
+            return "O passo de hoje"
+        case .german:
+            return "Der heutige Schritt"
+        case .japanese:
+            return "今日の一歩"
+        case .korean:
+            return "오늘의 걸음"
+        }
+    }
+
+    static var defaultTodayAim: String {
+        switch currentLanguage() {
+        case .english:
+            return "take one faithful step"
+        case .spanish:
+            return "dar un paso fiel"
+        case .portugueseBrazil:
+            return "dar um passo fiel"
+        case .german:
+            return "einen treuen Schritt gehen"
+        case .japanese:
+            return "忠実な一歩を踏み出す"
+        case .korean:
+            return "신실한 한 걸음을 내딛기"
         }
     }
 
@@ -268,14 +320,24 @@ enum DailyJourneyPackageValidation {
             confidence: normalizedConfidence
         )
 
+        let normalizedTodayAim = package.todayAim.trimmingCharacters(in: .whitespacesAndNewlines)
+
         return DailyJourneyPackage(
+            dailyTitle: package.dailyTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? defaultDailyTitle
+                : package.dailyTitle,
             reflectionThought: normalizedReflectionThought(package.reflectionThought, language: language),
             scriptureReference: normalizedReference,
             scriptureParaphrase: normalizedParaphrase,
             prayer: normalizedFirstPersonPrayer(package.prayer, language: language),
+            todayAim: normalizedTodayAim.isEmpty
+                ? defaultTodayAim
+                : normalizedTodayAim,
             smallStepQuestion: normalizedQuestion,
             suggestedSteps: mergedSuggestedSteps,
             completionSuggestion: normalizedCompletionSuggestion,
+            updatedJourneyArc: package.updatedJourneyArc,
+            qualityVersion: max(package.qualityVersion, DailyJourneyPackage.currentQualityVersion),
             generatedAt: package.generatedAt
         )
     }
@@ -770,30 +832,42 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                     : "Bring your requests to God with trust, and take one faithful step today.")
 
         return DailyJourneyPackage(
-            reflectionThought: isSpanish
-                ? "No vas tarde. Una acción fiel hoy sí importa."
+            dailyTitle: isSpanish
+                ? "Un paso fiel hoy"
                 : isPortuguese
-                    ? "Você não está atrasado. Uma ação fiel hoje importa."
+                    ? "Um passo fiel hoje"
                     : isGerman
-                        ? "Du bist nicht zu spät. Ein treuer Schritt heute zählt."
+                        ? "Ein treuer Schritt heute"
                     : isJapanese
-                        ? "遅れてはいません。今日の忠実な行動には確かな意味があります。"
+                        ? "今日の忠実な一歩"
                     : isKorean
-                        ? "늦지 않았습니다. 오늘의 신실한 실천 하나가 분명히 중요합니다."
-                    : "You are not behind. Faithful action today matters.",
+                        ? "오늘의 신실한 한 걸음"
+                    : "One Faithful Step Today",
+            reflectionThought: isSpanish
+                ? "Dios encuentra a su pueblo en pasos pequeños y concretos. La fidelidad no siempre se ve grande, pero puede formar una dirección real para el día. La Escritura llama a entregar las cargas a Dios y caminar con confianza. Este camino puede avanzar hoy con una respuesta sencilla y sincera."
+                : isPortuguese
+                    ? "Deus encontra seu povo em passos pequenos e concretos. A fidelidade nem sempre parece grande, mas pode formar uma direção real para o dia. A Escritura chama a entregar os pesos a Deus e caminhar com confiança. Esta jornada pode avançar hoje com uma resposta simples e sincera."
+                    : isGerman
+                        ? "Gott begegnet seinem Volk in kleinen und konkreten Schritten. Treue wirkt nicht immer groß, kann aber dem Tag eine klare Richtung geben. Die Schrift lädt dazu ein, Lasten Gott anzuvertrauen und mit Vertrauen weiterzugehen. Diese Journey kann heute durch eine einfache und aufrichtige Antwort weiterwachsen."
+                    : isJapanese
+                        ? "神は小さく具体的な歩みの中で、ご自分の民に出会われます。忠実さは大きく見えないこともありますが、その日の方向を形づくります。聖書は重荷を神にゆだね、信頼して歩むよう招いています。この歩みは、今日の誠実な一つの応答によって前に進みます。"
+                    : isKorean
+                        ? "하나님은 작고 구체적인 걸음 속에서 자기 백성을 만나십니다. 신실함은 늘 크게 보이지 않지만, 오늘의 방향을 분명하게 세울 수 있습니다. 성경은 짐을 하나님께 맡기고 신뢰로 걸으라고 초대합니다. 이 여정은 오늘의 단순하고 진실한 응답으로 앞으로 나아갈 수 있습니다."
+                    : "God often meets His people in small, concrete steps. Faithfulness may not look dramatic, but it can give the day a clear direction. Scripture invites burdens to be brought to God with trust instead of carried alone. This journey can move forward today through one simple, sincere response.",
             scriptureReference: reference,
             scriptureParaphrase: paraphrase,
             prayer: isSpanish
-                ? "Señor, ayúdame a mantenerme firme y sincero en este camino hoy."
+                ? "Señor, te entrego este camino hoy. Ayúdame a confiar en ti con lo que realmente llevo. Dame claridad para dar un paso fiel y pequeño."
                 : isPortuguese
-                    ? "Senhor, ajuda-me a permanecer firme e sincero nesta jornada hoje."
+                    ? "Senhor, entrego esta jornada a ti hoje. Ajuda-me a confiar em ti com o que realmente carrego. Dá-me clareza para dar um passo pequeno e fiel."
                     : isGerman
-                        ? "Herr, hilf mir, heute auf diesem Weg standhaft und aufrichtig zu bleiben."
+                        ? "Herr, ich lege diese Journey heute in deine Hände. Hilf mir, dir mit dem zu vertrauen, was ich wirklich trage. Gib mir Klarheit für einen kleinen, treuen Schritt."
                     : isJapanese
-                        ? "主よ、今日この歩みの中で、私が誠実に揺るがず歩めるよう助けてください。"
+                        ? "主よ、今日この歩みをあなたにゆだねます。私が本当に抱えていることの中で、あなたを信頼できるよう助けてください。小さく忠実な一歩を知る明確さを与えてください。"
                     : isKorean
-                        ? "주님, 오늘 이 여정에서 제가 흔들리지 않고 진실하게 걸어가도록 도와주세요."
-                    : "Lord, help me stay steady and sincere in this journey today.",
+                        ? "주님, 오늘 이 여정을 주님께 맡깁니다. 제가 실제로 짊어진 것 안에서 주님을 신뢰하게 도와주세요. 작고 신실한 한 걸음을 알 수 있는 분명함을 주세요."
+                    : "Lord, I place this journey in Your hands today. Help me trust You with what I am actually carrying. Give me clarity for one small, faithful step.",
+            todayAim: DailyJourneyPackageValidation.defaultTodayAim,
             smallStepQuestion: isSpanish
                 ? "¿Qué paso pequeño podrías dar hoy?"
                 : isPortuguese
@@ -807,44 +881,45 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                     : "What small step could you take today?",
             suggestedSteps: [
                 isSpanish
-                    ? "Ora 5 minutos específicamente por este camino."
+                    ? "Ora cinco minutos por esto."
                     : isPortuguese
-                        ? "Ore por 5 minutos especificamente por esta jornada."
+                        ? "Ore cinco minutos por isso."
                         : isGerman
-                            ? "Bete fünf Minuten gezielt für diese Journey."
+                            ? "Bete fünf Minuten dafür."
                         : isJapanese
-                            ? "この歩みのために、5分間具体的に祈りましょう。"
+                            ? "5分間これを祈る"
                         : isKorean
-                            ? "이 여정을 위해 5분 동안 구체적으로 기도하세요."
-                        : "Take 5 minutes to pray specifically for this journey.",
+                            ? "5분 동안 기도하기"
+                        : "Pray for five minutes.",
                 isSpanish
-                    ? "Haz una tarea concreta que haga avanzar este camino."
+                    ? "Da un paso pequeño."
                     : isPortuguese
-                        ? "Faça uma tarefa concreta que avance esta jornada."
+                        ? "Dê um passo pequeno."
                         : isGerman
-                            ? "Tu eine konkrete Aufgabe, die diese Journey voranbringt."
+                            ? "Geh einen kleinen Schritt."
                         : isJapanese
-                            ? "この歩みを前進させる具体的な行動を一つ実行しましょう。"
+                            ? "小さな一歩を選ぶ"
                         : isKorean
-                            ? "이 여정을 앞으로 나아가게 할 구체적인 일 하나를 하세요."
-                        : "Do one concrete task that moves this journey forward.",
+                            ? "작은 한 걸음 선택하기"
+                        : "Take one small step.",
                 isSpanish
-                    ? "Envía un mensaje a una persona de confianza pidiendo oración."
+                    ? "Pide oración a alguien."
                     : isPortuguese
-                        ? "Envie uma mensagem para alguém de confiança pedindo oração."
+                        ? "Peça oração a alguém."
                         : isGerman
-                            ? "Schreibe einer vertrauenswürdigen Person und bitte um Gebet."
+                            ? "Bitte jemanden um Gebet."
                         : isJapanese
-                            ? "信頼できる一人に、祈りをお願いするメッセージを送りましょう。"
+                            ? "祈りを頼む"
                         : isKorean
-                            ? "신뢰하는 한 사람에게 기도를 부탁하는 메시지를 보내세요."
-                        : "Text one trusted person and ask for prayer."
+                            ? "기도 부탁하기"
+                        : "Ask for prayer."
             ],
             completionSuggestion: CompletionSuggestion(
                 shouldPrompt: false,
                 reason: "",
                 confidence: 0
             ),
+            qualityVersion: DailyJourneyPackage.currentQualityVersion,
             generatedAt: .now
         )
     }

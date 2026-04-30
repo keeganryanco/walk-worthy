@@ -15,6 +15,13 @@ function numberFromEnv(value: string | undefined): number | undefined {
   return parsed;
 }
 
+const DEFAULT_RATE_PER_1M: Record<string, { input: number; output: number }> = {
+  "openai:gpt-5.1": { input: 1.25, output: 1.25 },
+  "openai:gpt-5.2": { input: 1.75, output: 1.75 },
+  "openai:gpt-5.4": { input: 2.5, output: 2.5 },
+  "openai:gpt-5.5": { input: 5, output: 5 }
+};
+
 function resolveRatePer1M(provider: AIProvider, model: string, kind: "INPUT" | "OUTPUT"): number | undefined {
   if (provider === "template") return 0;
 
@@ -26,6 +33,11 @@ function resolveRatePer1M(provider: AIProvider, model: string, kind: "INPUT" | "
 
   const providerDefault = numberFromEnv(process.env[`${providerKey}_${kind}_COST_PER_1M_TOKENS`]);
   if (typeof providerDefault === "number") return providerDefault;
+
+  const defaultRate = DEFAULT_RATE_PER_1M[`${provider}:${model}`];
+  if (defaultRate) {
+    return kind === "INPUT" ? defaultRate.input : defaultRate.output;
+  }
 
   return undefined;
 }
@@ -47,4 +59,3 @@ export function estimateCostUSD(provider: AIProvider, model: string, usage?: AIT
   const outputCost = (outputTokens / 1_000_000) * outputRate;
   return Number((inputCost + outputCost).toFixed(8));
 }
-

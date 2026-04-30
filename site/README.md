@@ -43,6 +43,10 @@ Required for AI orchestration:
 
 Optional:
 - `TEND_APP_SHARED_SECRET` (recommended)
+- `OPENAI_DEVOTIONAL_MODEL` (default `gpt-5.5`; scripture/reflection/prayer/arc)
+- `OPENAI_ACTION_MODEL` (default `gpt-5.1`; action question and suggestions)
+- `OPENAI_REPAIR_MODEL` (default `OPENAI_DEVOTIONAL_MODEL`)
+- `OPENAI_UTILITY_MODEL` (default `OPENAI_ACTION_MODEL`)
 - `OPENAI_PRIMARY_MODEL` (default `gpt-5-mini`)
 - `OPENAI_ESCALATION_MODEL` (default `gpt-5.1`)
 - `GEMINI_PRIMARY_MODEL` (default `gemini-2.5-flash`)

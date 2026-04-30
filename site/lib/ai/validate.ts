@@ -1,5 +1,11 @@
-import { DailyJourneyPackage } from "./types";
-import { JourneyPackageRequest } from "./types";
+import {
+  DAILY_JOURNEY_PACKAGE_QUALITY_VERSION,
+  DailyJourneyPackage,
+  DevotionalCore,
+  ActionLayerOutput,
+  JourneyArc,
+  JourneyPackageRequest
+} from "./types";
 import { deterministicReference, normalizeReference } from "./scripture";
 
 const CHIP_MIN_WORDS = 2;
@@ -281,7 +287,10 @@ const themeChipBankKo: Record<string, string[]> = {
 };
 
 const contextualKeywordChipsEn: Array<{ pattern: RegExp; chips: string[] }> = [
-  { pattern: /(husband|wife|spouse|marriage)/i, chips: ["Buy flowers today", "Write a kind note", "Ask one caring question"] },
+  {
+    pattern: /(husband|wife|spouse|marriage)/i,
+    chips: ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"]
+  },
   { pattern: /(anx|worr|fear|stress|panic|calm|rest|peace)/i, chips: ["Pray through this worry", "Take five calm breaths"] },
   { pattern: /(focus|disciplin|habit|procrastin|delay|consisten)/i, chips: ["Start one focused block", "Finish one delayed task"] },
   { pattern: /(family|marriage|friend|relationship|team|community)/i, chips: ["Send one honest message", "Pray for this relationship"] },
@@ -468,7 +477,6 @@ function concreteContextSignals(input?: JourneyPackageRequest): boolean {
 function hasConcreteStepLanguage(step: string): boolean {
   return /(send|call|text|write|ask|buy|bring|schedule|plan|review|finish|start|remove|apologize|thank|serve|clean|cook|walk|budget|flowers|note|message|check-in|env[ií]a|llama|escribe|compra|agenda|revisa|termina|pide perd[oó]n|agradece|compre|envie|ligue|escreva|agende|revise|termine|entschuldige|kaufe|sende|schreibe|plane|prüfe|erledige|送る|書く|買う|予定|確認|終える|謝る|感謝|보내|쓰기|사|계획|확인|끝내|사과|감사)/i.test(step);
 }
-
 function reflectionUsesFirstPerson(value: string, language: SupportedLanguageCode): boolean {
   const normalized = value.toLowerCase().replace(/[’`]/g, "'");
   const regex =
@@ -639,7 +647,7 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
         : language === "ko"
           ? genericFallbackChipsKo
           : genericFallbackChipsEn;
-  const chips: string[] = [...(baseBank[themeKey] ?? baseBank.basic)];
+  const chips: string[] = [];
 
   const signals = contextSignals(input);
   for (const keywordSet of keywordSets) {
@@ -648,6 +656,7 @@ function contextualFallbackChips(input?: JourneyPackageRequest): string[] {
     }
   }
 
+  chips.push(...(baseBank[themeKey] ?? baseBank.basic));
   chips.push(...genericFallback);
   const normalized = dedupeChips(chips.map((chip) => normalizeChip(chip, language)).filter(Boolean));
   return normalized.slice(0, CHIP_FALLBACK_COUNT);
@@ -1117,6 +1126,234 @@ function extractJSON(raw: string): unknown {
   return null;
 }
 
+function normalizeList(value: unknown, maxItems: number, maxLength: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => cleanText(item, maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function fallbackDailyTitle(input?: JourneyPackageRequest): string {
+  const language = languageCode(input);
+  const signals = contextSignals(input);
+  if (/(husband|wife|spouse|marriage)/i.test(signals)) return "Learning Sacrificial Love";
+  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "Choosing Peace Today";
+  if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "Practicing Steady Prayer";
+  if (language === "es") return "El paso de hoy";
+  if (language === "pt") return "O passo de hoje";
+  if (language === "de") return "Der heutige Schritt";
+  if (language === "ja") return "今日の一歩";
+  if (language === "ko") return "오늘의 걸음";
+  return "Today’s Faithful Step";
+}
+
+function fallbackTodayAim(input?: JourneyPackageRequest): string {
+  const signals = contextSignals(input);
+  if (/(husband|wife|spouse|marriage)/i.test(signals)) return "practice concrete love toward your spouse";
+  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "practice peace in one concrete moment";
+  if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "turn prayer into one steady practice";
+  return cleanText(input?.profile.growthGoal, 120) || cleanText(input?.profile.prayerFocus, 120) || "take one faithful step";
+}
+
+function normalizeJourneyArcFromObject(
+  source: Record<string, unknown> | undefined,
+  input?: JourneyPackageRequest,
+  todayAim?: string
+): JourneyArc {
+  const existing = input?.journeyArc;
+  const purpose =
+    cleanText(source?.journeyPurpose, 180) ||
+    cleanText(source?.purpose, 180) ||
+    existing?.journeyPurpose ||
+    existing?.purpose ||
+    cleanText(input?.profile.prayerFocus, 180) ||
+    "grow through faithful daily action";
+
+  const normalized: JourneyArc = {
+    purpose,
+    journeyPurpose: purpose,
+    currentStage:
+      cleanText(source?.currentStage, 140) ||
+      existing?.currentStage ||
+      "learning the first faithful response",
+    todayAim:
+      cleanText(source?.todayAim, 140) ||
+      cleanText(todayAim, 140) ||
+      existing?.todayAim ||
+      fallbackTodayAim(input),
+    nextMovement:
+      cleanText(source?.nextMovement, 180) ||
+      existing?.nextMovement ||
+      "Move from prayer into one concrete lived response.",
+    tone:
+      cleanText(source?.tone, 100) ||
+      existing?.tone ||
+      "grounded, specific, biblically anchored, practical",
+    practicalActionDirection:
+      cleanText(source?.practicalActionDirection, 180) ||
+      existing?.practicalActionDirection ||
+      "Prefer concrete real-life actions when context supports them.",
+    recentDayTitles: normalizeList(source?.recentDayTitles, 8, 80).length
+      ? normalizeList(source?.recentDayTitles, 8, 80)
+      : existing?.recentDayTitles ?? [],
+    specificContextSignals: normalizeList(source?.specificContextSignals, 8, 80).length
+      ? normalizeList(source?.specificContextSignals, 8, 80)
+      : existing?.specificContextSignals ?? [],
+    lastFollowThroughInterpretation:
+      cleanText(source?.lastFollowThroughInterpretation, 160) ||
+      existing?.lastFollowThroughInterpretation ||
+      ""
+  };
+
+  return normalized;
+}
+
+const EMPTY_CHRISTIANESE_REGEX =
+  /\b(reflect your grace more and more|deeper reliance|divine care|higher purpose|profound sense|inner stability|spiritual breakthrough|walk in victory)\b/i;
+
+const REFLECTION_ACTION_ASSIGNMENT_REGEX =
+  /\b(send|buy|schedule|text|call|write|ask|apologize|plan|do|take|clean|cook|bring|serve|finish|start)\b/i;
+
+function reflectionAssignsAction(value: string, language: SupportedLanguageCode): boolean {
+  if (language !== "en") return false;
+  const sentences = value.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
+  return sentences.some((sentence) => {
+    const lower = sentence.toLowerCase();
+    if (/^let\b.*\blead\b.*\b(act|action|kindness|listening|step|response)\b/.test(lower)) {
+      return true;
+    }
+    if (/^(send|buy|schedule|text|call|write|ask|apologize|plan|do|take|clean|cook|bring|serve|finish|start)\b/.test(lower)) {
+      return true;
+    }
+    if (/^(notice|consider|reflect|see)\b/.test(lower)) {
+      return REFLECTION_ACTION_ASSIGNMENT_REGEX.test(lower) && /\b(today|one|spouse|wife|husband|work|task)\b/.test(lower);
+    }
+    return REFLECTION_ACTION_ASSIGNMENT_REGEX.test(lower) && /\b(today|one|spouse|wife|husband|step|action)\b/.test(lower);
+  });
+}
+
+function hasEmptyChristianese(value: string): boolean {
+  return EMPTY_CHRISTIANESE_REGEX.test(value);
+}
+
+function isMarriageContext(input?: JourneyPackageRequest): boolean {
+  return /(husband|wife|spouse|marriage)/i.test(contextSignals(input));
+}
+
+function isMarriageStep(step: string): boolean {
+  return /(wife|spouse|marriage|husband|home|love|kind note|note|caring question|helpful chore|chore|flowers|listen|apologize|encouragement.*wife|pray for your wife|serve|tender)/i.test(step);
+}
+
+function actionLayerMatchesContext(suggested: string[], input?: JourneyPackageRequest): boolean {
+  if (isMarriageContext(input)) {
+    const specificCount = suggested.filter(isMarriageStep).length;
+    return specificCount >= Math.min(3, suggested.length) && !suggested.some((step) => /friend|check-in|next step/i.test(step));
+  }
+  if (concreteContextSignals(input)) {
+    return suggested.some(hasConcreteStepLanguage);
+  }
+  return true;
+}
+
+export function parseAndNormalizeDevotionalCore(rawText: string, input?: JourneyPackageRequest): DevotionalCore | null {
+  const parsed = extractJSON(rawText);
+  if (!parsed || typeof parsed !== "object") return null;
+  return normalizeDevotionalCoreFromObject(parsed as Record<string, unknown>, input);
+}
+
+export function normalizeDevotionalCoreFromObject(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest
+): DevotionalCore | null {
+  const language = languageCode(input);
+  const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 120));
+  const uniqueReference = nonRepeatingReference(referenceCandidate, input);
+  const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
+  const prayer = normalizeFirstPersonPrayer(source.prayer, input);
+  const todayAim = cleanText(source.todayAim, 160) || fallbackTodayAim(input);
+  const dailyTitle = cleanText(source.dailyTitle, 80) || fallbackDailyTitle(input);
+  const arcSource =
+    source.updatedJourneyArc && typeof source.updatedJourneyArc === "object"
+      ? (source.updatedJourneyArc as Record<string, unknown>)
+      : source.journeyArc && typeof source.journeyArc === "object"
+        ? (source.journeyArc as Record<string, unknown>)
+        : undefined;
+
+  if (
+    !hasSentenceCount(reflectionThought, 4, 5) ||
+    reflectionUsesFirstPerson(reflectionThought, language) ||
+    reflectionAssignsAction(reflectionThought, language) ||
+    hasEmptyChristianese(reflectionThought) ||
+    !hasSentenceCount(prayer, 3, 4) ||
+    hasEmptyChristianese(prayer)
+  ) {
+    return null;
+  }
+
+  const scriptureParaphrase = normalizeProseEnding(
+    enforceParaphraseFidelity(uniqueReference, cleanText(source.scriptureParaphrase, 900), language)
+  );
+
+  if (!dailyTitle || !todayAim || !scriptureParaphrase || !prayer || !reflectionThought) {
+    return null;
+  }
+
+  return {
+    dailyTitle,
+    scriptureReference: uniqueReference,
+    scriptureParaphrase,
+    reflectionThought,
+    prayer,
+    todayAim,
+    updatedJourneyArc: normalizeJourneyArcFromObject(arcSource, input, todayAim)
+  };
+}
+
+export function parseAndNormalizeActionLayer(
+  rawText: string,
+  input?: JourneyPackageRequest,
+  core?: DevotionalCore
+): ActionLayerOutput | null {
+  const parsed = extractJSON(rawText);
+  if (!parsed || typeof parsed !== "object") return null;
+  return normalizeActionLayerFromObject(parsed as Record<string, unknown>, input, core);
+}
+
+export function normalizeActionLayerFromObject(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest,
+  core?: DevotionalCore
+): ActionLayerOutput | null {
+  const suggestedRaw = Array.isArray(source.suggestedSteps) ? source.suggestedSteps : [];
+  const suggested = normalizedChips(suggestedRaw, input);
+  const completionRaw =
+    source.completionSuggestion && typeof source.completionSuggestion === "object"
+      ? (source.completionSuggestion as Record<string, unknown>)
+      : {};
+  const confidenceRaw = typeof completionRaw.confidence === "number" ? completionRaw.confidence : 0;
+  const confidence = Math.min(1, Math.max(0, confidenceRaw));
+  const question = normalizeSmallStepQuestion(source.smallStepQuestion, input);
+
+  if (!actionLayerMatchesContext(suggested, input)) {
+    return null;
+  }
+
+  if (core?.todayAim && languageCode(input) === "en" && wordCount(question) > 16) {
+    return null;
+  }
+
+  return {
+    smallStepQuestion: question,
+    suggestedSteps: suggested,
+    completionSuggestion: {
+      shouldPrompt: completionRaw.shouldPrompt === true,
+      reason: cleanText(completionRaw.reason, 260),
+      confidence
+    }
+  };
+}
+
 export function parseAndNormalizePackage(rawText: string, input?: JourneyPackageRequest): DailyJourneyPackage | null {
   const parsed = extractJSON(rawText);
   if (!parsed || typeof parsed !== "object") {
@@ -1126,57 +1363,36 @@ export function parseAndNormalizePackage(rawText: string, input?: JourneyPackage
   return normalizePackageFromObject(parsed as Record<string, unknown>, input);
 }
 
+export function mergePackageFromCoreAndAction(core: DevotionalCore, action: ActionLayerOutput): DailyJourneyPackage {
+  return {
+    dailyTitle: core.dailyTitle,
+    reflectionThought: core.reflectionThought,
+    scriptureReference: core.scriptureReference,
+    scriptureParaphrase: core.scriptureParaphrase,
+    prayer: core.prayer,
+    todayAim: core.todayAim,
+    smallStepQuestion: action.smallStepQuestion,
+    suggestedSteps: action.suggestedSteps,
+    completionSuggestion: action.completionSuggestion,
+    updatedJourneyArc: core.updatedJourneyArc,
+    qualityVersion: DAILY_JOURNEY_PACKAGE_QUALITY_VERSION
+  };
+}
+
 export function normalizePackageFromObject(
   source: Record<string, unknown>,
   input?: JourneyPackageRequest
 ): DailyJourneyPackage | null {
-  const suggestedRaw = Array.isArray(source.suggestedSteps) ? source.suggestedSteps : [];
-  const suggested = normalizedChips(suggestedRaw, input);
+  const core = normalizeDevotionalCoreFromObject(source, input);
+  if (!core) return null;
 
-  const completionRaw =
-    source.completionSuggestion && typeof source.completionSuggestion === "object"
-      ? (source.completionSuggestion as Record<string, unknown>)
-      : {};
-  const confidenceRaw = typeof completionRaw.confidence === "number" ? completionRaw.confidence : 0;
-  const confidence = Math.min(1, Math.max(0, confidenceRaw));
-
-  const language = languageCode(input);
-
-  const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 120));
-  const uniqueReference = nonRepeatingReference(referenceCandidate, input);
-  const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
-  const prayer = normalizeFirstPersonPrayer(source.prayer, input);
-
-  if (
-    !hasSentenceCount(reflectionThought, 4, 5) ||
-    reflectionUsesFirstPerson(reflectionThought, language) ||
-    !hasSentenceCount(prayer, 3, 4)
-  ) {
-    return null;
-  }
-
-  if (concreteContextSignals(input) && !suggested.some(hasConcreteStepLanguage)) {
-    return null;
-  }
+  const actionLayer = normalizeActionLayerFromObject(source, input, core);
+  if (!actionLayer) return null;
 
   const normalized: DailyJourneyPackage = {
-    reflectionThought,
-    scriptureReference: uniqueReference,
-    scriptureParaphrase: normalizeProseEnding(
-      enforceParaphraseFidelity(
-        uniqueReference,
-        cleanText(source.scriptureParaphrase, 900),
-        language
-      )
-    ),
-    prayer,
-    smallStepQuestion: normalizeSmallStepQuestion(source.smallStepQuestion, input),
-    suggestedSteps: suggested,
-    completionSuggestion: {
-      shouldPrompt: completionRaw.shouldPrompt === true,
-      reason: cleanText(completionRaw.reason, 260),
-      confidence
-    }
+    ...core,
+    ...actionLayer,
+    qualityVersion: DAILY_JOURNEY_PACKAGE_QUALITY_VERSION
   };
 
   if (!normalized.reflectionThought || !normalized.scriptureParaphrase || !normalized.prayer) {

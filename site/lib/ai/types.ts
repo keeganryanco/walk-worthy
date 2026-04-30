@@ -17,13 +17,19 @@ export interface CompletionSuggestion {
   confidence: number;
 }
 
+export const DAILY_JOURNEY_PACKAGE_QUALITY_VERSION = 3;
+
 export interface JourneyArc {
   purpose: string;
+  journeyPurpose?: string;
   currentStage: string;
+  todayAim?: string;
   nextMovement: string;
   tone: string;
   practicalActionDirection: string;
+  recentDayTitles?: string[];
   lastFollowThroughInterpretation?: string;
+  specificContextSignals?: string[];
 }
 
 export interface ClientTelemetry {
@@ -88,10 +94,30 @@ export interface JourneyPackageRequest {
 }
 
 export interface DailyJourneyPackage {
+  dailyTitle: string;
   reflectionThought: string;
   scriptureReference: string;
   scriptureParaphrase: string;
   prayer: string;
+  todayAim?: string;
+  smallStepQuestion: string;
+  suggestedSteps: string[];
+  completionSuggestion: CompletionSuggestion;
+  updatedJourneyArc?: JourneyArc;
+  qualityVersion?: number;
+}
+
+export interface DevotionalCore {
+  dailyTitle: string;
+  scriptureReference: string;
+  scriptureParaphrase: string;
+  reflectionThought: string;
+  prayer: string;
+  todayAim: string;
+  updatedJourneyArc: JourneyArc;
+}
+
+export interface ActionLayerOutput {
   smallStepQuestion: string;
   suggestedSteps: string[];
   completionSuggestion: CompletionSuggestion;

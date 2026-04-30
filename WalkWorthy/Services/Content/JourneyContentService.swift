@@ -85,6 +85,10 @@ final class JourneyContentService {
                     recentEntries: recentEntries,
                     modelContext: modelContext
                 )
+                if let updatedArc = uniqueScripturePackage.updatedJourneyArc,
+                   let encoded = encodeJourneyArc(updatedArc) {
+                    journey.journeyArc = encoded
+                }
                 persist(
                     uniqueScripturePackage,
                     journeyID: journey.id,
@@ -106,6 +110,7 @@ final class JourneyContentService {
             recentEntries: recentEntries,
             memory: memory
         )) ?? DailyJourneyPackage(
+            dailyTitle: DailyJourneyPackageValidation.defaultDailyTitle,
             reflectionThought: DailyJourneyPackageValidation.defaultReflectionThought,
             scriptureReference: "Philippians 4:6-7",
             scriptureParaphrase: languageCode == "es"
@@ -120,6 +125,7 @@ final class JourneyContentService {
                         ? "염려를 기도로 하나님께 올려 드리고, 다음 걸음을 내딛을 때 주님의 평안을 누리세요."
                     : "Bring your worries to God in prayer and receive His peace as you take your next step.",
             prayer: DailyJourneyPackageValidation.defaultFirstPersonPrayer,
+            todayAim: DailyJourneyPackageValidation.defaultTodayAim,
             smallStepQuestion: DailyJourneyPackageValidation.defaultSmallStepQuestion,
             suggestedSteps: [
                 languageCode == "es"
@@ -139,6 +145,7 @@ final class JourneyContentService {
                 reason: "",
                 confidence: 0
             ),
+            qualityVersion: DailyJourneyPackage.currentQualityVersion,
             generatedAt: date
         )
 
@@ -209,7 +216,11 @@ final class JourneyContentService {
                 $0.journeyID == journeyID && $0.dayKey == dayKey
             }
         )
-        return try? modelContext.fetch(descriptor).first
+        guard let records = try? modelContext.fetch(descriptor) else { return nil }
+        return records
+            .filter { $0.qualityVersion >= DailyJourneyPackage.currentQualityVersion }
+            .sorted { $0.generatedAt > $1.generatedAt }
+            .first
     }
 
     private func persist(
@@ -223,13 +234,17 @@ final class JourneyContentService {
         let record = DailyJourneyPackageRecord(
             journeyID: journeyID,
             dayKey: dayKey,
+            dailyTitle: package.dailyTitle,
             reflectionThought: package.reflectionThought,
             scriptureReference: package.scriptureReference,
             scriptureParaphrase: package.scriptureParaphrase,
             prayer: package.prayer,
+            todayAim: package.todayAim,
             smallStepQuestion: package.smallStepQuestion,
             suggestedSteps: package.suggestedSteps,
             completionSuggestion: package.completionSuggestion,
+            updatedJourneyArc: package.updatedJourneyArc,
+            qualityVersion: package.qualityVersion,
             generatedAt: package.generatedAt,
             source: source
         )
@@ -266,13 +281,17 @@ final class JourneyContentService {
         )
 
         return DailyJourneyPackage(
+            dailyTitle: package.dailyTitle,
             reflectionThought: package.reflectionThought,
             scriptureReference: replacementReference,
             scriptureParaphrase: replacementParaphrase,
             prayer: package.prayer,
+            todayAim: package.todayAim,
             smallStepQuestion: package.smallStepQuestion,
             suggestedSteps: package.suggestedSteps,
             completionSuggestion: package.completionSuggestion,
+            updatedJourneyArc: package.updatedJourneyArc,
+            qualityVersion: package.qualityVersion,
             generatedAt: package.generatedAt
         )
     }

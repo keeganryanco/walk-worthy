@@ -1,17 +1,17 @@
 import { fallbackPackage } from "./fallback";
-import { parseAndNormalizePackage } from "./validate";
-import { JourneyPackageRequest, OrchestratedResult } from "./types";
-import { generateWithOpenAI } from "./providers/openai";
+import {
+  mergePackageFromCoreAndAction,
+  parseAndNormalizeActionLayer,
+  parseAndNormalizeDevotionalCore,
+  parseAndNormalizePackage
+} from "./validate";
+import { ActionLayerOutput, DevotionalCore, JourneyPackageRequest, OrchestratedResult, AIUsageMetrics, AITokenUsage } from "./types";
+import { generateWithOpenAIPrompt } from "./providers/openai";
 import { generateWithGemini } from "./providers/gemini";
 import { estimateCostUSD } from "./cost";
+import { actionModel, devotionalModel, repairModel } from "./modelRouting";
+import { buildActionLayerPrompt, buildDevotionalCorePrompt } from "./journeyQualityPrompts";
 import type { ProviderGenerationResult } from "./providers/openai";
-
-type Candidate = {
-  provider: "openai" | "gemini";
-  model: string;
-  call: (input: JourneyPackageRequest) => Promise<ProviderGenerationResult>;
-  escalated: boolean;
-};
 
 function enforceCompletionPromptRules(
   input: JourneyPackageRequest,
@@ -19,22 +19,7 @@ function enforceCompletionPromptRules(
 ): OrchestratedResult["package"] {
   const completionCount = typeof input.completionCount === "number" ? input.completionCount : 0;
 
-  if (completionCount < 7) {
-    return {
-      ...parsed,
-      completionSuggestion: {
-        shouldPrompt: false,
-        reason: "",
-        confidence: 0
-      }
-    };
-  }
-
-  if (!parsed.completionSuggestion.shouldPrompt) {
-    return parsed;
-  }
-
-  if (!parsed.completionSuggestion.reason.trim()) {
+  if (completionCount < 7 || !parsed.completionSuggestion.shouldPrompt || !parsed.completionSuggestion.reason.trim()) {
     return {
       ...parsed,
       completionSuggestion: {
@@ -48,73 +33,150 @@ function enforceCompletionPromptRules(
   return parsed;
 }
 
-function buildCandidates(): Candidate[] {
-  const candidates: Candidate[] = [];
+function usageWithCost(provider: "openai" | "gemini", model: string, usage?: AITokenUsage): AIUsageMetrics | undefined {
+  if (!usage) return undefined;
+  return {
+    ...usage,
+    estimatedCostUSD: estimateCostUSD(provider, model, usage)
+  };
+}
 
-  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+function combineUsage(segments: Array<AIUsageMetrics | undefined>): AIUsageMetrics | undefined {
+  const defined = segments.filter(Boolean) as AIUsageMetrics[];
+  if (!defined.length) return undefined;
+  return {
+    inputTokens: defined.reduce((sum, item) => sum + (item.inputTokens ?? 0), 0),
+    outputTokens: defined.reduce((sum, item) => sum + (item.outputTokens ?? 0), 0),
+    totalTokens: defined.reduce((sum, item) => sum + (item.totalTokens ?? 0), 0),
+    estimatedCostUSD: defined.reduce((sum, item) => sum + (item.estimatedCostUSD ?? 0), 0)
+  };
+}
+
+async function generateOpenAICore(
+  input: JourneyPackageRequest,
+  model: string,
+  apiKey: string,
+  repairNotes?: string
+): Promise<{ core: DevotionalCore | null; generated: ProviderGenerationResult }> {
+  const { system, user } = buildDevotionalCorePrompt(input, repairNotes);
+  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
+  return { core: parseAndNormalizeDevotionalCore(generated.text, input), generated };
+}
+
+async function generateOpenAIAction(
+  input: JourneyPackageRequest,
+  core: DevotionalCore,
+  model: string,
+  apiKey: string,
+  repairNotes?: string
+): Promise<{ action: ActionLayerOutput | null; generated: ProviderGenerationResult }> {
+  const { system, user } = buildActionLayerPrompt(input, core, repairNotes);
+  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
+  return { action: parseAndNormalizeActionLayer(generated.text, input, core), generated };
+}
+
+async function generateWithOpenAIOrchestration(
+  input: JourneyPackageRequest,
+  apiKey: string
+): Promise<OrchestratedResult | null> {
+  const coreModel = devotionalModel();
+  const fallbackRepairModel = repairModel();
+  const stepModel = actionModel();
+
+  const coreAttempt = await generateOpenAICore(input, coreModel, apiKey);
+  let core = coreAttempt.core;
+  let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated.usage);
+  let escalated = false;
+
+  if (!core) {
+    const repaired = await generateOpenAICore(
+      input,
+      fallbackRepairModel,
+      apiKey,
+      "Previous devotional core failed validation. Repair sentence counts, remove practical commands from reflection, remove vague Christianese, keep near-quote scripture, and return the same JSON schema."
+    );
+    core = repaired.core;
+    coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);
+    escalated = true;
+  }
+
+  if (!core) return null;
+
+  const actionAttempt = await generateOpenAIAction(input, core, stepModel, apiKey);
+  let action = actionAttempt.action;
+  let actionUsage = usageWithCost("openai", stepModel, actionAttempt.generated.usage);
+
+  if (!action) {
+    const repairedAction = await generateOpenAIAction(
+      input,
+      core,
+      stepModel,
+      apiKey,
+      "Previous action layer failed validation. Make every suggested step relevant to the journey and today's question; include concrete real-world steps when context supports it."
+    );
+    action = repairedAction.action;
+    actionUsage = combineUsage([actionUsage, usageWithCost("openai", stepModel, repairedAction.generated.usage)]);
+  }
+
+  if (!action) {
+    const escalatedAction = await generateOpenAIAction(
+      input,
+      core,
+      fallbackRepairModel,
+      apiKey,
+      "Action layer still failed. Use specific, relevant, safe practical steps. Do not return unrelated generic spiritual chips."
+    );
+    action = escalatedAction.action;
+    actionUsage = combineUsage([actionUsage, usageWithCost("openai", fallbackRepairModel, escalatedAction.generated.usage)]);
+    escalated = true;
+  }
+
+  if (!action) return null;
+
+  return {
+    package: enforceCompletionPromptRules(input, mergePackageFromCoreAndAction(core, action)),
+    provider: "openai",
+    model: `${coreModel}+${stepModel}`,
+    escalated,
+    fallbackUsed: false,
+    usage: combineUsage([coreUsage, actionUsage])
+  };
+}
+
+async function generateWithGeminiFallback(input: JourneyPackageRequest): Promise<OrchestratedResult | null> {
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
-
-  if (openAIKey) {
-    const primaryModel = process.env.OPENAI_PRIMARY_MODEL?.trim() || "gpt-5-mini";
-    candidates.push({
-      provider: "openai",
-      model: primaryModel,
-      escalated: false,
-      call: (input) => generateWithOpenAI(input, primaryModel, openAIKey)
-    });
-  }
-
-  if (geminiKey) {
-    const primaryModel = process.env.GEMINI_PRIMARY_MODEL?.trim() || "gemini-2.5-flash";
-    candidates.push({
-      provider: "gemini",
-      model: primaryModel,
-      escalated: false,
-      call: (input) => generateWithGemini(input, primaryModel, geminiKey)
-    });
-  }
-
-  if (openAIKey) {
-    const escalationModel = process.env.OPENAI_ESCALATION_MODEL?.trim() || "gpt-5.1";
-    candidates.push({
-      provider: "openai",
-      model: escalationModel,
-      escalated: true,
-      call: (input) => generateWithOpenAI(input, escalationModel, openAIKey)
-    });
-  }
-
-  return candidates;
+  if (!geminiKey) return null;
+  const model = process.env.GEMINI_PRIMARY_MODEL?.trim() || "gemini-2.5-flash";
+  const generated = await generateWithGemini(input, model, geminiKey);
+  const parsed = parseAndNormalizePackage(generated.text, input);
+  if (!parsed) return null;
+  return {
+    package: enforceCompletionPromptRules(input, parsed),
+    provider: "gemini",
+    model,
+    escalated: true,
+    fallbackUsed: false,
+    usage: usageWithCost("gemini", model, generated.usage)
+  };
 }
 
 export async function generateJourneyPackage(input: JourneyPackageRequest): Promise<OrchestratedResult> {
-  const candidates = buildCandidates();
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
 
-  for (const candidate of candidates) {
+  if (openAIKey) {
     try {
-      const generated = await candidate.call(input);
-      const parsed = parseAndNormalizePackage(generated.text, input);
-      if (!parsed) {
-        continue;
-      }
-      const constrained = enforceCompletionPromptRules(input, parsed);
-
-      return {
-        package: constrained,
-        provider: candidate.provider,
-        model: candidate.model,
-        escalated: candidate.escalated,
-        fallbackUsed: false,
-        usage: generated.usage
-          ? {
-              ...generated.usage,
-              estimatedCostUSD: estimateCostUSD(candidate.provider, candidate.model, generated.usage)
-            }
-          : undefined
-      };
+      const result = await generateWithOpenAIOrchestration(input, openAIKey);
+      if (result) return result;
     } catch {
-      continue;
+      // Fall through to provider fallback and local template.
     }
+  }
+
+  try {
+    const geminiResult = await generateWithGeminiFallback(input);
+    if (geminiResult) return geminiResult;
+  } catch {
+    // Fall through to local template.
   }
 
   return {

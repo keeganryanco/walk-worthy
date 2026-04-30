@@ -5,11 +5,39 @@ private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.kee
 
 struct JourneyArcPayload: Codable, Equatable {
     let purpose: String
+    let journeyPurpose: String?
     let currentStage: String
+    let todayAim: String?
     let nextMovement: String
     let tone: String
     let practicalActionDirection: String
+    let recentDayTitles: [String]?
     let lastFollowThroughInterpretation: String?
+    let specificContextSignals: [String]?
+
+    init(
+        purpose: String,
+        journeyPurpose: String? = nil,
+        currentStage: String,
+        todayAim: String? = nil,
+        nextMovement: String,
+        tone: String,
+        practicalActionDirection: String,
+        recentDayTitles: [String]? = nil,
+        lastFollowThroughInterpretation: String? = nil,
+        specificContextSignals: [String]? = nil
+    ) {
+        self.purpose = purpose
+        self.journeyPurpose = journeyPurpose
+        self.currentStage = currentStage
+        self.todayAim = todayAim
+        self.nextMovement = nextMovement
+        self.tone = tone
+        self.practicalActionDirection = practicalActionDirection
+        self.recentDayTitles = recentDayTitles
+        self.lastFollowThroughInterpretation = lastFollowThroughInterpretation
+        self.specificContextSignals = specificContextSignals
+    }
 }
 
 struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {

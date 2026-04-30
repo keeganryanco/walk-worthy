@@ -83,11 +83,15 @@ enum JourneyArcService {
 
         let updated = JourneyArcPayload(
             purpose: purpose,
+            journeyPurpose: existing?.journeyPurpose ?? purpose,
             currentStage: currentStage,
+            todayAim: existing?.todayAim,
             nextMovement: nextMovement,
             tone: tone,
             practicalActionDirection: "Prefer specific real-world actions when the user's context supports them; lower difficulty after partial or missed follow-through.",
-            lastFollowThroughInterpretation: interpretation
+            recentDayTitles: existing?.recentDayTitles,
+            lastFollowThroughInterpretation: interpretation,
+            specificContextSignals: existing?.specificContextSignals
         )
         journey.journeyArc = encodeJourneyArc(updated) ?? journey.journeyArc
     }

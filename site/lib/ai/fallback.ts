@@ -1,4 +1,9 @@
-import { DailyJourneyPackage, JourneyPackageRequest } from "./types";
+import {
+  DAILY_JOURNEY_PACKAGE_QUALITY_VERSION,
+  DailyJourneyPackage,
+  JourneyArc,
+  JourneyPackageRequest
+} from "./types";
 import { deterministicReference } from "./scripture";
 
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
@@ -23,6 +28,7 @@ function followThroughStatus(input: JourneyPackageRequest): FollowThroughStatus 
 
 function fallbackChips(input: JourneyPackageRequest): string[] {
   const language = languageCode(input);
+  const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
   const status = followThroughStatus(input);
   if (status === "partial" || status === "no") {
     if (language === "es") {
@@ -41,6 +47,10 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
       return ["2분짜리 작은 행동을 하세요", "더 쉬운 행동 하나를 고르세요", "기도하고 작게 시작하세요"];
     }
     return ["Take a two minute step", "Choose one easier action", "Pray then start small"];
+  }
+
+  if (language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)) {
+    return ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"];
   }
 
   const theme = input.journey.themeKey ?? "basic";
@@ -248,6 +258,46 @@ function collectUsedScriptureReferences(input: JourneyPackageRequest): string[] 
   return Array.from(new Set([...fromHistory, ...fromPayload]));
 }
 
+function fallbackDailyTitle(input: JourneyPackageRequest): string {
+  const language = languageCode(input);
+  const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
+  if (language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)) return "Learning Sacrificial Love";
+  if (language === "en" && /(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "Choosing Peace Today";
+  if (language === "en" && /(prayer|consisten|disciplin|habit)/i.test(signals)) return "Practicing Steady Prayer";
+  if (language === "es") return "El paso de hoy";
+  if (language === "pt") return "O passo de hoje";
+  if (language === "de") return "Der heutige Schritt";
+  if (language === "ja") return "今日の一歩";
+  if (language === "ko") return "오늘의 걸음";
+  return "Today’s Faithful Step";
+}
+
+function fallbackTodayAim(input: JourneyPackageRequest): string {
+  const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
+  if (/(husband|wife|spouse|marriage)/i.test(signals)) return "practice concrete love toward your spouse";
+  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "practice peace in one concrete moment";
+  if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "turn prayer into one steady practice";
+  return input.profile.growthGoal || input.profile.prayerFocus || "take one faithful step";
+}
+
+function fallbackJourneyArc(input: JourneyPackageRequest, todayAim: string): JourneyArc {
+  const purpose = input.journeyArc?.journeyPurpose || input.journeyArc?.purpose || input.profile.prayerFocus || todayAim;
+  return {
+    purpose,
+    journeyPurpose: purpose,
+    currentStage: input.journeyArc?.currentStage || "learning the next faithful response",
+    todayAim,
+    nextMovement: input.journeyArc?.nextMovement || "Move from prayer into one concrete lived response.",
+    tone: input.journeyArc?.tone || "grounded, specific, biblically anchored, practical",
+    practicalActionDirection:
+      input.journeyArc?.practicalActionDirection ||
+      "Prefer specific real-life actions when the user's context supports them.",
+    recentDayTitles: input.journeyArc?.recentDayTitles ?? [],
+    specificContextSignals: input.journeyArc?.specificContextSignals ?? [],
+    lastFollowThroughInterpretation: input.journeyArc?.lastFollowThroughInterpretation ?? ""
+  };
+}
+
 export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPackage {
   const language = languageCode(input);
   const seed = `${input.journey.id}-${input.dateISO ?? "today"}`;
@@ -266,20 +316,23 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
         : language === "ko"
           ? "믿음으로 하나님께 간구를 올려 드리고, 오늘 신실한 한 걸음을 내딛으세요."
       : "Bring your requests to God with trust, and take one faithful step today.");
+  const dailyTitle = fallbackDailyTitle(input);
+  const todayAim = fallbackTodayAim(input);
 
   return {
+    dailyTitle,
     reflectionThought:
       language === "es"
-        ? "Tu oración necesita una forma concreta hoy. Dios puede formar crecimiento a través de una respuesta pequeña y fiel. No necesitas resolver todo el camino de una vez. Elige una acción que acerque tu vida a lo que estás pidiendo."
+        ? "La fe puede formar un camino paciente en esta área de oración. Dios suele obrar en el corazón antes de que todo se vea resuelto. Un paso pequeño puede revelar qué parte de la vida necesita atención y cuidado. El crecimiento verdadero se forma con fidelidad, no con presión."
         : language === "pt"
-          ? "Sua oração precisa ganhar uma forma concreta hoje. Deus pode formar crescimento por meio de uma resposta pequena e fiel. Você não precisa resolver todo o caminho de uma vez. Escolha uma ação que aproxime sua vida do que você está pedindo."
+          ? "A fé pode formar um caminho paciente nesta área de oração. Deus muitas vezes trabalha no coração antes que tudo pareça resolvido. Um pequeno passo pode revelar que parte da vida precisa de atenção e cuidado. O crescimento verdadeiro se forma com fidelidade, não com pressão."
           : language === "de"
-            ? "Dein Gebet braucht heute eine konkrete Form. Gott kann Wachstum durch eine kleine treue Antwort formen. Du musst nicht den ganzen Weg auf einmal lösen. Wähle eine Handlung, die dein Leben näher an das bringt, worum du bittest."
+            ? "Glaube kann in diesem Gebetsbereich einen geduldigen Weg formen. Gott wirkt oft im Herzen, bevor äußerlich alles gelöst ist. Ein kleiner Schritt kann zeigen, welcher Teil des Lebens Aufmerksamkeit und Fürsorge braucht. Echtes Wachstum entsteht durch Treue, nicht durch Druck."
           : language === "ja"
-            ? "今日の祈りには、具体的な形が必要です。神は小さな忠実な応答を通して成長を形づくることができます。道のり全体を一度に解決する必要はありません。あなたが願っていることに生活を近づける行動を一つ選びましょう。"
+            ? "この祈りの領域において、信仰は忍耐深い歩みを形づくります。神は目に見える解決の前に、心の中で働かれることがあります。小さな一歩は、生活のどこに注意と配慮が必要かを示してくれます。真の成長は、圧力ではなく忠実さによって育ちます。"
           : language === "ko"
-            ? "오늘의 기도에는 구체적인 모습이 필요합니다. 하나님은 작고 신실한 응답을 통해 성장을 빚어 가실 수 있습니다. 모든 길을 한 번에 해결할 필요는 없습니다. 당신이 구하는 방향으로 삶을 한 걸음 옮기는 행동을 하나 선택하세요."
-        : "Your prayer needs a concrete shape today. God can form growth through one small faithful response. You do not have to solve the whole journey at once. Choose one action that moves your life toward what you are asking for.",
+            ? "이 기도의 자리에서 믿음은 인내로운 길을 만들어 갑니다. 하나님은 모든 것이 해결되기 전에 먼저 마음 안에서 일하실 때가 많습니다. 작은 한 걸음은 삶의 어느 부분에 관심과 돌봄이 필요한지 보여 줄 수 있습니다. 참된 성장은 압박이 아니라 신실함으로 자랍니다."
+        : "Faith can form a patient path in this area of prayer. God often works in the heart before everything looks resolved. A small step can reveal which part of life needs attention and care. Real growth is shaped by faithfulness, not pressure.",
     scriptureReference: reference,
     scriptureParaphrase,
     prayer:
@@ -294,6 +347,7 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
           : language === "ko"
             ? "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 제가 신실하게 할 수 있는 구체적인 한 걸음을 보게 해 주세요. 마음만 품고 멈추지 않고 작게 시작할 겸손을 주세요. 제가 구하는 성장으로 이어지는 행동을 인도해 주세요."
         : "Lord, I place this journey in Your hands today. Help me see one concrete step I can take faithfully. Give me humility to start small instead of staying in intention. Guide my action toward the growth I am asking You for.",
+    todayAim,
     smallStepQuestion:
       followThroughStatus(input) === "partial" ||
       followThroughStatus(input) === "no"
@@ -324,6 +378,8 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
       shouldPrompt: false,
       reason: "",
       confidence: 0
-    }
+    },
+    updatedJourneyArc: fallbackJourneyArc(input, todayAim),
+    qualityVersion: DAILY_JOURNEY_PACKAGE_QUALITY_VERSION
   };
 }

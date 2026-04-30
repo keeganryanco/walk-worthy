@@ -462,13 +462,17 @@ private struct DebugOnboardingSimulatorView: View {
                 let record = DailyJourneyPackageRecord(
                     journeyID: journey.id,
                     dayKey: JourneyContentService.dayKey(for: .now),
+                    dailyTitle: initialPackage.dailyTitle,
                     reflectionThought: initialPackage.reflectionThought,
                     scriptureReference: initialPackage.scriptureReference,
                     scriptureParaphrase: initialPackage.scriptureParaphrase,
                     prayer: initialPackage.prayer,
+                    todayAim: initialPackage.todayAim,
                     smallStepQuestion: initialPackage.smallStepQuestion,
                     suggestedSteps: initialPackage.suggestedSteps,
                     completionSuggestion: initialPackage.completionSuggestion,
+                    updatedJourneyArc: initialPackage.updatedJourneyArc,
+                    qualityVersion: initialPackage.qualityVersion,
                     generatedAt: initialPackage.generatedAt,
                     source: .remote,
                     linkedEntryID: entry.id

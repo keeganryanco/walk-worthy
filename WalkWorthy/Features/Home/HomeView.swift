@@ -1747,6 +1747,11 @@ struct TendingFlowView: View {
         return value.isEmpty ? "Take one faithful step in response to what God is growing in you." : value
     }
 
+    private var dailyTitle: String {
+        let value = package?.dailyTitle.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? DailyJourneyPackageValidation.defaultDailyTitle : value
+    }
+
     private var prayerText: String {
         let value = package?.prayer.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return value.isEmpty ? entry.prompt : value
@@ -1850,6 +1855,12 @@ struct TendingFlowView: View {
 
                     if revealedStageCount >= 1 {
                         VStack(alignment: .leading, spacing: 14) {
+                            Text(dailyTitle)
+                                .font(WWTypography.heading(30).weight(.semibold))
+                                .foregroundStyle(WWColor.nearBlack)
+                                .lineSpacing(3)
+                                .multilineTextAlignment(.leading)
+
                             Text(L10n.string("REFLECT", default: "REFLECT"))
                                 .font(WWTypography.caption(14).weight(.heavy))
                                 .foregroundStyle(WWColor.muted)

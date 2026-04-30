@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
       typeof result.usage?.estimatedCostUSD === "number"
         ? result.usage.estimatedCostUSD
         : 0;
+    const projectedMonthlyCostUSD = Number((estimatedCostUSD * (1095 / 12)).toFixed(2));
+    const projectedYearlyCostUSD = Number((estimatedCostUSD * 1095).toFixed(2));
 
     void capturePostHogEvent("ai_generation_usage", distinctID, {
       endpoint: "journey_package",
@@ -98,6 +100,11 @@ export async function POST(request: NextRequest) {
       output_tokens: result.usage?.outputTokens ?? 0,
       total_tokens: result.usage?.totalTokens ?? 0,
       estimated_cost_usd: estimatedCostUSD,
+      cost_guardrail_package_exceeded: estimatedCostUSD > 0.035,
+      projected_monthly_cost_usd: projectedMonthlyCostUSD,
+      cost_guardrail_monthly_exceeded: projectedMonthlyCostUSD > 1,
+      projected_yearly_cost_usd: projectedYearlyCostUSD,
+      cost_guardrail_yearly_exceeded: projectedYearlyCostUSD > 30,
       completion_count: typedPayload.completionCount ?? 0,
       cycle_count: typedPayload.cycleCount ?? 0,
       app_platform: typedPayload.telemetry?.platform ?? "ios",
