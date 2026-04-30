@@ -49,6 +49,13 @@
 "settings.support.privacy" = "プライバシーポリシー";
 "settings.debug.paywall_bypass_enabled" = "このデバッグビルドではペイウォールのバイパスが有効です。";
 "settings.debug.reset_fast_day_offset" = "Fast-Dayオフセットをリセット";
+"settings.debug.section" = "デバッグテスト";
+"settings.debug.bypass_paywall" = "ペイウォールをバイパス（デバッグ）";
+"settings.debug.fast_day_tending" = "Fast-Day Tend（デバッグ）";
+"settings.debug.launch_onboarding_simulator" = "オンボーディングシミュレーターを起動";
+"settings.debug.enable_instructions" = "Runスキームの引数または環境変数に `-TEND_DEBUG_TESTING 1` を設定して有効にします。";
+"settings.debug.onboarding_simulator_unavailable" = "オンボーディングシミュレーターを読み込めません。";
+"settings.debug.close" = "閉じる";
 
 "downsell.cta.keep_going" = "続ける";
 "downsell.cta.hint" = "期間限定の再開オファーを購入します。";

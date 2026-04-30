@@ -49,6 +49,13 @@
 "settings.support.privacy" = "Datenschutz";
 "settings.debug.paywall_bypass_enabled" = "Paywall-Bypass ist in diesem Debug-Build aktiviert.";
 "settings.debug.reset_fast_day_offset" = "Schnelltag-Versatz zurücksetzen";
+"settings.debug.section" = "Debug-Tests";
+"settings.debug.bypass_paywall" = "Paywall umgehen (Debug)";
+"settings.debug.fast_day_tending" = "Schnelltag-Tending (Debug)";
+"settings.debug.launch_onboarding_simulator" = "Onboarding-Simulator starten";
+"settings.debug.enable_instructions" = "Aktiviere es mit `-TEND_DEBUG_TESTING 1` in den Argumenten oder Umgebungsvariablen deines Run-Schemas.";
+"settings.debug.onboarding_simulator_unavailable" = "Onboarding-Simulator konnte nicht geladen werden.";
+"settings.debug.close" = "Schließen";
 
 "downsell.cta.keep_going" = "Weitergehen";
 "downsell.cta.hint" = "Kauft das zeitlich begrenzte Verlängerungsangebot.";

@@ -49,6 +49,13 @@
 "settings.support.privacy" = "Privacy Policy";
 "settings.debug.paywall_bypass_enabled" = "Paywall bypass is enabled for this debug build.";
 "settings.debug.reset_fast_day_offset" = "Reset Fast-Day Offset";
+"settings.debug.section" = "Debug Testing";
+"settings.debug.bypass_paywall" = "Bypass Paywall (Debug)";
+"settings.debug.fast_day_tending" = "Fast-Day Tending (Debug)";
+"settings.debug.launch_onboarding_simulator" = "Launch Onboarding Simulator";
+"settings.debug.enable_instructions" = "Enable with `-TEND_DEBUG_TESTING 1` in your Run scheme arguments/environment.";
+"settings.debug.onboarding_simulator_unavailable" = "Unable to load onboarding simulator.";
+"settings.debug.close" = "Close";
 
 "downsell.cta.keep_going" = "Keep Going";
 "downsell.cta.hint" = "Purchases the limited-time renewal offer.";

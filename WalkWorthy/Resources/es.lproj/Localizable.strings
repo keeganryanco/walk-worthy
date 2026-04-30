@@ -49,6 +49,13 @@
 "settings.support.privacy" = "Política de privacidad";
 "settings.debug.paywall_bypass_enabled" = "La omisión del paywall está habilitada para esta compilación de depuración.";
 "settings.debug.reset_fast_day_offset" = "Restablecer desfase de día rápido";
+"settings.debug.section" = "Pruebas de depuración";
+"settings.debug.bypass_paywall" = "Omitir paywall (depuración)";
+"settings.debug.fast_day_tending" = "Tend con días rápidos (depuración)";
+"settings.debug.launch_onboarding_simulator" = "Abrir simulador de onboarding";
+"settings.debug.enable_instructions" = "Actívalo con `-TEND_DEBUG_TESTING 1` en los argumentos o variables de entorno del esquema Run.";
+"settings.debug.onboarding_simulator_unavailable" = "No se pudo cargar el simulador de onboarding.";
+"settings.debug.close" = "Cerrar";
 
 "downsell.cta.keep_going" = "Seguir";
 "downsell.cta.hint" = "Compra la oferta de renovación por tiempo limitado.";

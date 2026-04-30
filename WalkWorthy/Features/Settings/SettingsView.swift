@@ -206,12 +206,12 @@ struct SettingsView: View {
                 .listRowBackground(WWColor.surface)
 
 #if DEBUG
-                Section("Debug Testing") {
+                Section(L10n.string("settings.debug.section", default: "Debug Testing")) {
                     if AppConstants.Debug.debugTestingEnabled {
-                        Toggle("Bypass Paywall (Debug)", isOn: $debugBypassPaywallOverride)
-                        Toggle("Fast-Day Tending (Debug)", isOn: $debugFastDayTestingOverride)
+                        Toggle(L10n.string("settings.debug.bypass_paywall", default: "Bypass Paywall (Debug)"), isOn: $debugBypassPaywallOverride)
+                        Toggle(L10n.string("settings.debug.fast_day_tending", default: "Fast-Day Tending (Debug)"), isOn: $debugFastDayTestingOverride)
 
-                        Button("Launch Onboarding Simulator") {
+                        Button(L10n.string("settings.debug.launch_onboarding_simulator", default: "Launch Onboarding Simulator")) {
                             showOnboardingSimulator = true
                         }
                         .foregroundStyle(WWColor.growGreen)
@@ -221,7 +221,7 @@ struct SettingsView: View {
                         }
                         .foregroundStyle(WWColor.growGreen)
                     } else {
-                        Text("Enable with `-TEND_DEBUG_TESTING 1` in your Run scheme arguments/environment.")
+                        Text(L10n.string("settings.debug.enable_instructions", default: "Enable with `-TEND_DEBUG_TESTING 1` in your Run scheme arguments/environment."))
                             .font(WWTypography.caption(14))
                             .foregroundStyle(WWColor.muted)
                     }
@@ -382,10 +382,10 @@ private struct DebugOnboardingSimulatorView: View {
                 }
             } else {
                 VStack(spacing: 18) {
-                    Text("Unable to load onboarding simulator.")
+                    Text(L10n.string("settings.debug.onboarding_simulator_unavailable", default: "Unable to load onboarding simulator."))
                         .font(WWTypography.heading(20))
                         .foregroundStyle(WWColor.nearBlack)
-                    Button("Close") {
+                    Button(L10n.string("settings.debug.close", default: "Close")) {
                         dismiss()
                     }
                     .font(WWTypography.heading(18))
