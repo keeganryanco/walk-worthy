@@ -109,28 +109,111 @@ export const APPROVED_SCRIPTURE_REFERENCES = [
   "James 5:7-8",
   "1 Peter 3:8",
   "1 Peter 4:8",
-  "1 John 3:18"
+  "1 John 3:18",
+  "Genesis 2:24",
+  "Deuteronomy 6:6-7",
+  "Psalm 16:11",
+  "Psalm 25:4-5",
+  "Psalm 34:18",
+  "Psalm 55:12-14",
+  "Psalm 55:22",
+  "Psalm 73:26",
+  "Psalm 139:13-14",
+  "Psalm 147:3",
+  "Nehemiah 8:10",
+  "Proverbs 2:6",
+  "Proverbs 4:26",
+  "Proverbs 12:18",
+  "Proverbs 15:1",
+  "Proverbs 15:22",
+  "Proverbs 16:2",
+  "Proverbs 18:21",
+  "Proverbs 21:5",
+  "Proverbs 22:6",
+  "Proverbs 29:25",
+  "Ecclesiastes 3:1",
+  "Isaiah 43:1-2",
+  "Isaiah 55:8-9",
+  "Jeremiah 29:11",
+  "Matthew 5:4",
+  "Matthew 6:25-34",
+  "Matthew 25:21",
+  "Luke 6:27-28",
+  "Luke 12:15",
+  "John 15:11",
+  "John 15:16",
+  "Romans 8:1",
+  "Romans 8:15",
+  "Romans 12:17-18",
+  "Romans 12:18",
+  "1 Corinthians 9:24-27",
+  "1 Corinthians 10:31",
+  "2 Corinthians 1:3-4",
+  "2 Corinthians 10:5",
+  "Galatians 1:10",
+  "Galatians 5:22-23",
+  "Ephesians 4:15",
+  "Ephesians 4:26-27",
+  "Ephesians 4:31-32",
+  "Ephesians 5:25",
+  "Ephesians 6:4",
+  "Philippians 4:11-13",
+  "Colossians 3:17",
+  "Colossians 3:19",
+  "1 Timothy 4:12",
+  "2 Timothy 2:5",
+  "Hebrews 4:15-16",
+  "Hebrews 12:11",
+  "James 1:19-20",
+  "James 3:17",
+  "1 Peter 3:7",
+  "1 Peter 5:6-7",
+  "Revelation 21:4"
 ] as const;
 
 const canonicalReferencePattern = /^(?:[1-3]\s)?[A-Za-z]+(?:\s[A-Za-z]+)*\s\d{1,3}:\d{1,3}(?:-\d{1,3})?$/;
+const MAX_REFERENCE_COUNT = 3;
 
 export function isCanonicalReferenceFormat(input: string): boolean {
   return canonicalReferencePattern.test(input.trim());
 }
 
-export function normalizeReference(input: string): string {
+export function splitReferenceCandidates(input: string): string[] {
+  return input
+    .split(/\s*(?:;|\+|\band\b|,\s+(?=(?:[1-3]\s)?[A-Z]))\s*/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function normalizeSingleReference(input: string): string | null {
   const trimmed = input.trim();
-  return APPROVED_SCRIPTURE_REFERENCES.includes(trimmed as (typeof APPROVED_SCRIPTURE_REFERENCES)[number])
-    ? trimmed
-    : isCanonicalReferenceFormat(trimmed)
-      ? trimmed
-      : "Philippians 4:6-7";
+  if (APPROVED_SCRIPTURE_REFERENCES.includes(trimmed as (typeof APPROVED_SCRIPTURE_REFERENCES)[number])) {
+    return trimmed;
+  }
+  return isCanonicalReferenceFormat(trimmed) ? trimmed : null;
+}
+
+export function normalizeReference(input: string): string {
+  const parts = splitReferenceCandidates(input).slice(0, MAX_REFERENCE_COUNT);
+  const normalized = parts
+    .map(normalizeSingleReference)
+    .filter((reference): reference is string => Boolean(reference));
+  const unique = Array.from(new Set(normalized));
+  return unique.length > 0 ? unique.join("; ") : "Philippians 4:6-7";
+}
+
+export function splitNormalizedReferences(input: string): string[] {
+  const normalized = splitReferenceCandidates(input)
+    .slice(0, MAX_REFERENCE_COUNT)
+    .map(normalizeSingleReference)
+    .filter((reference): reference is string => Boolean(reference));
+  return Array.from(new Set(normalized));
 }
 
 export function deterministicReference(seed: string, excludedReferences: string[] = []): string {
   const excluded = new Set(
     excludedReferences
-      .map((value) => value.trim())
+      .flatMap((value) => splitNormalizedReferences(value))
       .filter(Boolean)
   );
 

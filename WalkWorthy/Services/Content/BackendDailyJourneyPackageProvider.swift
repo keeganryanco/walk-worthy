@@ -264,7 +264,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let usedScriptureReferences = Array(
             Set(
                 recentEntries
-                    .map { $0.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .flatMap { ScriptureReferenceValidator.splitReferenceSet($0.scriptureReference) }
                     .filter { !$0.isEmpty }
             )
         ).sorted()

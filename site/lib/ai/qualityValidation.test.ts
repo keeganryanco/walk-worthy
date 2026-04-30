@@ -5,6 +5,7 @@ import {
   normalizeActionLayerFromObject,
   normalizeDevotionalCoreFromObject
 } from "./validate.ts";
+import { normalizeReference } from "./scripture.ts";
 import { actionModel, devotionalModel, repairModel } from "./modelRouting.ts";
 import { DAILY_JOURNEY_PACKAGE_QUALITY_VERSION } from "./types.ts";
 import type { JourneyPackageRequest } from "./types.ts";
@@ -81,11 +82,45 @@ test("model routing defaults use gpt-5.5 core and gpt-5.1 action", () => {
 });
 
 test("current package quality version invalidates stale cached output", () => {
-  assert.equal(DAILY_JOURNEY_PACKAGE_QUALITY_VERSION, 4);
+  assert.equal(DAILY_JOURNEY_PACKAGE_QUALITY_VERSION, 5);
 });
 
 test("valid spouse-specific devotional core passes", () => {
   assert.ok(normalizeDevotionalCoreFromObject(validCoreSource, husbandRequest));
+});
+
+test("marriage context rejects broad love command scripture by itself", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      scriptureReference: "Matthew 22:37-39",
+      scriptureParaphrase:
+        "Jesus says the greatest command is to love God with all the heart, soul, and mind, and the second is to love your neighbor as yourself.",
+      reflectionThought:
+        "Jesus shows that love for God is tied to love for the person close beside you. In marriage, love becomes real when it is patient, humble, and willing to serve. A husband is growing in the right direction when his daily choices look less selfish and more like the way Christ loves. Sacrificial love is learned in ordinary moments of care, listening, and humility."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+});
+
+test("multi-reference scripture passes when one passage directly fits marriage", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      scriptureReference: "Matthew 22:37-39; Ephesians 5:25",
+      scriptureParaphrase:
+        "Jesus says the greatest command is to love God and to love your neighbor as yourself. Paul tells husbands to love their wives as Christ loved the church and gave Himself for her."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result?.scriptureReference, "Matthew 22:37-39; Ephesians 5:25");
+});
+
+test("scripture references may normalize to a semicolon-separated set", () => {
+  assert.equal(normalizeReference("John 15:12; Mark 10:45"), "John 15:12; Mark 10:45");
 });
 
 test("reflection with practical commands fails validation", () => {

@@ -112,18 +112,87 @@ struct ScriptureReferenceValidator {
         "James 5:7-8",
         "1 Peter 3:8",
         "1 Peter 4:8",
-        "1 John 3:18"
+        "1 John 3:18",
+        "Genesis 2:24",
+        "Deuteronomy 6:6-7",
+        "Psalm 16:11",
+        "Psalm 25:4-5",
+        "Psalm 34:18",
+        "Psalm 55:12-14",
+        "Psalm 55:22",
+        "Psalm 73:26",
+        "Psalm 139:13-14",
+        "Psalm 147:3",
+        "Nehemiah 8:10",
+        "Proverbs 2:6",
+        "Proverbs 4:26",
+        "Proverbs 12:18",
+        "Proverbs 15:1",
+        "Proverbs 15:22",
+        "Proverbs 16:2",
+        "Proverbs 18:21",
+        "Proverbs 21:5",
+        "Proverbs 22:6",
+        "Proverbs 29:25",
+        "Ecclesiastes 3:1",
+        "Isaiah 43:1-2",
+        "Isaiah 55:8-9",
+        "Jeremiah 29:11",
+        "Matthew 5:4",
+        "Matthew 6:25-34",
+        "Matthew 25:21",
+        "Luke 6:27-28",
+        "Luke 12:15",
+        "John 15:11",
+        "John 15:16",
+        "Romans 8:1",
+        "Romans 8:15",
+        "Romans 12:17-18",
+        "Romans 12:18",
+        "1 Corinthians 9:24-27",
+        "1 Corinthians 10:31",
+        "2 Corinthians 1:3-4",
+        "2 Corinthians 10:5",
+        "Galatians 1:10",
+        "Galatians 5:22-23",
+        "Ephesians 4:15",
+        "Ephesians 4:26-27",
+        "Ephesians 4:31-32",
+        "Ephesians 5:25",
+        "Ephesians 6:4",
+        "Philippians 4:11-13",
+        "Colossians 3:17",
+        "Colossians 3:19",
+        "1 Timothy 4:12",
+        "2 Timothy 2:5",
+        "Hebrews 4:15-16",
+        "Hebrews 12:11",
+        "James 1:19-20",
+        "James 3:17",
+        "1 Peter 3:7",
+        "1 Peter 5:6-7",
+        "Revelation 21:4"
     ]
 
     static func isApproved(_ reference: String) -> Bool {
         let trimmed = reference.trimmingCharacters(in: .whitespacesAndNewlines)
-        if approvedReferences.contains(trimmed) {
-            return true
-        }
+        let references = splitReferenceSet(trimmed)
+        guard !references.isEmpty, references.count <= 3 else { return false }
+        return references.allSatisfy(isApprovedSingleReference)
+    }
 
+    private static func isApprovedSingleReference(_ reference: String) -> Bool {
+        if approvedReferences.contains(reference) { return true }
         // Canonical format fallback: "<Book> <Chapter>:<Verse>" or verse ranges.
         let pattern = #"^(?:[1-3]\s)?[A-Za-z]+(?:\s[A-Za-z]+)*\s\d{1,3}:\d{1,3}(?:-\d{1,3})?$"#
-        return trimmed.range(of: pattern, options: .regularExpression) != nil
+        return reference.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    static func splitReferenceSet(_ reference: String) -> [String] {
+        reference
+            .components(separatedBy: ";")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 
     static var approvedReferencesSorted: [String] {

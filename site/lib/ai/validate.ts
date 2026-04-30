@@ -8,7 +8,7 @@ import type {
   JourneyArc,
   JourneyPackageRequest
 } from "./types";
-import { deterministicReference, normalizeReference } from "./scripture";
+import { deterministicReference, normalizeReference, splitNormalizedReferences } from "./scripture";
 
 const CHIP_MIN_WORDS = 2;
 const CHIP_MAX_WORDS = 8;
@@ -1065,6 +1065,17 @@ function fallbackParaphrase(reference: string, language: SupportedLanguageCode):
 }
 
 function enforceParaphraseFidelity(reference: string, paraphrase: string, language: SupportedLanguageCode): string {
+  const references = splitNormalizedReferences(reference);
+  if (references.length > 1) {
+    if (paraphrase.trim()) {
+      return paraphrase;
+    }
+    return references
+      .map((item) => fallbackParaphrase(item, language))
+      .filter((item): item is string => Boolean(item))
+      .join(" ");
+  }
+
   const fallback = fallbackParaphrase(reference, language);
   const anchors = referenceAnchorRules[reference];
   if (!fallback) {
@@ -1101,10 +1112,10 @@ function collectUsedScriptureReferences(input?: JourneyPackageRequest): string[]
   }
 
   const fromHistory = (input.recentEntries ?? [])
-    .map((entry) => normalizeReference(cleanText(entry.scriptureReference, 120)))
+    .flatMap((entry) => splitNormalizedReferences(cleanText(entry.scriptureReference, 160)))
     .filter(Boolean);
   const fromPayload = (input.usedScriptureReferences ?? [])
-    .map((value) => normalizeReference(cleanText(value, 120)))
+    .flatMap((value) => splitNormalizedReferences(cleanText(value, 160)))
     .filter(Boolean);
 
   return Array.from(new Set([...fromHistory, ...fromPayload]));
@@ -1112,7 +1123,8 @@ function collectUsedScriptureReferences(input?: JourneyPackageRequest): string[]
 
 function nonRepeatingReference(candidate: string, input?: JourneyPackageRequest): string {
   const used = collectUsedScriptureReferences(input);
-  if (used.length === 0 || !used.includes(candidate)) {
+  const candidateParts = splitNormalizedReferences(candidate);
+  if (used.length === 0 || candidateParts.every((part) => !used.includes(part))) {
     return candidate;
   }
 
@@ -1314,6 +1326,182 @@ function hasOffContextMarriageStep(step: string): boolean {
   return /friend|generic check-?in|next step|community|neighbor|coworker|church member/i.test(step) || !isMarriageStep(step);
 }
 
+const scriptureContextReferenceSets: Array<{ pattern: RegExp; references: Set<string> }> = [
+  {
+    pattern: /(husband|wife|spouse|marriage|boyfriend|girlfriend|dating|friendship|friend\b)/i,
+    references: new Set([
+      "Genesis 2:24",
+      "Matthew 22:37-39",
+      "Proverbs 27:17",
+      "Ecclesiastes 4:9-10",
+      "John 13:34-35",
+      "John 15:12",
+      "Romans 12:10",
+      "1 Corinthians 13:4-7",
+      "Galatians 5:13",
+      "Ephesians 4:2",
+      "Ephesians 4:32",
+      "Ephesians 5:25",
+      "Philippians 2:3-4",
+      "Colossians 3:12",
+      "Colossians 3:19",
+      "Hebrews 10:24",
+      "Mark 10:45",
+      "1 Peter 3:7",
+      "1 Peter 3:8",
+      "1 Peter 4:8",
+      "1 John 3:18"
+    ])
+  },
+  {
+    pattern: /(grief|grieve|loss|died|death|mourning|sad|heartbroken|duelo|luto)/i,
+    references: new Set([
+      "Psalm 23:1-3",
+      "Psalm 34:18",
+      "Psalm 73:26",
+      "Psalm 147:3",
+      "Isaiah 43:1-2",
+      "Lamentations 3:22-23",
+      "Matthew 5:4",
+      "Matthew 11:28",
+      "John 14:1",
+      "2 Corinthians 1:3-4",
+      "Revelation 21:4"
+    ])
+  },
+  {
+    pattern: /(anx|worr|fear|stress|panic|peace|calm|afraid)/i,
+    references: new Set([
+      "Psalm 4:8",
+      "Psalm 46:10",
+      "Psalm 55:22",
+      "Psalm 56:3-4",
+      "Psalm 62:8",
+      "Psalm 94:19",
+      "Isaiah 26:3",
+      "Isaiah 30:15",
+      "Isaiah 41:10",
+      "Matthew 6:25-34",
+      "Matthew 6:34",
+      "John 14:27",
+      "John 16:33",
+      "Philippians 4:6-7",
+      "1 Peter 5:6-7",
+      "1 Peter 5:7",
+      "2 Timothy 1:7"
+    ])
+  },
+  {
+    pattern: /(work|job|career|decision|business|money|budget|debt|influencer|tiktok|social media|calling|ambition|success)/i,
+    references: new Set([
+      "Proverbs 2:6",
+      "Proverbs 3:5-6",
+      "Proverbs 15:22",
+      "Proverbs 16:2",
+      "Proverbs 16:3",
+      "Proverbs 21:5",
+      "Proverbs 29:25",
+      "Matthew 5:16",
+      "Matthew 6:33",
+      "Matthew 25:21",
+      "Luke 12:15",
+      "Galatians 1:10",
+      "Ephesians 2:10",
+      "Colossians 3:17",
+      "Colossians 3:23",
+      "1 Corinthians 10:31",
+      "James 1:5"
+    ])
+  },
+  {
+    pattern: /(basketball|sport|athlete|fitness|exercise|discipline|habit|practice|training|consisten|focus|procrastin)/i,
+    references: new Set([
+      "Proverbs 4:26",
+      "Proverbs 21:5",
+      "Colossians 3:23",
+      "1 Corinthians 9:24-27",
+      "1 Corinthians 9:27",
+      "2 Timothy 2:5",
+      "Hebrews 12:1",
+      "Hebrews 12:11",
+      "Philippians 3:13-14"
+    ])
+  },
+  {
+    pattern: /(cheat|betray|betrayed|forgiv|resent|anger|hurt|conflict|enemy)/i,
+    references: new Set([
+      "Psalm 55:12-14",
+      "Psalm 55:22",
+      "Proverbs 12:18",
+      "Proverbs 15:1",
+      "Matthew 11:28",
+      "Luke 6:27-28",
+      "Romans 12:17-18",
+      "Romans 12:18",
+      "Romans 12:21",
+      "Ephesians 4:26-27",
+      "Ephesians 4:31-32",
+      "James 1:19-20"
+    ])
+  },
+  {
+    pattern: /(happy|happier|joy|content|gratitude|lonely|meaning)/i,
+    references: new Set([
+      "Psalm 16:11",
+      "Psalm 90:14",
+      "Psalm 118:24",
+      "John 10:10",
+      "John 15:11",
+      "Romans 15:13",
+      "Philippians 4:8",
+      "Philippians 4:11-13",
+      "1 Thessalonians 5:16-18",
+      "Nehemiah 8:10"
+    ])
+  }
+];
+
+const scriptureContextDirectReferenceSets: Array<{ pattern: RegExp; references: Set<string> }> = [
+  {
+    pattern: /(husband|wife|spouse|marriage)/i,
+    references: new Set([
+      "Genesis 2:24",
+      "John 15:12",
+      "1 Corinthians 13:4-7",
+      "Galatians 5:13",
+      "Ephesians 4:2",
+      "Ephesians 4:32",
+      "Ephesians 5:25",
+      "Philippians 2:3-4",
+      "Colossians 3:19",
+      "Mark 10:45",
+      "1 Peter 3:7",
+      "1 Peter 4:8",
+      "1 John 3:18"
+    ])
+  }
+];
+
+function scriptureMatchesJourneyContext(reference: string, input?: JourneyPackageRequest): boolean {
+  const signals = contextSignals(input);
+  if (!signals) return true;
+
+  const references = splitNormalizedReferences(reference);
+  for (const directSet of scriptureContextDirectReferenceSets) {
+    if (directSet.pattern.test(signals) && !references.some((item) => directSet.references.has(item))) {
+      return false;
+    }
+  }
+
+  for (const set of scriptureContextReferenceSets) {
+    if (set.pattern.test(signals)) {
+      return references.some((item) => set.references.has(item));
+    }
+  }
+
+  return true;
+}
+
 export function parseAndNormalizeDevotionalCore(rawText: string, input?: JourneyPackageRequest): DevotionalCore | null {
   const parsed = extractJSON(rawText);
   if (!parsed || typeof parsed !== "object") return null;
@@ -1325,7 +1513,7 @@ export function normalizeDevotionalCoreFromObject(
   input?: JourneyPackageRequest
 ): DevotionalCore | null {
   const language = languageCode(input);
-  const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 120));
+  const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 180));
   const uniqueReference = nonRepeatingReference(referenceCandidate, input);
   const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
   const prayer = normalizeFirstPersonPrayer(source.prayer, input);
@@ -1349,6 +1537,7 @@ export function normalizeDevotionalCoreFromObject(
     hasMetaDevotionalFraming(reflectionThought) ||
     hasOverlyDenseAbstractLanguage(reflectionThought, language) ||
     hasEmptyChristianese(reflectionThought) ||
+    !scriptureMatchesJourneyContext(uniqueReference, input) ||
     !hasSentenceCount(prayer, 3, 4) ||
     hasEmptyChristianese(prayer)
   ) {

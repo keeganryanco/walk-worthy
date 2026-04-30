@@ -20,7 +20,7 @@ struct CompletionSuggestion: Codable, Equatable {
 }
 
 struct DailyJourneyPackage: Codable, Equatable {
-    static let currentQualityVersion = 4
+    static let currentQualityVersion = 5
 
     let dailyTitle: String
     let reflectionThought: String
@@ -827,7 +827,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
         let isKorean = languageCode == "ko"
         let usedReferences = Set(
             recentEntries
-                .map { $0.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .flatMap { ScriptureReferenceValidator.splitReferenceSet($0.scriptureReference) }
                 .filter { !$0.isEmpty }
         )
         let reference = ScriptureReferenceValidator.deterministicApprovedReference(

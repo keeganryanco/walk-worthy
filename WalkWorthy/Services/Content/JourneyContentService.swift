@@ -276,7 +276,8 @@ final class JourneyContentService {
         )
 
         let currentReference = package.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !currentReference.isEmpty, !usedReferences.contains(currentReference) {
+        let currentReferenceSet = ScriptureReferenceValidator.splitReferenceSet(currentReference)
+        if !currentReferenceSet.isEmpty, currentReferenceSet.allSatisfy({ !usedReferences.contains($0) }) {
             return package
         }
 
@@ -312,7 +313,7 @@ final class JourneyContentService {
         modelContext: ModelContext
     ) -> Set<String> {
         let fromEntries = recentEntries
-            .map { $0.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .flatMap { ScriptureReferenceValidator.splitReferenceSet($0.scriptureReference) }
             .filter { !$0.isEmpty }
 
         let descriptor = FetchDescriptor<DailyJourneyPackageRecord>(
@@ -320,7 +321,7 @@ final class JourneyContentService {
         )
         let fromPackages = (try? modelContext.fetch(descriptor))?
             .filter { $0.dayKey != excludingDayKey }
-            .map { $0.scriptureReference.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .flatMap { ScriptureReferenceValidator.splitReferenceSet($0.scriptureReference) }
             .filter { !$0.isEmpty } ?? []
 
         return Set(fromEntries + fromPackages)

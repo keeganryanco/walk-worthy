@@ -17,7 +17,7 @@ export interface CompletionSuggestion {
   confidence: number;
 }
 
-export const DAILY_JOURNEY_PACKAGE_QUALITY_VERSION = 4;
+export const DAILY_JOURNEY_PACKAGE_QUALITY_VERSION = 5;
 
 export interface JourneyArc {
   purpose: string;
