@@ -55,7 +55,7 @@ const validCoreSource = {
   scriptureReference: "John 15:12",
   scriptureParaphrase: "Jesus commands His disciples to love one another as He has loved them.",
   reflectionThought:
-    "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. For a husband, this turns marriage into a daily place where Christlike love becomes visible. Today's lesson is learning to let love become attentive, humble, and steady.",
+    "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. For a husband, this turns marriage into a daily place where Christlike love becomes visible. Sacrificial love grows in the ordinary places where attention, humility, and tenderness become steady.",
   prayer:
     "Jesus, I bring my marriage and my role as a husband to You today. Teach me to love my wife with patience, humility, and attention. Show me where selfishness or passivity has shaped my habits.",
   todayAim: "practice concrete love toward your wife",
@@ -120,6 +120,19 @@ test("vague Christianese prayer fails validation", () => {
       ...validCoreSource,
       prayer:
         "Lord, I ask You to help our home reflect your grace more and more. Give me deeper reliance and a higher purpose. Help me grow closer to you."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+});
+
+test("meta-devotional reflection framing fails validation", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      reflectionThought:
+        "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. For a husband, this turns marriage into a daily place where Christlike love becomes visible. Today's lesson is learning to let love become attentive, humble, and steady."
     },
     husbandRequest
   );

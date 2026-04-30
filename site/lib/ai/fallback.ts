@@ -327,7 +327,7 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
   return {
     dailyTitle,
     reflectionThought: isEnglishMarriageJourney
-      ? "Paul presents love as patient, humble, and willing to seek another person's good. In marriage, that kind of love becomes visible through attentiveness rather than sentiment alone. A husband grows when his habits are shaped less by passivity or defensiveness and more by Christlike service. Today's lesson is to see marriage as a daily place where sacrificial love is learned."
+      ? "Jesus joins love for God with love for the person placed near enough to receive it. In marriage, that love becomes more than sentiment when it is patient, humble, and attentive. A husband grows when his habits are shaped less by passivity or defensiveness and more by Christlike service. Sacrificial love is learned in the ordinary places where tenderness and humility become visible."
       : language === "es"
         ? "La fe puede formar un camino paciente en esta área de oración. Dios suele obrar en el corazón antes de que todo se vea resuelto. Un paso pequeño puede revelar qué parte de la vida necesita atención y cuidado. El crecimiento verdadero se forma con fidelidad, no con presión."
         : language === "pt"

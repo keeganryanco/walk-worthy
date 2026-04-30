@@ -1860,6 +1860,7 @@ struct TendingFlowView: View {
                                 .foregroundStyle(WWColor.nearBlack)
                                 .lineSpacing(3)
                                 .multilineTextAlignment(.leading)
+                                .offset(x: -1.5)
 
                             Text(L10n.string("REFLECT", default: "REFLECT"))
                                 .font(WWTypography.caption(14).weight(.heavy))

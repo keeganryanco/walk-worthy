@@ -1233,6 +1233,9 @@ const REFLECTION_ACTION_ASSIGNMENT_REGEX =
 const GENERIC_DAILY_TITLE_REGEX =
   /^(growing in faith|trusting god more|daily peace|a step toward love|today'?s faithful step|one faithful step today|faithful growth|daily faith|walking in faith|god'?s guidance|a faithful step|the next step)$/i;
 
+const META_DEVOTIONAL_REFLECTION_REGEX =
+  /\b(today'?s lesson|the lesson is|this lesson|the takeaway|this devotional|this reflection|in conclusion|today'?s aim)\b/i;
+
 function reflectionAssignsAction(value: string, language: SupportedLanguageCode): boolean {
   if (language !== "en") return false;
   const sentences = value.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
@@ -1253,6 +1256,10 @@ function reflectionAssignsAction(value: string, language: SupportedLanguageCode)
 
 function hasEmptyChristianese(value: string): boolean {
   return EMPTY_CHRISTIANESE_REGEX.test(value);
+}
+
+function hasMetaDevotionalFraming(value: string): boolean {
+  return META_DEVOTIONAL_REFLECTION_REGEX.test(value);
 }
 
 function isGenericDailyTitle(value: string, language: SupportedLanguageCode): boolean {
@@ -1319,6 +1326,7 @@ export function normalizeDevotionalCoreFromObject(
     !hasSentenceCount(reflectionThought, 4, 5) ||
     reflectionUsesFirstPerson(reflectionThought, language) ||
     reflectionAssignsAction(reflectionThought, language) ||
+    hasMetaDevotionalFraming(reflectionThought) ||
     hasEmptyChristianese(reflectionThought) ||
     !hasSentenceCount(prayer, 3, 4) ||
     hasEmptyChristianese(prayer)
