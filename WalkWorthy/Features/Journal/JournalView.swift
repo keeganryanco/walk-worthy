@@ -188,6 +188,12 @@ struct CreateJourneyView: View {
     
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived })
     private var activeJourneys: [PrayerJourney]
+
+    @Query(sort: \PrayerJourney.createdAt, order: .reverse)
+    private var allJourneys: [PrayerJourney]
+
+    @Query(sort: \PrayerEntry.createdAt, order: .reverse)
+    private var recentEntries: [PrayerEntry]
     
     @Query(sort: \AppSettings.lastSessionDate, order: .reverse)
     private var settingsRows: [AppSettings]
@@ -201,6 +207,7 @@ struct CreateJourneyView: View {
     @State private var prayerIntentText = ""
     @State private var alertMessage: String?
     @State private var isSubmitting = false
+    @State private var suggestionSeed = Int.random(in: Int.min...Int.max)
     @FocusState private var focusedField: InputField?
 
     private let bootstrapProvider = BackendJourneyBootstrapProvider()
@@ -210,12 +217,10 @@ struct CreateJourneyView: View {
     }
 
     private var starterPromptSuggestions: [String] {
-        [
-            L10n.string("create_journey.starter_1", default: "Trusting God with my anxiety"),
-            L10n.string("create_journey.starter_2", default: "Growing consistency in prayer"),
-            L10n.string("create_journey.starter_3", default: "Healing in a relationship"),
-            L10n.string("create_journey.starter_4", default: "Wisdom for a hard decision")
-        ]
+        let personalized = personalizedStarterSuggestions()
+        let generic = rotatedGenericStarterSuggestions()
+        let mixed = interleave(primary: Array(personalized.prefix(2)), secondary: generic)
+        return Array(uniqueNonEmpty(mixed).prefix(4))
     }
     
     var body: some View {
@@ -461,6 +466,117 @@ struct CreateJourneyView: View {
                 }
             }
         )
+    }
+
+    private func personalizedStarterSuggestions() -> [String] {
+        let journeySignals = allJourneys
+            .prefix(8)
+            .flatMap { journey -> [String] in
+                [
+                    journey.growthFocus,
+                    journey.title,
+                    journey.category
+                ]
+            }
+
+        let entrySignals = recentEntries
+            .prefix(10)
+            .flatMap { entry -> [String] in
+                [
+                    entry.actionStep,
+                    entry.userReflection
+                ]
+            }
+
+        let signals = uniqueNonEmpty(journeySignals + entrySignals)
+        let candidates = signals.compactMap(personalizedSuggestion(from:))
+        return rotated(uniqueNonEmpty(candidates), seed: suggestionSeed)
+    }
+
+    private func personalizedSuggestion(from signal: String) -> String? {
+        let normalized = signal.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalized.count >= 4 else { return nil }
+        let lowercased = normalized.lowercased()
+
+        if lowercased.contains("anx") || lowercased.contains("worr") || lowercased.contains("fear") || lowercased.contains("stress") {
+            return L10n.string("create_journey.personalized_peace", default: "Trusting God with anxiety")
+        }
+        if lowercased.contains("pray") || lowercased.contains("consisten") || lowercased.contains("habit") {
+            return L10n.string("create_journey.personalized_prayer", default: "Growing steady in prayer")
+        }
+        if lowercased.contains("wife") || lowercased.contains("husband") || lowercased.contains("spouse") || lowercased.contains("marriage") {
+            return L10n.string("create_journey.personalized_marriage", default: "Loving my spouse well")
+        }
+        if lowercased.contains("friend") || lowercased.contains("family") || lowercased.contains("relationship") || lowercased.contains("forgiv") {
+            return L10n.string("create_journey.personalized_relationship", default: "Healing in a relationship")
+        }
+        if lowercased.contains("work") || lowercased.contains("career") || lowercased.contains("decision") || lowercased.contains("wisdom") {
+            return L10n.string("create_journey.personalized_wisdom", default: "Wisdom for a hard decision")
+        }
+        if lowercased.contains("money") || lowercased.contains("budget") || lowercased.contains("debt") || lowercased.contains("financial") {
+            return L10n.string("create_journey.personalized_money", default: "Trusting God with money")
+        }
+        if lowercased.contains("parent") || lowercased.contains("child") || lowercased.contains("kid") {
+            return L10n.string("create_journey.personalized_parenting", default: "Parenting with patience")
+        }
+        if lowercased.contains("patien") || lowercased.contains("anger") || lowercased.contains("react") {
+            return L10n.string("create_journey.personalized_patience", default: "Practicing patience today")
+        }
+        if lowercased.contains("grief") || lowercased.contains("heal") || lowercased.contains("hurt") || lowercased.contains("pain") {
+            return L10n.string("create_journey.personalized_healing", default: "Healing with God’s help")
+        }
+
+        return nil
+    }
+
+    private func rotatedGenericStarterSuggestions() -> [String] {
+        rotated([
+            L10n.string("create_journey.starter_1", default: "Trusting God with my anxiety"),
+            L10n.string("create_journey.starter_2", default: "Growing consistency in prayer"),
+            L10n.string("create_journey.starter_3", default: "Healing in a relationship"),
+            L10n.string("create_journey.starter_4", default: "Wisdom for a hard decision"),
+            L10n.string("create_journey.starter_5", default: "Becoming more patient"),
+            L10n.string("create_journey.starter_6", default: "Finding peace at work"),
+            L10n.string("create_journey.starter_7", default: "Forgiving someone who hurt me"),
+            L10n.string("create_journey.starter_8", default: "Serving my family with love")
+        ], seed: suggestionSeed ^ 0x5f3759df)
+    }
+
+    private func interleave(primary: [String], secondary: [String]) -> [String] {
+        var result: [String] = []
+        let maxCount = max(primary.count, secondary.count)
+        for index in 0..<maxCount {
+            if index < primary.count {
+                result.append(primary[index])
+            }
+            if index < secondary.count {
+                result.append(secondary[index])
+            }
+        }
+        return result
+    }
+
+    private func rotated(_ values: [String], seed: Int) -> [String] {
+        guard !values.isEmpty else { return [] }
+        let positiveSeed = seed == Int.min ? 0 : abs(seed)
+        let offset = positiveSeed % values.count
+        return Array(values[offset...]) + Array(values[..<offset])
+    }
+
+    private func uniqueNonEmpty(_ values: [String]) -> [String] {
+        var seen: Set<String> = []
+        var result: [String] = []
+        for value in values {
+            let cleaned = value
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            guard !cleaned.isEmpty else { continue }
+            let key = cleaned.lowercased()
+            guard !seen.contains(key) else { continue }
+            seen.insert(key)
+            result.append(cleaned)
+        }
+        return result
     }
 
     private func inferredReminderWindow() -> String {
