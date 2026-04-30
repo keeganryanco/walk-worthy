@@ -285,6 +285,7 @@ struct RootView: View {
                 category: payload.journeyCategory,
                 themeKey: theme,
                 growthFocus: inferredGrowthFocus,
+                journeyArc: encodeJourneyArc(payload.journeyArc),
                 status: .active
             )
             modelContext.insert(firstJourney)
@@ -418,6 +419,7 @@ struct RootView: View {
                 category: payload.journeyCategory,
                 themeKey: theme,
                 growthFocus: payload.growthFocus ?? payload.journeyCategory,
+                journeyArc: encodeJourneyArc(payload.journeyArc),
                 status: .active
             )
             modelContext.insert(firstJourney)

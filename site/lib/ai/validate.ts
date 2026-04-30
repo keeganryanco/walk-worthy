@@ -3,7 +3,7 @@ import { JourneyPackageRequest } from "./types";
 import { deterministicReference, normalizeReference } from "./scripture";
 
 const CHIP_MIN_WORDS = 2;
-const CHIP_MAX_WORDS = 7;
+const CHIP_MAX_WORDS = 8;
 const CHIP_MAX_LENGTH = 80;
 const CHIP_LIMIT = 4;
 const CHIP_FALLBACK_COUNT = 3;
@@ -281,6 +281,7 @@ const themeChipBankKo: Record<string, string[]> = {
 };
 
 const contextualKeywordChipsEn: Array<{ pattern: RegExp; chips: string[] }> = [
+  { pattern: /(husband|wife|spouse|marriage)/i, chips: ["Buy flowers today", "Write a kind note", "Ask one caring question"] },
   { pattern: /(anx|worr|fear|stress|panic|calm|rest|peace)/i, chips: ["Pray through this worry", "Take five calm breaths"] },
   { pattern: /(focus|disciplin|habit|procrastin|delay|consisten)/i, chips: ["Start one focused block", "Finish one delayed task"] },
   { pattern: /(family|marriage|friend|relationship|team|community)/i, chips: ["Send one honest message", "Pray for this relationship"] },
@@ -430,6 +431,59 @@ function cleanText(value: unknown, maxLength: number): string {
   // Preserve full model output if we cannot trim at a natural boundary.
   // This prevents mid-sentence clipping in the app UI.
   return trimmed;
+}
+
+function sentenceCount(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const matches = trimmed.match(/[^.!?。！？]+[.!?。！？]+/g);
+  if (matches?.length) return matches.length;
+  return trimmed.length > 0 ? 1 : 0;
+}
+
+function hasSentenceCount(value: string, min: number, max: number): boolean {
+  const count = sentenceCount(value);
+  return count >= min && count <= max;
+}
+
+function wordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function isSimpleSmallStepQuestion(value: string, language: SupportedLanguageCode): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (!/[?？]$/.test(trimmed)) return false;
+  if (language === "ja" || language === "ko") {
+    return trimmed.length <= 46;
+  }
+  return wordCount(trimmed) <= 16;
+}
+
+function concreteContextSignals(input?: JourneyPackageRequest): boolean {
+  const signals = contextSignals(input);
+  return /(husband|wife|marriage|spouse|family|friend|relationship|work|job|boss|money|budget|debt|health|exercise|home|child|kids|parent|school|study|business|team|employee|anxiety|worry|habit|prayer|consisten|focus|decision|career|matrimonio|espos|familia|amig|relaci[oó]n|trabajo|dinero|sa[uú]de|casamento|fam[ií]lia|relacionamento|trabalho|dinheiro|gesundheit|familie|ehe|freund|beziehung|arbeit|geld|家族|結婚|友人|関係|仕事|お金|健康|가족|결혼|친구|관계|일|돈|건강)/i.test(signals);
+}
+
+function hasConcreteStepLanguage(step: string): boolean {
+  return /(send|call|text|write|ask|buy|bring|schedule|plan|review|finish|start|remove|apologize|thank|serve|clean|cook|walk|budget|flowers|note|message|check-in|env[ií]a|llama|escribe|compra|agenda|revisa|termina|pide perd[oó]n|agradece|compre|envie|ligue|escreva|agende|revise|termine|entschuldige|kaufe|sende|schreibe|plane|prüfe|erledige|送る|書く|買う|予定|確認|終える|謝る|感謝|보내|쓰기|사|계획|확인|끝내|사과|감사)/i.test(step);
+}
+
+function reflectionUsesFirstPerson(value: string, language: SupportedLanguageCode): boolean {
+  const normalized = value.toLowerCase().replace(/[’`]/g, "'");
+  const regex =
+    language === "es"
+      ? FIRST_PERSON_PRAYER_REGEX_ES
+      : language === "pt"
+        ? FIRST_PERSON_PRAYER_REGEX_PT
+        : language === "de"
+          ? FIRST_PERSON_PRAYER_REGEX_DE
+        : language === "ja"
+          ? FIRST_PERSON_PRAYER_REGEX_JA
+        : language === "ko"
+          ? FIRST_PERSON_PRAYER_REGEX_KO
+          : FIRST_PERSON_PRAYER_REGEX_EN;
+  return regex.test(normalized);
 }
 
 function normalizeProseEnding(value: string): string {
@@ -679,6 +733,60 @@ function normalizeFirstPersonPrayer(value: unknown, input?: JourneyPackageReques
           ? FIRST_PERSON_PRAYER_REGEX_KO
           : FIRST_PERSON_PRAYER_REGEX_EN;
   return firstPersonRegex.test(normalized) ? trimmed : "";
+}
+
+function fallbackSmallStepQuestion(input?: JourneyPackageRequest): string {
+  const language = languageCode(input);
+  const status = followThroughStatus(input);
+  if (status === "partial" || status === "no") {
+    return language === "es"
+      ? "¿Qué paso pequeño sí puedes completar hoy?"
+      : language === "pt"
+        ? "Que pequeno passo você consegue concluir hoje?"
+        : language === "de"
+          ? "Welchen kleinen Schritt kannst du heute schaffen?"
+        : language === "ja"
+          ? "今日できる小さな一歩は何ですか？"
+        : language === "ko"
+          ? "오늘 할 수 있는 작은 걸음은 무엇인가요?"
+        : "What small step can you finish today?";
+  }
+
+  const signals = contextSignals(input);
+  if (/(peace|anx|worr|fear|paz|ansied|preocup|medo|frieden|angst|sorge|平安|不安|心配|평안|불안|걱정)/i.test(signals)) {
+    return language === "es"
+      ? "¿Cómo puedes practicar paz hoy?"
+      : language === "pt"
+        ? "Como você pode praticar paz hoje?"
+        : language === "de"
+          ? "Wie kannst du heute Frieden üben?"
+        : language === "ja"
+          ? "今日、平安をどう実践できますか？"
+        : language === "ko"
+          ? "오늘 평안을 어떻게 실천할 수 있나요?"
+        : "How can you practice peace today?";
+  }
+
+  return language === "es"
+    ? "¿Qué puedes hacer hoy?"
+    : language === "pt"
+      ? "O que você pode fazer hoje?"
+      : language === "de"
+        ? "Was kannst du heute tun?"
+      : language === "ja"
+        ? "今日、何ができますか？"
+      : language === "ko"
+        ? "오늘 무엇을 할 수 있나요?"
+        : "What can you do today?";
+}
+
+function normalizeSmallStepQuestion(value: unknown, input?: JourneyPackageRequest): string {
+  const language = languageCode(input);
+  const candidate = cleanText(value, 180);
+  if (isSimpleSmallStepQuestion(candidate, language)) {
+    return candidate;
+  }
+  return fallbackSmallStepQuestion(input);
 }
 
 function fallbackReflectionThought(input?: JourneyPackageRequest): string {
@@ -1032,38 +1140,27 @@ export function normalizePackageFromObject(
   const confidenceRaw = typeof completionRaw.confidence === "number" ? completionRaw.confidence : 0;
   const confidence = Math.min(1, Math.max(0, confidenceRaw));
 
-  const status = followThroughStatus(input);
   const language = languageCode(input);
-  const defaultQuestion =
-    status === "partial" || status === "no"
-      ? language === "es"
-        ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
-        : language === "pt"
-          ? "Qual é um pequeno passo que você consegue concluir hoje?"
-          : language === "de"
-            ? "Welchen kleinen Schritt kannst du heute realistisch abschließen?"
-          : language === "ja"
-            ? "今日、現実的に終えられる小さな一歩は何ですか？"
-          : language === "ko"
-            ? "오늘 현실적으로 마칠 수 있는 작은 걸음 하나는 무엇인가요?"
-        : "What is one small step you can realistically finish today?"
-      : language === "es"
-        ? "¿Qué paso pequeño podrías dar hoy?"
-        : language === "pt"
-          ? "Qual pequeno passo você pode dar hoje?"
-          : language === "de"
-            ? "Welchen kleinen Schritt kannst du heute gehen?"
-          : language === "ja"
-            ? "今日、どんな小さな一歩を踏み出せますか？"
-          : language === "ko"
-            ? "오늘 어떤 작은 걸음을 내딛을 수 있을까요?"
-        : "What small step could you take today?";
 
   const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 120));
   const uniqueReference = nonRepeatingReference(referenceCandidate, input);
+  const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
+  const prayer = normalizeFirstPersonPrayer(source.prayer, input);
+
+  if (
+    !hasSentenceCount(reflectionThought, 4, 5) ||
+    reflectionUsesFirstPerson(reflectionThought, language) ||
+    !hasSentenceCount(prayer, 3, 4)
+  ) {
+    return null;
+  }
+
+  if (concreteContextSignals(input) && !suggested.some(hasConcreteStepLanguage)) {
+    return null;
+  }
 
   const normalized: DailyJourneyPackage = {
-    reflectionThought: normalizeReflectionThought(source.reflectionThought, input),
+    reflectionThought,
     scriptureReference: uniqueReference,
     scriptureParaphrase: normalizeProseEnding(
       enforceParaphraseFidelity(
@@ -1072,8 +1169,8 @@ export function normalizePackageFromObject(
         language
       )
     ),
-    prayer: normalizeFirstPersonPrayer(source.prayer, input),
-    smallStepQuestion: cleanText(source.smallStepQuestion, 320) || defaultQuestion,
+    prayer,
+    smallStepQuestion: normalizeSmallStepQuestion(source.smallStepQuestion, input),
     suggestedSteps: suggested,
     completionSuggestion: {
       shouldPrompt: completionRaw.shouldPrompt === true,

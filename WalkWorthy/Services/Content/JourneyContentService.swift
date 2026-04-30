@@ -106,17 +106,7 @@ final class JourneyContentService {
             recentEntries: recentEntries,
             memory: memory
         )) ?? DailyJourneyPackage(
-            reflectionThought: languageCode == "es"
-                ? "La constancia fiel se construye un día a la vez."
-                : languageCode == "pt"
-                    ? "A constância fiel é construída dia após dia."
-                    : languageCode == "de"
-                        ? "Treue Beständigkeit wächst Schritt für Schritt, Tag für Tag."
-                    : languageCode == "ja"
-                        ? "忠実さは、一日一日の積み重ねによって育まれます。"
-                    : languageCode == "ko"
-                        ? "신실한 꾸준함은 하루하루 쌓여 갑니다."
-                    : "Faithful consistency is built one day at a time.",
+            reflectionThought: DailyJourneyPackageValidation.defaultReflectionThought,
             scriptureReference: "Philippians 4:6-7",
             scriptureParaphrase: languageCode == "es"
                 ? "Lleva tus preocupaciones a Dios en oración y recibe Su paz mientras das tu próximo paso."
@@ -129,17 +119,7 @@ final class JourneyContentService {
                     : languageCode == "ko"
                         ? "염려를 기도로 하나님께 올려 드리고, 다음 걸음을 내딛을 때 주님의 평안을 누리세요."
                     : "Bring your worries to God in prayer and receive His peace as you take your next step.",
-            prayer: languageCode == "es"
-                ? "Señor, afírmame en la confianza y guíame a una acción concreta hoy."
-                : languageCode == "pt"
-                    ? "Senhor, firma-me na confiança e guia-me a uma ação concreta hoje."
-                    : languageCode == "de"
-                        ? "Herr, festige mein Vertrauen und führe mich heute zu einer konkreten Handlung."
-                    : languageCode == "ja"
-                        ? "主よ、私の心を信頼のうちに堅くし、今日取るべき具体的な一歩へ導いてください。"
-                    : languageCode == "ko"
-                        ? "주님, 오늘 제 마음을 믿음 안에 굳게 세우시고 구체적인 한 걸음을 인도해 주세요."
-                    : "Lord, ground me in trust and guide one concrete action today.",
+            prayer: DailyJourneyPackageValidation.defaultFirstPersonPrayer,
             smallStepQuestion: DailyJourneyPackageValidation.defaultSmallStepQuestion,
             suggestedSteps: [
                 languageCode == "es"

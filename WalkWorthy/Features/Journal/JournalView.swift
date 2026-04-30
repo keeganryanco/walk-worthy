@@ -384,6 +384,7 @@ struct CreateJourneyView: View {
                         category: payload.journeyCategory,
                         themeKey: theme,
                         growthFocus: payload.growthFocus ?? payload.journeyCategory,
+                        journeyArc: encodeJourneyArc(payload.journeyArc),
                         status: .active
                     )
                     modelContext.insert(journey)

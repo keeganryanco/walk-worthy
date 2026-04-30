@@ -139,19 +139,103 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
   return byTheme[theme] ?? byTheme.basic;
 }
 
-const referenceFallbackParaphrases: Record<string, string> = {
-  "Galatians 6:9": "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
-  "1 Corinthians 15:58": "Stand firm and keep giving yourself fully to the Lord's work, because your labor in Him is not in vain.",
-  "Joshua 1:9": "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
-  "2 Timothy 1:7": "God gives you a spirit of power, love, and self-control, not fear.",
-  "Philippians 4:6-7": "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
-  "Isaiah 26:3": "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
-  "Colossians 3:23": "Work wholeheartedly, as for the Lord and not for people.",
-  "1 Corinthians 9:27": "Practice disciplined self-control so your life stays aligned with what you proclaim.",
-  "Galatians 5:13": "Use your freedom to serve one another humbly in love.",
-  "Mark 10:45": "The Son of Man came not to be served but to serve and to give His life for many.",
-  "Proverbs 16:3": "Commit your work to the Lord, and He will establish your plans.",
-  "Matthew 6:33": "Seek God's kingdom first, and trust Him to provide what you need."
+const referenceFallbackParaphrases: Record<string, Record<"en" | "es" | "pt" | "de" | "ja" | "ko", string>> = {
+  "Galatians 6:9": {
+    en: "Do not grow weary in doing good, because in due time you will reap a harvest if you do not give up.",
+    es: "No te canses de hacer el bien, porque a su tiempo cosecharás si no te rindes.",
+    pt: "Não se canse de fazer o bem, pois no tempo certo você colherá se não desistir.",
+    de: "Werde nicht müde, Gutes zu tun; zur rechten Zeit wirst du ernten, wenn du nicht aufgibst.",
+    ja: "善を行うことに疲れ果てないでください。あきらめなければ、時が来て必ず実を結びます。",
+    ko: "선을 행하다가 낙심하지 마세요. 포기하지 않으면 때가 되어 반드시 열매를 거둡니다."
+  },
+  "1 Corinthians 15:58": {
+    en: "Stand firm and keep giving yourself fully to the Lord's work, because your labor in Him is not in vain.",
+    es: "Mantente firme y sigue entregándote por completo a la obra del Señor, porque tu esfuerzo en Él no es en vano.",
+    pt: "Permaneça firme e continue se dedicando por completo à obra do Senhor, pois seu trabalho nEle não é em vão.",
+    de: "Steh fest und diene dem Herrn mit ganzem Herzen, denn deine Mühe in ihm ist nicht vergeblich.",
+    ja: "固く立って揺らがず、主の働きに心を尽くし続けてください。主にあるあなたの労苦は決して無駄ではありません。",
+    ko: "굳게 서서 주님의 일에 더욱 힘쓰세요. 주님 안에서의 수고는 헛되지 않습니다."
+  },
+  "Joshua 1:9": {
+    en: "Be strong and courageous, do not be afraid, for the Lord your God is with you wherever you go.",
+    es: "Sé fuerte y valiente, no tengas miedo, porque el Señor tu Dios está contigo dondequiera que vayas.",
+    pt: "Seja forte e corajoso, não tenha medo, pois o Senhor seu Deus está com você por onde você for.",
+    de: "Sei stark und mutig, hab keine Angst, denn der Herr, dein Gott, ist mit dir, wohin du auch gehst.",
+    ja: "強くあれ、雄々しくあれ。恐れないでください。あなたがどこへ行っても、あなたの神である主が共におられます。",
+    ko: "강하고 담대하세요. 두려워하지 마세요. 어디로 가든지 주 하나님이 함께하십니다."
+  },
+  "2 Timothy 1:7": {
+    en: "God gives you a spirit of power, love, and self-control, not fear.",
+    es: "Dios te da un espíritu de poder, amor y dominio propio, no de miedo.",
+    pt: "Deus lhe dá um espírito de poder, amor e domínio próprio, e não de medo.",
+    de: "Gott gibt dir keinen Geist der Furcht, sondern der Kraft, der Liebe und der Besonnenheit.",
+    ja: "神は恐れではなく、力と愛と自制の霊をあなたに与えてくださいます。",
+    ko: "하나님은 두려움이 아니라 능력과 사랑과 절제의 영을 주십니다."
+  },
+  "Philippians 4:6-7": {
+    en: "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.",
+    es: "Presenta a Dios cada preocupación y petición con gratitud, y su paz guardará tu corazón y tu mente en Cristo.",
+    pt: "Apresente a Deus cada preocupação e pedido com gratidão, e a paz dEle guardará seu coração e sua mente em Cristo.",
+    de: "Bring jede Sorge und Bitte mit Dank zu Gott, und sein Frieden wird dein Herz und deinen Sinn in Christus bewahren.",
+    ja: "あらゆる不安と願いを感謝とともに神にささげるなら、神の平安がキリストにあってあなたの心と思いを守ってくださいます。",
+    ko: "모든 염려와 간구를 감사함으로 하나님께 아뢰면, 그분의 평강이 그리스도 안에서 마음과 생각을 지켜 주십니다."
+  },
+  "Isaiah 26:3": {
+    en: "God keeps in perfect peace the one whose mind is steadfast and trusting in Him.",
+    es: "Dios guarda en perfecta paz a quien mantiene su mente firme y confía en Él.",
+    pt: "Deus mantém em perfeita paz quem permanece firme e confia nEle.",
+    de: "Gott bewahrt den in vollkommenem Frieden, dessen Sinn fest auf ihn gerichtet ist und ihm vertraut.",
+    ja: "心を主に堅く据えて主に信頼する者を、神は完全な平安のうちに守ってくださいます。",
+    ko: "마음을 주님께 굳게 두고 의지하는 사람을 하나님이 온전한 평강으로 지켜 주십니다."
+  },
+  "Colossians 3:23": {
+    en: "Work wholeheartedly, as for the Lord and not for people.",
+    es: "Trabaja de todo corazón, como para el Señor y no para las personas.",
+    pt: "Trabalhe de todo o coração, como para o Senhor e não para as pessoas.",
+    de: "Arbeite von Herzen, als für den Herrn und nicht nur für Menschen.",
+    ja: "何をするにも、人のためではなく主のためにするように、心を尽くして行ってください。",
+    ko: "무슨 일을 하든 사람에게 하듯이 하지 말고 주님께 하듯 마음을 다해 하세요."
+  },
+  "1 Corinthians 9:27": {
+    en: "Practice disciplined self-control so your life stays aligned with what you proclaim.",
+    es: "Practica un dominio propio disciplinado para que tu vida permanezca alineada con lo que proclamas.",
+    pt: "Pratique domínio próprio com disciplina para que sua vida permaneça alinhada ao que você proclama.",
+    de: "Übe disziplinierte Selbstkontrolle, damit dein Leben mit dem übereinstimmt, was du bekennst.",
+    ja: "自分を訓練し節制を保ち、あなたが告白する信仰と生き方が一致するようにしなさい。",
+    ko: "자신을 훈련하고 절제하여, 고백하는 믿음과 삶이 함께 가도록 하세요."
+  },
+  "Galatians 5:13": {
+    en: "Use your freedom to serve one another humbly in love.",
+    es: "Usa tu libertad para servir a otros con humildad y amor.",
+    pt: "Use sua liberdade para servir uns aos outros com humildade e amor.",
+    de: "Nutze deine Freiheit, um einander in Liebe demütig zu dienen.",
+    ja: "与えられた自由を、自分のためだけでなく、愛をもって互いに仕えるために用いなさい。",
+    ko: "주어진 자유를 사랑으로 서로 섬기는 데 사용하세요."
+  },
+  "Mark 10:45": {
+    en: "The Son of Man came not to be served but to serve and to give His life for many.",
+    es: "El Hijo del Hombre no vino para ser servido, sino para servir y dar su vida por muchos.",
+    pt: "O Filho do Homem não veio para ser servido, mas para servir e dar a sua vida por muitos.",
+    de: "Der Menschensohn kam nicht, um bedient zu werden, sondern um zu dienen und sein Leben für viele zu geben.",
+    ja: "人の子は仕えられるためではなく、仕えるため、また多くの人のために命を与えるために来られました。",
+    ko: "인자는 섬김을 받으러 온 것이 아니라 섬기고 많은 사람을 위해 생명을 주러 오셨습니다."
+  },
+  "Proverbs 16:3": {
+    en: "Commit your work to the Lord, and He will establish your plans.",
+    es: "Encomienda tu trabajo al Señor, y Él afirmará tus planes.",
+    pt: "Entregue seu trabalho ao Senhor, e Ele firmará seus planos.",
+    de: "Befiehl dem Herrn dein Werk an, und er wird deine Pläne festigen.",
+    ja: "あなたの働きを主にゆだねれば、主があなたの計画を確かなものにしてくださいます。",
+    ko: "당신의 일을 주님께 맡기면, 주님께서 당신의 계획을 굳게 세워 주십니다."
+  },
+  "Matthew 6:33": {
+    en: "Seek God's kingdom first, and trust Him to provide what you need.",
+    es: "Busca primero el reino de Dios y confía en que Él proveerá lo que necesitas.",
+    pt: "Busque primeiro o reino de Deus e confie que Ele proverá o que você precisa.",
+    de: "Suche zuerst Gottes Reich und vertraue darauf, dass er gibt, was du brauchst.",
+    ja: "まず神の国を求め、必要なものは主が満たしてくださると信頼しなさい。",
+    ko: "먼저 하나님의 나라를 구하고, 필요한 것을 주님이 채우실 것을 신뢰하세요."
+  }
 };
 
 function collectUsedScriptureReferences(input: JourneyPackageRequest): string[] {
@@ -170,7 +254,7 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
   const usedReferences = collectUsedScriptureReferences(input);
   const reference = deterministicReference(seed, usedReferences);
   const scriptureParaphrase =
-    referenceFallbackParaphrases[reference] ??
+    referenceFallbackParaphrases[reference]?.[language] ??
     (language === "es"
       ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
       : language === "pt"
@@ -186,55 +270,55 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
   return {
     reflectionThought:
       language === "es"
-        ? "Una decisión fiel hoy puede formar un crecimiento duradero."
+        ? "Tu oración necesita una forma concreta hoy. Dios puede formar crecimiento a través de una respuesta pequeña y fiel. No necesitas resolver todo el camino de una vez. Elige una acción que acerque tu vida a lo que estás pidiendo."
         : language === "pt"
-          ? "Uma decisão fiel hoje pode formar um crescimento duradouro."
+          ? "Sua oração precisa ganhar uma forma concreta hoje. Deus pode formar crescimento por meio de uma resposta pequena e fiel. Você não precisa resolver todo o caminho de uma vez. Escolha uma ação que aproxime sua vida do que você está pedindo."
           : language === "de"
-            ? "Eine treue Entscheidung heute kann langfristiges Wachstum formen."
+            ? "Dein Gebet braucht heute eine konkrete Form. Gott kann Wachstum durch eine kleine treue Antwort formen. Du musst nicht den ganzen Weg auf einmal lösen. Wähle eine Handlung, die dein Leben näher an das bringt, worum du bittest."
           : language === "ja"
-            ? "今日の忠実な決断が、長く続く成長を形づくります。"
+            ? "今日の祈りには、具体的な形が必要です。神は小さな忠実な応答を通して成長を形づくることができます。道のり全体を一度に解決する必要はありません。あなたが願っていることに生活を近づける行動を一つ選びましょう。"
           : language === "ko"
-            ? "오늘의 신실한 결정 하나가 오래 남는 성장을 만듭니다."
-        : "One faithful choice today can shape long-term growth.",
+            ? "오늘의 기도에는 구체적인 모습이 필요합니다. 하나님은 작고 신실한 응답을 통해 성장을 빚어 가실 수 있습니다. 모든 길을 한 번에 해결할 필요는 없습니다. 당신이 구하는 방향으로 삶을 한 걸음 옮기는 행동을 하나 선택하세요."
+        : "Your prayer needs a concrete shape today. God can form growth through one small faithful response. You do not have to solve the whole journey at once. Choose one action that moves your life toward what you are asking for.",
     scriptureReference: reference,
     scriptureParaphrase,
     prayer:
       language === "es"
-        ? "Señor, afirma mi corazón y alinea mi próxima acción con el crecimiento que te estoy pidiendo."
+        ? "Señor, pongo esta jornada en Tus manos hoy. Ayúdame a ver un paso concreto que pueda dar con fidelidad. Dame humildad para empezar pequeño en vez de quedarme solo en intención. Guía mi acción hacia el crecimiento que te estoy pidiendo."
         : language === "pt"
-          ? "Senhor, firma meu coração e alinha minha próxima ação com o crescimento que estou Te pedindo."
+          ? "Senhor, coloco esta jornada em Tuas mãos hoje. Ajuda-me a enxergar um passo concreto que posso dar com fidelidade. Dá-me humildade para começar pequeno em vez de ficar apenas na intenção. Guia minha ação em direção ao crescimento que estou Te pedindo."
           : language === "de"
-            ? "Herr, stärke mein Herz und richte meine nächste Handlung auf das Wachstum aus, um das ich Dich bitte."
+            ? "Herr, ich lege diese Journey heute in Deine Hände. Hilf mir, einen konkreten Schritt zu sehen, den ich treu gehen kann. Gib mir Demut, klein anzufangen, statt nur bei der Absicht zu bleiben. Richte meine Handlung auf das Wachstum aus, um das ich Dich bitte."
           : language === "ja"
-            ? "主よ、私の心を堅くし、私が願う成長と一致する次の行動へ導いてください。"
+            ? "主よ、今日この歩みをあなたの御手にゆだねます。私が忠実に踏み出せる具体的な一歩を見せてください。思いだけで終わらず、小さく始める謙遜を与えてください。私が願っている成長へ向かう行動へ導いてください。"
           : language === "ko"
-            ? "주님, 제 마음을 붙드시고 제가 구하는 성장과 맞는 다음 행동으로 이끌어 주세요."
-        : "Lord, steady my heart and align my next action with the growth I am asking You for.",
+            ? "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 제가 신실하게 할 수 있는 구체적인 한 걸음을 보게 해 주세요. 마음만 품고 멈추지 않고 작게 시작할 겸손을 주세요. 제가 구하는 성장으로 이어지는 행동을 인도해 주세요."
+        : "Lord, I place this journey in Your hands today. Help me see one concrete step I can take faithfully. Give me humility to start small instead of staying in intention. Guide my action toward the growth I am asking You for.",
     smallStepQuestion:
       followThroughStatus(input) === "partial" ||
       followThroughStatus(input) === "no"
         ? language === "es"
-          ? "¿Cuál es un paso pequeño que sí puedes terminar hoy?"
+            ? "¿Qué paso pequeño sí puedes completar hoy?"
           : language === "pt"
-            ? "Qual é um pequeno passo que você consegue concluir hoje?"
+            ? "Que pequeno passo você consegue concluir hoje?"
             : language === "de"
-              ? "Welchen kleinen Schritt kannst du heute realistisch abschließen?"
+              ? "Welchen kleinen Schritt kannst du heute schaffen?"
             : language === "ja"
               ? "今日、現実的に終えられる小さな一歩は何ですか？"
             : language === "ko"
               ? "오늘 현실적으로 마칠 수 있는 작은 걸음 하나는 무엇인가요?"
           : "What is one small step you can realistically finish today?"
         : language === "es"
-          ? "¿Qué paso pequeño podrías dar hoy?"
+          ? "¿Qué puedes hacer hoy?"
           : language === "pt"
-            ? "Qual pequeno passo você pode dar hoje?"
+            ? "O que você pode fazer hoje?"
             : language === "de"
-              ? "Welchen kleinen Schritt kannst du heute gehen?"
+              ? "Was kannst du heute tun?"
             : language === "ja"
               ? "今日、どんな小さな一歩を踏み出せますか？"
             : language === "ko"
               ? "오늘 어떤 작은 걸음을 내딛을 수 있을까요?"
-          : "What small step could you take today?",
+          : "What can you do today?",
     suggestedSteps: fallbackChips(input),
     completionSuggestion: {
       shouldPrompt: false,

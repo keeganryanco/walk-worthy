@@ -29,6 +29,7 @@ final class PrayerJourney {
     var colorToken: String
     var themeKeyRaw: String?
     var growthFocusRaw: String?
+    var journeyArcRaw: String?
     var statusRaw: String?
     var cycleCountStored: Int?
     var completedTendsStored: Int?
@@ -57,6 +58,7 @@ final class PrayerJourney {
         category: String,
         themeKey: JourneyThemeKey = .basic,
         growthFocus: String? = nil,
+        journeyArc: String? = nil,
         status: JourneyStatus = .active,
         createdAt: Date = .now,
         isArchived: Bool = false,
@@ -85,6 +87,8 @@ final class PrayerJourney {
         self.themeKeyRaw = themeKey.rawValue
         let trimmedGrowthFocus = growthFocus?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         self.growthFocusRaw = trimmedGrowthFocus.isEmpty ? nil : trimmedGrowthFocus
+        let trimmedJourneyArc = journeyArc?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        self.journeyArcRaw = trimmedJourneyArc.isEmpty ? nil : trimmedJourneyArc
         self.statusRaw = status.rawValue
         self.cycleCountStored = cycleCount
         self.completedTendsStored = completedTends
@@ -119,6 +123,14 @@ final class PrayerJourney {
         set {
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             growthFocusRaw = trimmed.isEmpty ? nil : trimmed
+        }
+    }
+
+    var journeyArc: String {
+        get { journeyArcRaw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
+        set {
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            journeyArcRaw = trimmed.isEmpty ? nil : trimmed
         }
     }
 

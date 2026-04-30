@@ -39,7 +39,8 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
     "Provide scripture paraphrase only; do not mention NIV/ESV/NLT/KJV or any translation label and do not quote copyrighted verse text verbatim.",
     "Keep tone grounded, sincere, and practical.",
     `Write reflectionThought, scriptureParaphrase, prayer, smallStepQuestion, and suggestedSteps entirely in ${language.label} (${language.code}).`,
-    "Do not include translation notes, bilingual output, or language labels."
+    "Do not include translation notes, bilingual output, or language labels.",
+    "This must feel like the next day in an ongoing devotional journey, not a standalone topical thought."
   ].join(" ");
 
   const recent = (input.recentEntries ?? [])
@@ -76,19 +77,25 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         }
       },
       instructions: [
-        "Make the reflection concise and specific to the journey.",
-        "reflectionThought should read naturally as a concise reflection statement or gentle directive (not a question).",
+        "Make the reflection concrete, specific to this journey, and connected to the current journeyArc.nextMovement.",
+        "reflectionThought must be exactly 4-5 complete sentences.",
+        "reflectionThought should read naturally as a grounded reflection statement or gentle directive (not a question).",
         "You may use phrasing like 'Reflect on ...' when it fits, but do not force a fixed opening phrase.",
         "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
         "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
-        "Keep reflectionThought to 2-4 sentences.",
-        "Keep scriptureParaphrase to 1-3 sentences and stay faithful to the cited verse’s central meaning.",
+        "Avoid abstract filler like higher purpose, profound sense, deeper reliance, inner stability, or divine care unless the user context specifically asks for it.",
+        "Scripture paraphrase should be near-quote style: very close to the selected verse’s wording, with only small wording changes that connect to today's devotional focus.",
+        "Keep scriptureParaphrase to 1-2 sentences and stay faithful to the cited verse’s central meaning.",
         "Do not blend ideas from unrelated verses into the paraphrase.",
         "ScriptureReference MUST NOT repeat any reference listed in context.usedScriptureReferences.",
-        "Prayer should be 1-3 sentences and strictly first-person voice (I/me/my/we/us/our).",
+        "Prayer must be exactly 3-4 complete sentences and strictly first-person voice (I/me/my/we/us/our).",
         "Never refer to the user in third person (for example: 'the user', 'they', or by name).",
-        "Keep smallStepQuestion to one sentence (ideally under 24 words).",
-        "Suggested step chips must be complete, actionable phrases (no fragments), practical, and short (target 3-6 words each).",
+        "smallStepQuestion must be one simple question, usually under 14 words, that asks what the user can do today to partner with the thing they are praying about.",
+        "Suggested step chips must be complete, actionable phrases (no fragments), practical, and short (target 3-8 words each).",
+        "If user context is specific enough, suggestedSteps should become specific real-life actions, not vague spiritual actions.",
+        "Include a mix: one concrete practical action, one lower-friction action, and one prayer/spiritual action when appropriate.",
+        "For relationship or marriage contexts, specific actions like buying flowers, writing a note, apologizing, asking a direct question, or planning a short check-in are allowed when context supports them.",
+        "Avoid unsafe, manipulative, expensive, shaming, or conflict-escalating suggestions.",
         "Never end a suggested chip with dangling words like 'to', 'for', or 'with'.",
         "Advance the journey: use memory, recent entries, and follow-through context to move the focus forward instead of repeating yesterday's angle.",
         "If followThroughContext.previousFollowThroughStatus is partial or no, lower the next-step difficulty and use gentler wording.",
@@ -103,6 +110,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         journey: input.journey,
         profile: input.profile,
         memory: input.memory ?? {},
+        journeyArc: input.journeyArc ?? null,
         followThroughContext,
         usedScriptureReferences,
         recentEntries: recent,

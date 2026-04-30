@@ -2084,6 +2084,11 @@ struct TendingFlowView: View {
                     date: completionDate
                 )
             }
+            JourneyArcService.updateAfterTend(
+                journey: journey,
+                committedStep: trimmedStep,
+                followThroughStatus: closureTarget == nil ? nil : selectedFollowThroughStatus
+            )
 
             let baseGrowthPoints = FollowThroughService.growthPoints(
                 for: selectedFollowThroughStatus,

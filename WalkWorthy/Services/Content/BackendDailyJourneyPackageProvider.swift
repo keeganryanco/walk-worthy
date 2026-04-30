@@ -3,6 +3,15 @@ import os
 
 private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend", category: "AI")
 
+struct JourneyArcPayload: Codable, Equatable {
+    let purpose: String
+    let currentStage: String
+    let nextMovement: String
+    let tone: String
+    let practicalActionDirection: String
+    let lastFollowThroughInterpretation: String?
+}
+
 struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     private struct RequestBody: Encodable {
         struct Telemetry: Encodable {
@@ -52,6 +61,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let profile: Profile
         let journey: Journey
         let memory: Memory?
+        let journeyArc: JourneyArcPayload?
         let recentEntries: [RecentEntry]
         let usedScriptureReferences: [String]
         let followThroughContext: FollowThroughContext?
@@ -254,6 +264,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
             profile: profilePayload,
             journey: journeyPayload,
             memory: memoryPayload,
+            journeyArc: decodeJourneyArc(from: journey.journeyArc),
             recentEntries: recent,
             usedScriptureReferences: usedScriptureReferences,
             followThroughContext: followThroughPayload,
@@ -285,6 +296,7 @@ struct JourneyBootstrapPayload: Decodable {
     let journeyCategory: String
     let themeKey: String
     let growthFocus: String?
+    let journeyArc: JourneyArcPayload?
     let initialMemory: InitialMemory
     let initialPackage: DailyJourneyPackage
 }
@@ -415,6 +427,17 @@ private extension String {
     var nilIfEmpty: String? {
         isEmpty ? nil : self
     }
+}
+
+func decodeJourneyArc(from rawValue: String) -> JourneyArcPayload? {
+    let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else { return nil }
+    return try? JSONDecoder().decode(JourneyArcPayload.self, from: data)
+}
+
+func encodeJourneyArc(_ arc: JourneyArcPayload?) -> String? {
+    guard let arc, let data = try? JSONEncoder().encode(arc) else { return nil }
+    return String(data: data, encoding: .utf8)
 }
 
 private func analyticsDistinctID() -> String {

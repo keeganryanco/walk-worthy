@@ -445,6 +445,7 @@ private struct DebugOnboardingSimulatorView: View {
                     category: payload.journeyCategory,
                     themeKey: theme,
                     growthFocus: inferredGrowthFocus,
+                    journeyArc: encodeJourneyArc(payload.journeyArc),
                     status: .active
                 )
                 modelContext.insert(journey)

@@ -17,6 +17,15 @@ export interface CompletionSuggestion {
   confidence: number;
 }
 
+export interface JourneyArc {
+  purpose: string;
+  currentStage: string;
+  nextMovement: string;
+  tone: string;
+  practicalActionDirection: string;
+  lastFollowThroughInterpretation?: string;
+}
+
 export interface ClientTelemetry {
   distinctID?: string;
   appVersion?: string;
@@ -54,6 +63,7 @@ export interface JourneyPackageRequest {
     blockersSummary?: string;
     preferredTone?: string;
   };
+  journeyArc?: JourneyArc;
   recentEntries?: Array<{
     createdAt?: string;
     actionStep?: string;
@@ -111,6 +121,7 @@ export interface JourneyBootstrapResponse {
   journeyCategory: string;
   themeKey: JourneyThemeKey;
   growthFocus: string;
+  journeyArc: JourneyArc;
   initialMemory: {
     summary: string;
     winsSummary: string;

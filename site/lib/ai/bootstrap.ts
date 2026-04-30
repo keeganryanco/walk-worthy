@@ -6,6 +6,7 @@ import {
   JourneyPackageRequest,
   JourneyBootstrapRequest,
   JourneyBootstrapResponse,
+  JourneyArc,
   JourneyThemeKey
 } from "./types";
 import { normalizePackageFromObject } from "./validate";
@@ -142,6 +143,31 @@ function inferGrowthFocus(request: JourneyBootstrapRequest, themeKey: JourneyThe
   }
 }
 
+function fallbackJourneyArc(request: JourneyBootstrapRequest, themeKey: JourneyThemeKey, growthFocus: string): JourneyArc {
+  const purpose = cleanText(request.prayerIntentText, 140) || growthFocus || "grow in faithful action";
+  const stageByTheme: Record<JourneyThemeKey, string> = {
+    basic: "beginning with one faithful response",
+    faith: "learning to trust God in one concrete area",
+    patience: "slowing down before reacting",
+    peace: "practicing peace in daily pressure",
+    resilience: "building endurance through small faithful steps",
+    community: "turning love into visible action",
+    discipline: "forming consistency through one next step",
+    healing: "moving gently toward wholeness",
+    joy: "noticing and practicing gratitude",
+    wisdom: "choosing the next wise step"
+  };
+
+  return {
+    purpose,
+    currentStage: stageByTheme[themeKey] ?? stageByTheme.basic,
+    nextMovement: `Move from prayer about ${growthFocus || "this need"} into one concrete act today.`,
+    tone: "grounded, sincere, practical, hopeful",
+    practicalActionDirection: "Prefer specific real-life actions when the user's context supports them.",
+    lastFollowThroughInterpretation: ""
+  };
+}
+
 function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapResponse {
   const language = targetLanguage(request);
   const themeKey = fallbackTheme(request);
@@ -170,6 +196,7 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
     journeyCategory,
     themeKey,
     growthFocus,
+    journeyArc: fallbackJourneyArc(request, themeKey, growthFocus),
     initialMemory: {
       summary:
         language.code === "es"
@@ -215,19 +242,23 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
     "Classify the journey into one themeKey from:",
     THEME_KEYS.join(", "),
     "Create concise, practical initial memory and a daily package.",
+    "Create a flexible journeyArc that gives the journey an ongoing story and practical direction without locking a fixed day-by-day plan.",
     "Do not include inflammatory denominational commentary, sectarian attacks, or arguments about which Christian tradition is superior.",
     "Keep religious language respectful, invitational, and non-coercive. Do not shame, threaten, or pressure the user spiritually.",
     "reflectionThought should be a natural concise reflection statement or gentle directive, not a question.",
     "Do not force a fixed opening phrase for reflectionThought.",
     "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
     "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
-    "Keep reflectionThought to 2-4 sentences.",
-    "Keep scriptureParaphrase to 1-3 sentences and faithful to the cited verse’s central meaning.",
+    "reflectionThought must be exactly 4-5 complete sentences.",
+    "Keep reflectionThought concrete, practical, and tied to this journey's next movement.",
+    "Scripture paraphrase should be near-quote style: close to the selected verse wording with only subtle wording changes for the devotional focus.",
+    "Keep scriptureParaphrase to 1-2 sentences and faithful to the cited verse’s central meaning.",
     "Do not blend ideas from unrelated verses into one paraphrase.",
-    "Keep prayer to 1-3 sentences.",
-    "Keep smallStepQuestion to one sentence (ideally under 24 words).",
-    "Suggested step chips must be complete actionable phrases, not fragments.",
-    "Prayer must be strict first-person voice (I/me/my/we/us/our).",
+    "Prayer must be exactly 3-4 complete sentences and strict first-person voice (I/me/my/we/us/our).",
+    "smallStepQuestion must be one simple question, usually under 14 words, asking what the user can do today.",
+    "Suggested step chips must include at least one concrete practical action when context supports it, plus a lower-friction option and a prayer/spiritual option when appropriate.",
+    "For relationship or marriage contexts, specific actions like buying flowers, writing a note, apologizing, asking a direct question, or planning a short check-in are allowed when context supports them.",
+    "Avoid unsafe, manipulative, expensive, shaming, or conflict-escalating suggestions.",
     "Never refer to the user in third person (for example: 'the user', 'they', or by name).",
     "Use scripture paraphrase only. No translation labels. No copyright-protected direct verse quoting.",
     "Keep tone grounded, sincere, practical, and hopeful.",
@@ -242,6 +273,14 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest): { system: strin
         journeyCategory: "string",
         themeKey: "one of fixed theme keys",
         growthFocus: "short inferred growth direction string",
+        journeyArc: {
+          purpose: "string",
+          currentStage: "string",
+          nextMovement: "string",
+          tone: "string",
+          practicalActionDirection: "string",
+          lastFollowThroughInterpretation: "string"
+        },
         initialMemory: {
           summary: "string",
           winsSummary: "string",
@@ -281,6 +320,19 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
   const themeKey = THEME_KEYS.includes(themeCandidate) ? themeCandidate : fallback.themeKey;
   const parsedGrowthFocus = cleanText(source.growthFocus, 80);
   const growthFocus = parsedGrowthFocus || fallback.growthFocus;
+  const arcSource =
+    source.journeyArc && typeof source.journeyArc === "object"
+      ? (source.journeyArc as Record<string, unknown>)
+      : {};
+  const fallbackArc = fallbackJourneyArc(request, themeKey, growthFocus);
+  const journeyArc: JourneyArc = {
+    purpose: cleanText(arcSource.purpose, 180) || fallbackArc.purpose,
+    currentStage: cleanText(arcSource.currentStage, 140) || fallbackArc.currentStage,
+    nextMovement: cleanText(arcSource.nextMovement, 180) || fallbackArc.nextMovement,
+    tone: cleanText(arcSource.tone, 100) || fallbackArc.tone,
+    practicalActionDirection: cleanText(arcSource.practicalActionDirection, 180) || fallbackArc.practicalActionDirection,
+    lastFollowThroughInterpretation: cleanText(arcSource.lastFollowThroughInterpretation, 160) || ""
+  };
 
   const normalizationContext: JourneyPackageRequest = {
     profile: {
@@ -294,6 +346,7 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
       category: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
       themeKey
     },
+    journeyArc,
     recentJourneySignals: [request.prayerIntentText, request.goalIntentText ?? "", growthFocus].filter(
       (signal) => signal.trim().length > 0
     ),
@@ -312,6 +365,7 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
     journeyCategory: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
     themeKey,
     growthFocus,
+    journeyArc,
     initialMemory: {
       summary:
         cleanText((source.initialMemory as Record<string, unknown> | undefined)?.summary, 240) ||
@@ -346,6 +400,16 @@ export async function generateJourneyBootstrap(
   }> = [];
 
   if (openAIKey) {
+    const escalationModel = process.env.OPENAI_ESCALATION_MODEL?.trim() || "gpt-5.1";
+    candidates.push({
+      provider: "openai",
+      model: escalationModel,
+      escalated: true,
+      call: () => generateWithOpenAIPrompt(system, user, escalationModel, openAIKey)
+    });
+  }
+
+  if (openAIKey) {
     const primaryModel = process.env.OPENAI_PRIMARY_MODEL?.trim() || "gpt-5-mini";
     candidates.push({
       provider: "openai",
@@ -362,16 +426,6 @@ export async function generateJourneyBootstrap(
       model: primaryModel,
       escalated: false,
       call: () => generateWithGeminiPrompt(system, user, primaryModel, geminiKey)
-    });
-  }
-
-  if (openAIKey) {
-    const escalationModel = process.env.OPENAI_ESCALATION_MODEL?.trim() || "gpt-5.1";
-    candidates.push({
-      provider: "openai",
-      model: escalationModel,
-      escalated: true,
-      call: () => generateWithOpenAIPrompt(system, user, escalationModel, openAIKey)
     });
   }
 

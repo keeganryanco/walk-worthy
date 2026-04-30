@@ -118,34 +118,34 @@ enum DailyJourneyPackageValidation {
     static var defaultFirstPersonPrayer: String {
         switch currentLanguage() {
         case .english:
-            return "Lord, I place this journey in Your hands today. Give me wisdom, courage, and steady faith for my next step. Amen."
+            return "Lord, I place this journey in Your hands today. Give me wisdom for one concrete step. Help me follow through with steady faith. Keep my heart close to You as I act, amen."
         case .spanish:
-            return "Señor, pongo este camino en Tus manos hoy. Dame sabiduría, valentía y fe firme para mi próximo paso. Amén."
+            return "Señor, pongo este camino en Tus manos hoy. Dame sabiduría para un paso concreto. Ayúdame a cumplirlo con fe firme. Mantén mi corazón cerca de Ti mientras actúo, amén."
         case .portugueseBrazil:
-            return "Senhor, coloco esta jornada em Tuas mãos hoje. Dá-me sabedoria, coragem e fé firme para meu próximo passo. Amém."
+            return "Senhor, coloco esta jornada em Tuas mãos hoje. Dá-me sabedoria para um passo concreto. Ajuda-me a cumprir com fé firme. Mantém meu coração perto de Ti enquanto ajo, amém."
         case .german:
-            return "Herr, ich lege diese Journey heute in Deine Hände. Gib mir Weisheit, Mut und beständigen Glauben für meinen nächsten Schritt. Amen."
+            return "Herr, ich lege diese Journey heute in Deine Hände. Gib mir Weisheit für einen konkreten Schritt. Hilf mir, ihn mit festem Glauben zu gehen. Halte mein Herz nah bei Dir, während ich handle, amen."
         case .japanese:
-            return "主よ、今日この歩みをあなたの御手にゆだねます。次の一歩のために、知恵と勇気、揺るがない信仰を与えてください。アーメン。"
+            return "主よ、今日この歩みをあなたの御手にゆだねます。具体的な一歩のために知恵を与えてください。揺るがない信仰で実行できるよう助けてください。行動する時も、私の心をあなたの近くに保ってください、アーメン。"
         case .korean:
-            return "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 다음 걸음을 위한 지혜와 용기, 흔들리지 않는 믿음을 주세요. 아멘."
+            return "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 구체적인 한 걸음을 위한 지혜를 주세요. 흔들리지 않는 믿음으로 실천하게 도와주세요. 제가 행동할 때에도 제 마음을 주님 가까이에 붙들어 주세요, 아멘."
         }
     }
 
     static var defaultReflectionThought: String {
         switch currentLanguage() {
         case .english:
-            return "Faithful action today can shape long-term growth."
+            return "Faithful growth usually begins with one concrete response. The journey does not need a dramatic leap today. A small action can make prayer visible in ordinary life. Returning tomorrow gives that action room to become a pattern."
         case .spanish:
-            return "Una acción fiel hoy puede formar un crecimiento duradero."
+            return "El crecimiento fiel suele comenzar con una respuesta concreta. Hoy no hace falta dar un salto enorme. Una acción pequeña puede hacer visible la oración en la vida diaria. Volver mañana permite que esa acción empiece a formar un patrón."
         case .portugueseBrazil:
-            return "Uma ação fiel hoje pode gerar crescimento duradouro."
+            return "O crescimento fiel geralmente começa com uma resposta concreta. Hoje não é preciso dar um grande salto. Uma pequena ação pode tornar a oração visível na vida comum. Voltar amanhã dá espaço para essa ação formar um padrão."
         case .german:
-            return "Ein treuer Schritt heute kann langfristiges Wachstum formen."
+            return "Treues Wachstum beginnt oft mit einer konkreten Antwort. Heute braucht es keinen großen Sprung. Eine kleine Handlung kann Gebet im Alltag sichtbar machen. Morgen zurückzukehren gibt diesem Schritt Raum, ein Muster zu werden."
         case .japanese:
-            return "今日の忠実な行動が、長く続く成長を形づくります。"
+            return "忠実な成長は、たいてい一つの具体的な応答から始まります。今日、大きな飛躍をする必要はありません。小さな行動が、日常の中で祈りを見えるものにします。明日また戻ることで、その一歩が続く形になっていきます。"
         case .korean:
-            return "오늘의 신실한 실천 하나가 오래 남는 성장을 만듭니다."
+            return "신실한 성장은 보통 구체적인 응답 하나에서 시작됩니다. 오늘 큰 도약을 할 필요는 없습니다. 작은 행동 하나가 일상 속에서 기도를 보이게 합니다. 내일 다시 돌아오면 그 행동이 지속되는 흐름이 될 수 있습니다."
         }
     }
     private static let danglingEndings: Set<String> = [
