@@ -12,14 +12,15 @@ struct JournalView: View {
     private var allJourneys: [PrayerJourney]
     
     @State private var isCreating = false
+    @State private var journeyPendingDeletion: PrayerJourney?
     
     var body: some View {
         NavigationStack {
             ZStack {
                 WWColor.white.ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+
+                List {
+                    Section {
                         HStack {
                             Text(L10n.string("journal.title", default: "Journal"))
                                 .font(WWTypography.heading(32))
@@ -37,45 +38,43 @@ struct JournalView: View {
                         }
                         .padding(.horizontal, 24)
                         .padding(.top, 16)
-
-                        let active = allJourneys.filter { !$0.isArchived }
-                        let memories = allJourneys.filter { $0.isArchived }
-
-                        if !active.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text(L10n.string("journal.active_journeys", default: "ACTIVE JOURNEYS"))
-                                    .font(WWTypography.caption(12).weight(.heavy))
-                                    .foregroundStyle(WWColor.muted)
-                                    .tracking(2.0)
-                                    .padding(.horizontal, 24)
-                                ForEach(active) { journey in
-                                    NavigationLink(destination: JourneyDetailView(journey: journey)) {
-                                        journeyCard(journey)
-                                    }
-                                }
-                            }
-                        }
-
-                        if !memories.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text(L10n.string("journal.memories", default: "MEMORIES"))
-                                    .font(WWTypography.caption(12).weight(.heavy))
-                                    .foregroundStyle(WWColor.muted)
-                                    .tracking(2.0)
-                                    .padding(.horizontal, 24)
-
-                                ForEach(memories) { journey in
-                                    NavigationLink(destination: JourneyDetailView(journey: journey)) {
-                                        journeyCard(journey)
-                                    }
-                                }
-                            }
-                            .padding(.top, 24)
-                        }
-
-                        Spacer().frame(height: 136)
                     }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(WWColor.white)
+
+                    let active = allJourneys.filter { !$0.isArchived }
+                    let memories = allJourneys.filter { $0.isArchived }
+
+                    if !active.isEmpty {
+                        Section {
+                            ForEach(active) { journey in
+                                journeyRow(journey)
+                            }
+                        } header: {
+                            sectionHeader(L10n.string("journal.active_journeys", default: "ACTIVE JOURNEYS"))
+                        }
+                    }
+
+                    if !memories.isEmpty {
+                        Section {
+                            ForEach(memories) { journey in
+                                journeyRow(journey)
+                            }
+                        } header: {
+                            sectionHeader(L10n.string("journal.memories", default: "MEMORIES"))
+                        }
+                    }
+
+                    Section {
+                        Color.clear.frame(height: 136)
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(WWColor.white)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
             .navigationBarHidden(true)
             .safeAreaInset(edge: .bottom) {
@@ -84,7 +83,57 @@ struct JournalView: View {
             .sheet(isPresented: $isCreating) {
                 CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
             }
+            .alert(
+                L10n.string("journal.delete_journey_title", default: "Delete this journey?"),
+                isPresented: Binding(
+                    get: { journeyPendingDeletion != nil },
+                    set: { if !$0 { journeyPendingDeletion = nil } }
+                ),
+                presenting: journeyPendingDeletion
+            ) { journey in
+                Button(L10n.string("common.cancel", default: "Cancel"), role: .cancel) {
+                    journeyPendingDeletion = nil
+                }
+                Button(L10n.string("journal.delete_journey_confirm", default: "Delete Journey"), role: .destructive) {
+                    deleteJourney(journey)
+                }
+            } message: { journey in
+                Text(
+                    String(
+                        format: L10n.string("journal.delete_journey_message", default: "Are you sure you want to delete “%@”? This will also delete its journal entries."),
+                        journey.title
+                    )
+                )
+            }
         }
+    }
+
+    @ViewBuilder
+    private func journeyRow(_ journey: PrayerJourney) -> some View {
+        NavigationLink(destination: JourneyDetailView(journey: journey)) {
+            journeyCard(journey)
+        }
+        .buttonStyle(.plain)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                journeyPendingDeletion = journey
+            } label: {
+                Label(L10n.string("common.delete", default: "Delete"), systemImage: "trash")
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+        .listRowSeparator(.hidden)
+        .listRowBackground(WWColor.white)
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(WWTypography.caption(12).weight(.heavy))
+            .foregroundStyle(WWColor.muted)
+            .tracking(2.0)
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
     }
     
     @ViewBuilder
@@ -127,6 +176,54 @@ struct JournalView: View {
         .background(WWColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .padding(.horizontal, 24)
+    }
+
+    private func deleteJourney(_ journey: PrayerJourney) {
+        let journeyID = journey.id
+        deletePackageRecords(for: journeyID)
+        deleteMemorySnapshots(for: journeyID)
+        deleteProgressEvents(for: journeyID)
+        clearWidgetSelectionIfNeeded(for: journeyID)
+        modelContext.delete(journey)
+        try? modelContext.save()
+        WidgetSyncService.publishFromModelContext(modelContext)
+        journeyPendingDeletion = nil
+    }
+
+    private func deletePackageRecords(for journeyID: UUID) {
+        let descriptor = FetchDescriptor<DailyJourneyPackageRecord>(
+            predicate: #Predicate { $0.journeyID == journeyID }
+        )
+        for record in (try? modelContext.fetch(descriptor)) ?? [] {
+            modelContext.delete(record)
+        }
+    }
+
+    private func deleteMemorySnapshots(for journeyID: UUID) {
+        let descriptor = FetchDescriptor<JourneyMemorySnapshot>(
+            predicate: #Predicate { $0.journeyID == journeyID }
+        )
+        for snapshot in (try? modelContext.fetch(descriptor)) ?? [] {
+            modelContext.delete(snapshot)
+        }
+    }
+
+    private func deleteProgressEvents(for journeyID: UUID) {
+        let descriptor = FetchDescriptor<JourneyProgressEvent>(
+            predicate: #Predicate { $0.journeyID == journeyID }
+        )
+        for event in (try? modelContext.fetch(descriptor)) ?? [] {
+            modelContext.delete(event)
+        }
+    }
+
+    private func clearWidgetSelectionIfNeeded(for journeyID: UUID) {
+        let descriptor = FetchDescriptor<AppSettings>(
+            sortBy: [SortDescriptor(\.lastSessionDate, order: .reverse)]
+        )
+        for settings in (try? modelContext.fetch(descriptor)) ?? [] where settings.widgetJourneyID == journeyID {
+            settings.widgetJourneyID = nil
+        }
     }
     
     private func stageEmoji(for count: Int) -> String {
