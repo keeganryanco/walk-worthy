@@ -1,10 +1,12 @@
 import {
   DAILY_JOURNEY_PACKAGE_QUALITY_VERSION,
-  DailyJourneyPackage,
-  JourneyArc,
-  JourneyPackageRequest
 } from "./types";
-import { deterministicReference } from "./scripture";
+import type { DailyJourneyPackage, JourneyArc, JourneyPackageRequest } from "./types";
+import {
+  approvedScriptureParaphraseForReferenceSet,
+  deterministicReference,
+  deterministicReferenceForThemes
+} from "./scripture";
 
 type FollowThroughStatus = "yes" | "partial" | "no" | "unanswered";
 
@@ -52,10 +54,13 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
   if (language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)) {
     return ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"];
   }
+  if (language === "en" && /(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)) {
+    return ["Name one fear clearly", "Pray over one ambition", "Do one focused work block", "Encourage one person"];
+  }
 
   const theme = input.journey.themeKey ?? "basic";
   const byTheme: Record<string, string[]> = {
-    basic: ["Pray over one task", "Take one faithful action", "Write today's next step"],
+    basic: ["Pray over one concern", "Name one honest need", "Choose one wise task"],
     faith: ["Pray with full trust", "Release one control area", "Take one faith step"],
     patience: ["Choose one slow step", "Wait before reacting", "Finish one lingering task"],
     peace: ["Take five calm breaths", "Pray through one worry", "Silence one distraction"],
@@ -262,6 +267,7 @@ function fallbackDailyTitle(input: JourneyPackageRequest): string {
   const language = languageCode(input);
   const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
   if (language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)) return "Learning Sacrificial Love";
+  if (language === "en" && /(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)) return "Holding Ambition Loosely";
   if (language === "en" && /(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "Choosing Peace Today";
   if (language === "en" && /(prayer|consisten|disciplin|habit)/i.test(signals)) return "Practicing Steady Prayer";
   if (language === "es") return "El paso de hoy";
@@ -269,15 +275,16 @@ function fallbackDailyTitle(input: JourneyPackageRequest): string {
   if (language === "de") return "Der heutige Schritt";
   if (language === "ja") return "今日の一歩";
   if (language === "ko") return "오늘의 걸음";
-  return "Today’s Faithful Step";
+  return "Receiving Today With God";
 }
 
 function fallbackTodayAim(input: JourneyPackageRequest): string {
   const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
   if (/(husband|wife|spouse|marriage)/i.test(signals)) return "practice concrete love toward your spouse";
-  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "practice peace in one concrete moment";
+  if (/(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)) return "hold ambition with humility and wisdom";
+  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "receive God's peace with honesty about worry";
   if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "turn prayer into one steady practice";
-  return input.profile.growthGoal || input.profile.prayerFocus || "take one faithful step";
+  return input.profile.growthGoal || input.profile.prayerFocus || "listen for today's wise direction";
 }
 
 function fallbackJourneyArc(input: JourneyPackageRequest, todayAim: string): JourneyArc {
@@ -285,9 +292,9 @@ function fallbackJourneyArc(input: JourneyPackageRequest, todayAim: string): Jou
   return {
     purpose,
     journeyPurpose: purpose,
-    currentStage: input.journeyArc?.currentStage || "learning the next faithful response",
+    currentStage: input.journeyArc?.currentStage || "beginning with honest attention",
     todayAim,
-    nextMovement: input.journeyArc?.nextMovement || "Move from prayer into one concrete lived response.",
+    nextMovement: input.journeyArc?.nextMovement || "Continue the same theme with more clarity, humility, and trust.",
     tone: input.journeyArc?.tone || "grounded, specific, biblically anchored, practical",
     practicalActionDirection:
       input.journeyArc?.practicalActionDirection ||
@@ -302,32 +309,32 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
   const language = languageCode(input);
   const seed = `${input.journey.id}-${input.dateISO ?? "today"}`;
   const usedReferences = collectUsedScriptureReferences(input);
-  const reference = deterministicReference(seed, usedReferences);
+  const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`.toLowerCase();
+  const reference =
+    language === "en" && /(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)
+      ? deterministicReferenceForThemes(seed, ["calling", "ambition", "wisdom", "work"], usedReferences)
+      : language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)
+        ? deterministicReferenceForThemes(seed, ["marriage", "love", "service"], usedReferences)
+        : language === "en" && /(peace|anx|worr|fear|stress|calm)/i.test(signals)
+          ? deterministicReferenceForThemes(seed, ["anxiety", "peace"], usedReferences)
+          : deterministicReference(seed, usedReferences);
   const scriptureParaphrase =
+    approvedScriptureParaphraseForReferenceSet(reference) ??
     referenceFallbackParaphrases[reference]?.[language] ??
-    (language === "es"
-      ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
-      : language === "pt"
-        ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
-        : language === "de"
-          ? "Bring deine Anliegen im Vertrauen vor Gott und gehe heute einen treuen Schritt."
-        : language === "ja"
-          ? "神に願いを信頼してゆだね、今日、忠実な一歩を踏み出しましょう。"
-        : language === "ko"
-          ? "믿음으로 하나님께 간구를 올려 드리고, 오늘 신실한 한 걸음을 내딛으세요."
-      : "Bring your requests to God with trust, and take one faithful step today.");
+    approvedScriptureParaphraseForReferenceSet("Philippians 4:6-7") ??
+    "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.";
   const dailyTitle = fallbackDailyTitle(input);
   const todayAim = fallbackTodayAim(input);
-  const isEnglishMarriageJourney =
-    language === "en" &&
-    /(husband|wife|spouse|marriage)/i.test(
-      `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category}`
-    );
+  const isEnglishMarriageJourney = language === "en" && /(husband|wife|spouse|marriage)/i.test(signals);
+  const isEnglishFutureImpactJourney =
+    language === "en" && /(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals);
 
   return {
     dailyTitle,
     reflectionThought: isEnglishMarriageJourney
       ? "Jesus shows that love for God is tied to love for the person close beside you. In marriage, love becomes real when it is patient, humble, and willing to serve. A husband is growing in the right direction when his daily choices look less selfish and more like the way Christ loves. Sacrificial love is learned in ordinary moments of care, listening, and humility."
+      : isEnglishFutureImpactJourney
+        ? "Scripture treats influence as a gift that should point beyond the self. A desire to do meaningful things becomes healthier when it is shaped by service instead of pressure to prove worth. Anxiety about the future can make calling feel heavy before the path is clear. God can form ambition into wisdom, humility, and love for the people who may be helped."
       : language === "es"
         ? "La fe puede formar un camino paciente en esta área de oración. Dios suele obrar en el corazón antes de que todo se vea resuelto. Un paso pequeño puede revelar qué parte de la vida necesita atención y cuidado. El crecimiento verdadero se forma con fidelidad, no con presión."
         : language === "pt"
@@ -338,11 +345,13 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
             ? "この祈りの領域において、信仰は忍耐深い歩みを形づくります。神は目に見える解決の前に、心の中で働かれることがあります。小さな一歩は、生活のどこに注意と配慮が必要かを示してくれます。真の成長は、圧力ではなく忠実さによって育ちます。"
           : language === "ko"
             ? "이 기도의 자리에서 믿음은 인내로운 길을 만들어 갑니다. 하나님은 모든 것이 해결되기 전에 먼저 마음 안에서 일하실 때가 많습니다. 작은 한 걸음은 삶의 어느 부분에 관심과 돌봄이 필요한지 보여 줄 수 있습니다. 참된 성장은 압박이 아니라 신실함으로 자랍니다."
-        : "Faith can form a patient path in this area of prayer. God often works in the heart before everything looks resolved. A small step can reveal which part of life needs attention and care. Real growth is shaped by faithfulness, not pressure.",
+        : "Scripture gives this concern a steadier center than pressure can provide. God cares about the heart beneath the request, not only the outcome being hoped for. This journey can become a place to receive wisdom, patience, and trust. Growth begins to feel less vague when the concern is brought honestly before God.",
     scriptureReference: reference,
     scriptureParaphrase,
     prayer: isEnglishMarriageJourney
-      ? "Jesus, I bring my marriage and my role as a husband to You today. Teach me to love my wife with patience, humility, and attention. Show me where selfishness or passivity has shaped my habits. Help me take one concrete step of love today."
+      ? "Jesus, I bring my marriage and my role as a husband to You today. Teach me to love my wife with patience, humility, and attention. Show me where selfishness or passivity has shaped my habits. Make my love more like Yours."
+      : isEnglishFutureImpactJourney
+        ? "Lord, I bring You my fear about the future and my desire to matter. Teach me to want impact that serves people and honors You. Keep ambition from becoming pressure to prove myself. Give me wisdom, humility, and peace as I grow."
       : language === "es"
         ? "Señor, pongo esta jornada en Tus manos hoy. Ayúdame a ver un paso concreto que pueda dar con fidelidad. Dame humildad para empezar pequeño en vez de quedarme solo en intención. Guía mi acción hacia el crecimiento que te estoy pidiendo."
         : language === "pt"
@@ -353,10 +362,12 @@ export function fallbackPackage(input: JourneyPackageRequest): DailyJourneyPacka
             ? "主よ、今日この歩みをあなたの御手にゆだねます。私が忠実に踏み出せる具体的な一歩を見せてください。思いだけで終わらず、小さく始める謙遜を与えてください。私が願っている成長へ向かう行動へ導いてください。"
           : language === "ko"
             ? "주님, 오늘 이 여정을 주님의 손에 올려드립니다. 제가 신실하게 할 수 있는 구체적인 한 걸음을 보게 해 주세요. 마음만 품고 멈추지 않고 작게 시작할 겸손을 주세요. 제가 구하는 성장으로 이어지는 행동을 인도해 주세요."
-        : "Lord, I place this journey in Your hands today. Help me see one concrete step I can take faithfully. Give me humility to start small instead of staying in intention. Guide my action toward the growth I am asking You for.",
+        : "Lord, I bring this concern to You honestly today. Give me wisdom for what is unclear and peace where I feel pressure. Shape my desires with humility and trust. Keep my heart open to what is true and good.",
     todayAim,
     smallStepQuestion: isEnglishMarriageJourney
       ? "What is one simple way to show love to your wife today?"
+      : isEnglishFutureImpactJourney
+        ? "What is one wise way to face your future today?"
       : followThroughStatus(input) === "partial" ||
       followThroughStatus(input) === "no"
         ? language === "es"

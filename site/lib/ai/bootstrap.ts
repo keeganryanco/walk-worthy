@@ -12,6 +12,7 @@ import {
 import { normalizePackageFromObject } from "./validate";
 import { estimateCostUSD } from "./cost";
 import { devotionalModel as configuredDevotionalModel, repairModel as configuredRepairModel } from "./modelRouting";
+import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 import type { ProviderGenerationResult } from "./providers/openai";
 
 const THEME_KEYS: JourneyThemeKey[] = [
@@ -145,26 +146,26 @@ function inferGrowthFocus(request: JourneyBootstrapRequest, themeKey: JourneyThe
 }
 
 function fallbackJourneyArc(request: JourneyBootstrapRequest, themeKey: JourneyThemeKey, growthFocus: string): JourneyArc {
-  const purpose = cleanText(request.prayerIntentText, 140) || growthFocus || "grow in faithful action";
+  const purpose = cleanText(request.prayerIntentText, 140) || growthFocus || "grow with God in this concern";
   const stageByTheme: Record<JourneyThemeKey, string> = {
-    basic: "beginning with one faithful response",
-    faith: "learning to trust God in one concrete area",
+    basic: "beginning with honest attention",
+    faith: "learning to trust God in one honest area",
     patience: "slowing down before reacting",
-    peace: "practicing peace in daily pressure",
-    resilience: "building endurance through small faithful steps",
-    community: "turning love into visible action",
-    discipline: "forming consistency through one next step",
+    peace: "receiving peace in daily pressure",
+    resilience: "building endurance with patience",
+    community: "learning love in visible relationships",
+    discipline: "forming consistency with wisdom",
     healing: "moving gently toward wholeness",
-    joy: "noticing and practicing gratitude",
-    wisdom: "choosing the next wise step"
+    joy: "receiving gratitude with honesty",
+    wisdom: "seeking wise direction"
   };
 
   return {
     purpose,
     journeyPurpose: purpose,
     currentStage: stageByTheme[themeKey] ?? stageByTheme.basic,
-    todayAim: `Practice ${growthFocus || "faith"} through one concrete response today.`,
-    nextMovement: `Move from prayer about ${growthFocus || "this need"} into one concrete act today.`,
+    todayAim: `Receive Scripture about ${growthFocus || "this need"} with honesty and trust.`,
+    nextMovement: `Continue exploring ${growthFocus || "this need"} with more clarity, humility, and care.`,
     tone: "grounded, sincere, practical, hopeful",
     practicalActionDirection: "Prefer specific real-life actions when the user's context supports them.",
     recentDayTitles: [],
@@ -242,14 +243,14 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
 function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: string): { system: string; user: string } {
   const language = targetLanguage(request);
   const system = [
-    "You are generating initial journey setup for a Christian prayer-and-action app.",
+    "You are generating initial journey setup for Tend, a personal Christian devotional journey app.",
     "Return strict JSON only.",
     "Classify the journey into one themeKey from:",
     THEME_KEYS.join(", "),
-    "Create concise, practical initial memory and a daily package.",
+    "Create concise initial memory and a daily package.",
     "Create a flexible journeyArc that gives the journey an ongoing story and practical direction without locking a fixed day-by-day plan.",
     "Privately decide the one clear devotional point this package is communicating before writing any field.",
-    "The reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
+    "The title, Scripture choice, reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
     "Use plain, easy-to-follow language in reflectionThought. A thoughtful child should be able to follow the main point, while an adult should still feel respected.",
     "Do not try to sound literary, academic, or impressive. Prefer common words when they communicate the same idea.",
     "One rich word is fine when it matters; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
@@ -261,18 +262,21 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
     "Do not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action inside reflectionThought.",
     "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
     "reflectionThought must be exactly 4-5 complete sentences.",
-    "Keep reflectionThought concrete, practical, and tied to this journey's next movement.",
+    "Keep reflectionThought concrete, Scripture-led, and tied to this journey's concern.",
     "Choose Scripture before writing the reflection. The reflection's main point must clearly arise from what the selected Scripture says, not merely sit beside a broadly related verse.",
     "Use one scripture reference by default. Use 2-3 references only when the combined passages truly deepen the same point; if using multiple references, separate them with semicolons.",
+    "scriptureReference must come only from this approved scripture library:",
+    APPROVED_SCRIPTURE_REFERENCES.join(", "),
     "Scripture paraphrase should be near-quote style: close to the selected verse wording with only subtle wording changes for the devotional focus.",
     "Keep scriptureParaphrase to 1-3 concise sentences and faithful to the cited verse or verses.",
     "If using multiple references, paraphrase each passage in the same order without blending them into a fake single verse.",
+    "Do not turn Scripture into application language. scriptureParaphrase, reflectionThought, and prayer must not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act.",
     "For marriage/spouse journeys, prefer passages about sacrificial love, patient love, humility, service, tenderness, and honoring a spouse, such as Ephesians 5:25, Colossians 3:19, 1 Peter 3:7, John 15:12, 1 Corinthians 13:4-7, Mark 10:45, or Galatians 5:13.",
     "Prayer must be exactly 3-4 complete sentences and strict first-person voice (I/me/my/we/us/our).",
     "Prayer must name concrete realities from the user's journey and avoid empty Christianese such as reflect your grace more and more, deeper reliance, divine care, higher purpose, align my heart, walk in your truth, or grow closer to you.",
     "dailyTitle must be short, concrete, and story-like.",
     "Reject generic daily titles like Growing in Faith, Trusting God More, Daily Peace, A Step Toward Love, or Today's Faithful Step.",
-    "smallStepQuestion must be one simple question, usually under 14 words, asking what the user can do today.",
+    "smallStepQuestion must be one simple question, usually under 14 words, asking what the user can do today. Practical action language belongs only in smallStepQuestion and suggestedSteps.",
     "Suggested step chips must include at least one concrete practical action when context supports it, plus a lower-friction option and a prayer/spiritual option when appropriate.",
     "For relationship or marriage contexts, specific actions like buying flowers, writing a note, apologizing, asking a direct question, or planning a short check-in are allowed when context supports them.",
     "Avoid unsafe, manipulative, expensive, shaming, or conflict-escalating suggestions.",
@@ -309,6 +313,10 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
           preferredTone: "string"
         },
         initialPackage: {
+          centralConcern: "specific concern inferred from the user's request, not a generic category",
+          biblicalTheme: "specific biblical theme connecting the concern to Scripture",
+          devotionalPoint: "one clear point the reflection, prayer, and action layer should serve",
+          scriptureFitReason: "why the chosen reference fits this exact concern",
           dailyTitle: "string",
           reflectionThought: "string",
           scriptureReference: "string",

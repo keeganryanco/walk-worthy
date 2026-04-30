@@ -6,6 +6,7 @@ import {
   normalizeDevotionalCoreFromObject
 } from "./validate.ts";
 import { normalizeReference } from "./scripture.ts";
+import { fallbackPackage } from "./fallback.ts";
 import { actionModel, devotionalModel, repairModel } from "./modelRouting.ts";
 import { DAILY_JOURNEY_PACKAGE_QUALITY_VERSION } from "./types.ts";
 import type { JourneyPackageRequest } from "./types.ts";
@@ -52,6 +53,10 @@ const validArc = {
 };
 
 const validCoreSource = {
+  centralConcern: "learning to love my wife with patience and humility",
+  biblicalTheme: "Christlike sacrificial love in marriage",
+  devotionalPoint: "A husband learns love by letting Christ's self-giving love shape ordinary moments in marriage.",
+  scriptureFitReason: "John 15:12 directly grounds marriage love in the way Jesus loves His people.",
   dailyTitle: "Learning Sacrificial Love",
   scriptureReference: "John 15:12",
   scriptureParaphrase: "Jesus commands His disciples to love one another as He has loved them.",
@@ -82,7 +87,7 @@ test("model routing defaults use gpt-5.5 core and gpt-5.1 action", () => {
 });
 
 test("current package quality version invalidates stale cached output", () => {
-  assert.equal(DAILY_JOURNEY_PACKAGE_QUALITY_VERSION, 5);
+  assert.equal(DAILY_JOURNEY_PACKAGE_QUALITY_VERSION, 6);
 });
 
 test("valid spouse-specific devotional core passes", () => {
@@ -245,5 +250,210 @@ test("relevant spouse and marriage steps pass validation", () => {
     "Ask one caring question",
     "Do one helpful chore",
     "Pray for your wife"
+  ]);
+});
+
+const futureImpactRequest: JourneyPackageRequest = {
+  profile: {
+    prayerFocus: "anxiety about my future and doing great things and having great impact on the world",
+    growthGoal: "hold ambition with peace, wisdom, humility, and service"
+  },
+  journey: {
+    id: "journey-future-impact",
+    title: "Future Impact",
+    category: "Calling",
+    themeKey: "wisdom"
+  },
+  journeyArc: {
+    purpose: "bring anxiety about the future and impact to God",
+    journeyPurpose: "bring anxiety about the future and impact to God",
+    currentStage: "naming ambition and fear honestly",
+    todayAim: "hold ambition with humility and wisdom",
+    nextMovement: "Continue discerning calling without pressure to prove yourself.",
+    tone: "grounded, specific, biblically anchored",
+    practicalActionDirection: "Use actions tied to anxiety, ambition, work, service, and wisdom.",
+    recentDayTitles: [],
+    lastFollowThroughInterpretation: "",
+    specificContextSignals: ["future", "anxiety", "impact", "ambition", "calling"]
+  },
+  recentJourneySignals: ["future", "impact", "ambition", "anxiety"],
+  languageCode: "en",
+  localeIdentifier: "en-US"
+};
+
+const futureImpactArc = {
+  purpose: "bring anxiety about the future and impact to God",
+  journeyPurpose: "bring anxiety about the future and impact to God",
+  currentStage: "naming ambition and fear honestly",
+  todayAim: "hold ambition with humility and wisdom",
+  nextMovement: "Continue discerning calling without pressure to prove yourself.",
+  tone: "grounded, specific, biblically anchored",
+  practicalActionDirection: "Use actions tied to anxiety, ambition, work, service, and wisdom.",
+  recentDayTitles: ["Holding Ambition Loosely"],
+  lastFollowThroughInterpretation: "",
+  specificContextSignals: ["future", "anxiety", "impact", "ambition", "calling"]
+};
+
+test("Romans 12:10 cannot keep unrelated Philippians-style paraphrase", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      scriptureReference: "Romans 12:10",
+      scriptureParaphrase: "Bring your requests to God with trust, and take one faithful step today."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+
+  const communityResult = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      centralConcern: "learning to honor one another in love",
+      biblicalTheme: "devoted love and honor",
+      devotionalPoint: "Christian love becomes concrete when honor replaces self-importance.",
+      scriptureFitReason: "Romans 12:10 names devoted love and honor directly.",
+      scriptureReference: "Romans 12:10",
+      scriptureParaphrase: "Bring your requests to God with trust, and take one faithful step today.",
+      reflectionThought:
+        "Paul describes love as devotion that chooses honor over self-importance. That kind of love is not vague warmth because it makes another person's good matter deeply. In close relationships, honor can soften the pride that turns every need into a contest. Love becomes steadier when devotion and humility belong together.",
+      prayer:
+        "Lord, I bring You my relationships and my desire to love well. Teach me to honor people without needing to be first. Show me where pride has made me guarded.",
+      updatedJourneyArc: { ...validArc, specificContextSignals: ["relationships", "honor", "love"] }
+    },
+    {
+      ...husbandRequest,
+      profile: { prayerFocus: "honor a friend in love", growthGoal: "practice humble love" },
+      journey: { id: "journey-love", title: "Learning Honor", category: "Friendship", themeKey: "community" },
+      recentJourneySignals: ["friend", "honor", "love"]
+    }
+  );
+
+  assert.equal(
+    communityResult?.scriptureParaphrase,
+    "Be devoted to one another in love, and honor one another above yourselves."
+  );
+});
+
+test("scripture paraphrase cannot contain action-step language after normalization", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      scriptureParaphrase: "Take one faithful step today and move forward."
+    },
+    husbandRequest
+  );
+
+  assert.ok(result);
+  assert.doesNotMatch(result.scriptureParaphrase, /faithful step|move forward|concrete step/i);
+});
+
+test("reflection with small-step devotional action language fails validation", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      reflectionThought:
+        "Jesus defines love by His own self-giving pattern. His command reveals that love is not only affection but a chosen posture of service and patience. A small step can reveal which part of life needs attention and care. Real growth is shaped by faithfulness, not pressure."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+});
+
+test("prayer with concrete-step action language fails validation", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      prayer:
+        "Lord, I place this journey in Your hands today. Give me wisdom for one concrete step. Help me follow through with steady faith. Keep my heart close to You as I act."
+    },
+    husbandRequest
+  );
+
+  assert.equal(result, null);
+});
+
+test("future impact anxiety core accepts relevant scripture and concrete language", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      centralConcern: "anxiety about the future and wanting meaningful impact",
+      biblicalTheme: "calling shaped by service instead of self-pressure",
+      devotionalPoint: "God can reshape ambition so impact becomes service rather than proof of worth.",
+      scriptureFitReason: "Matthew 5:16 connects visible good works with giving glory to the Father.",
+      dailyTitle: "Holding Ambition Loosely",
+      scriptureReference: "Matthew 5:16",
+      scriptureParaphrase:
+        "Let your light shine before others, so they may see your good works and give glory to your Father in heaven.",
+      reflectionThought:
+        "Jesus teaches that visible good can point people back to the Father. This keeps impact from becoming a stage for proving personal worth. Anxiety about the future often grows when calling is measured by greatness before service. Ambition becomes healthier when it is held with humility, wisdom, and love for the people who may be helped.",
+      prayer:
+        "Lord, I bring You my fear about the future and my desire to matter. Teach me to want impact that serves people and honors You. Keep ambition from becoming pressure to prove myself. Give me wisdom, humility, and peace as I grow.",
+      todayAim: "hold ambition with humility and wisdom",
+      updatedJourneyArc: futureImpactArc
+    },
+    futureImpactRequest
+  );
+
+  assert.ok(result);
+  assert.match(
+    result.scriptureReference,
+    /^(Matthew 5:16|Ephesians 2:10|Colossians 3:17|Philippians 4:6-7|James 1:5)$/
+  );
+  assert.match(result.reflectionThought, /future|impact|calling|ambition/i);
+  assert.match(result.prayer, /fear|ambition|future|humility|wisdom|service|impact/i);
+});
+
+test("future impact anxiety action layer stays practical and related", () => {
+  const core = normalizeDevotionalCoreFromObject(
+    {
+      centralConcern: "anxiety about the future and wanting meaningful impact",
+      biblicalTheme: "calling shaped by service instead of self-pressure",
+      devotionalPoint: "God can reshape ambition so impact becomes service rather than proof of worth.",
+      scriptureFitReason: "James 1:5 fits a request for wisdom about the future.",
+      dailyTitle: "Asking For Wisdom",
+      scriptureReference: "James 1:5",
+      scriptureParaphrase: "If anyone lacks wisdom, they should ask God, who gives generously without finding fault.",
+      reflectionThought:
+        "James treats wisdom as something God gives generously to people who lack it. That matters when the future feels large and hard to read. A desire for impact can become anxious when every decision feels like proof of calling. God meets ambition with wisdom that is generous, humble, and steady.",
+      prayer:
+        "Lord, I bring You my fear about the future and my desire to matter. Give me wisdom that is humble and clear. Keep ambition from becoming pressure to prove myself.",
+      todayAim: "ask God for wisdom about ambition and impact",
+      updatedJourneyArc: futureImpactArc
+    },
+    futureImpactRequest
+  );
+  assert.ok(core);
+
+  const action = normalizeActionLayerFromObject(
+    {
+      smallStepQuestion: "What is one wise way to face your future today?",
+      suggestedSteps: ["Name one fear clearly", "Pray over one ambition", "Do one focused work block", "Encourage one person"],
+      completionSuggestion: { shouldPrompt: false, reason: "", confidence: 0 }
+    },
+    futureImpactRequest,
+    core
+  );
+
+  assert.deepEqual(action?.suggestedSteps, [
+    "Name one fear clearly",
+    "Pray over one ambition",
+    "Do one focused work block",
+    "Encourage one person"
+  ]);
+});
+
+test("fallback output never pairs a random reference with generic action paraphrase", () => {
+  const output = fallbackPackage(futureImpactRequest);
+
+  assert.doesNotMatch(output.scriptureParaphrase, /take one faithful step|one concrete step|small step/i);
+  assert.doesNotMatch(output.reflectionThought, /this area of prayer|A small step can reveal|move forward today/i);
+  assert.doesNotMatch(output.prayer, /one concrete step|as I act|small, faithful step/i);
+  assert.match(`${output.reflectionThought} ${output.prayer}`, /future|impact|ambition|anxiety|calling|fear|wisdom|service/i);
+  assert.deepEqual(output.suggestedSteps, [
+    "Name one fear clearly",
+    "Pray over one ambition",
+    "Do one focused work block",
+    "Encourage one person"
   ]);
 });

@@ -182,10 +182,7 @@ struct ScriptureReferenceValidator {
     }
 
     private static func isApprovedSingleReference(_ reference: String) -> Bool {
-        if approvedReferences.contains(reference) { return true }
-        // Canonical format fallback: "<Book> <Chapter>:<Verse>" or verse ranges.
-        let pattern = #"^(?:[1-3]\s)?[A-Za-z]+(?:\s[A-Za-z]+)*\s\d{1,3}:\d{1,3}(?:-\d{1,3})?$"#
-        return reference.range(of: pattern, options: .regularExpression) != nil
+        approvedReferences.contains(reference)
     }
 
     static func splitReferenceSet(_ reference: String) -> [String] {
@@ -279,6 +276,33 @@ struct ScriptureReferenceValidator {
             "de": "Der Menschensohn ist nicht gekommen, um sich bedienen zu lassen, sondern um zu dienen und sein Leben für viele hinzugeben.",
             "ja": "人の子は仕えられるためではなく仕えるために来られ、多くの人のためにご自身のいのちを与えるために来られました。",
             "ko": "인자는 섬김을 받으려 온 것이 아니라 섬기고 많은 사람을 위해 자기 생명을 내어주려 오셨습니다."
+        ],
+        "Romans 12:10": [
+            "en": "Be devoted to one another in love, and honor one another above yourselves."
+        ],
+        "Matthew 5:16": [
+            "en": "Let your light shine before others, so they may see your good works and give glory to your Father in heaven."
+        ],
+        "Ephesians 2:10": [
+            "en": "We are God's workmanship, created in Christ Jesus for good works that God prepared for us to walk in."
+        ],
+        "Colossians 3:17": [
+            "en": "Whatever you do in word or deed, do it all in the name of the Lord Jesus, giving thanks to God."
+        ],
+        "James 1:5": [
+            "en": "If anyone lacks wisdom, they should ask God, who gives generously without finding fault."
+        ],
+        "John 15:12": [
+            "en": "Jesus commands His disciples to love one another as He has loved them."
+        ],
+        "Ephesians 5:25": [
+            "en": "Husbands are called to love their wives as Christ loved the church and gave Himself for her."
+        ],
+        "1 Corinthians 13:4-7": [
+            "en": "Love is patient and kind; it is not proud or self-seeking, and it bears, believes, hopes, and endures."
+        ],
+        "1 Peter 5:6-7": [
+            "en": "Humble yourselves under God's mighty hand, casting all your anxieties on Him because He cares for you."
         ]
     ]
 
@@ -292,7 +316,16 @@ struct ScriptureReferenceValidator {
         "Colossians 3:23": ["work", "heartily", "lord", "not for", "people"],
         "1 Corinthians 9:27": ["discipline", "self-control", "body", "disqualified", "after preaching"],
         "Galatians 5:13": ["freedom", "serve", "one another", "love", "humility"],
-        "Mark 10:45": ["serve", "served", "son of man", "ransom", "many"]
+        "Mark 10:45": ["serve", "served", "son of man", "ransom", "many"],
+        "Romans 12:10": ["devoted", "one another", "love", "honor", "above yourselves"],
+        "Matthew 5:16": ["light", "shine", "good works", "glory", "father"],
+        "Ephesians 2:10": ["workmanship", "created", "good works", "prepared", "walk"],
+        "Colossians 3:17": ["word", "deed", "name", "lord jesus", "thanks"],
+        "James 1:5": ["wisdom", "ask", "god", "generously", "without finding fault"],
+        "John 15:12": ["jesus", "commands", "love one another", "loved", "disciples"],
+        "Ephesians 5:25": ["husbands", "love", "wives", "christ", "gave himself"],
+        "1 Corinthians 13:4-7": ["patient", "kind", "not proud", "not self-seeking", "endures"],
+        "1 Peter 5:6-7": ["humble", "mighty hand", "anxieties", "cares", "god"]
     ]
 
     private static let offTargetSignals: [String: [String]] = [
@@ -331,6 +364,15 @@ struct ScriptureReferenceValidator {
         let normalizedReference = reference.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedParaphrase = sanitizedSnippet(paraphrase)
         let normalizedLanguageCode = normalizedLanguage(languageCode)
+        let references = splitReferenceSet(normalizedReference)
+        if references.count > 1 {
+            let snippets = references.compactMap {
+                paraphraseFallback(for: $0, languageCode: normalizedLanguageCode)
+            }
+            if snippets.count == references.count {
+                return snippets.joined(separator: " ")
+            }
+        }
         let fallback = paraphraseFallback(for: normalizedReference, languageCode: normalizedLanguageCode)
         let anchors = paraphraseAnchors[normalizedReference]
 
@@ -378,8 +420,10 @@ struct ScriptureReferenceValidator {
     }
 
     static func deterministicApprovedReference(seed: String, excluding: Set<String> = []) -> String {
-        let pool = approvedReferencesSorted.filter { !excluding.contains($0) }
-        let candidates = pool.isEmpty ? approvedReferencesSorted : pool
+        let fallbackReferences = Set(paraphraseFallbacks.keys)
+        let approvedWithKnownParaphrases = approvedReferencesSorted.filter { fallbackReferences.contains($0) }
+        let pool = approvedWithKnownParaphrases.filter { !excluding.contains($0) }
+        let candidates = pool.isEmpty ? approvedWithKnownParaphrases : pool
         guard !candidates.isEmpty else {
             return "Philippians 4:6-7"
         }

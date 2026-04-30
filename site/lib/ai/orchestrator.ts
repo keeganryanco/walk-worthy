@@ -2,7 +2,7 @@ import { fallbackPackage } from "./fallback";
 import {
   mergePackageFromCoreAndAction,
   parseAndNormalizeActionLayer,
-  parseAndNormalizeDevotionalCore,
+  parseAndNormalizeDevotionalCoreWithIssues,
   parseAndNormalizePackage
 } from "./validate";
 import { ActionLayerOutput, DevotionalCore, JourneyPackageRequest, OrchestratedResult, AIUsageMetrics, AITokenUsage } from "./types";
@@ -57,10 +57,11 @@ async function generateOpenAICore(
   model: string,
   apiKey: string,
   repairNotes?: string
-): Promise<{ core: DevotionalCore | null; generated: ProviderGenerationResult }> {
+): Promise<{ core: DevotionalCore | null; generated: ProviderGenerationResult; issues: string[] }> {
   const { system, user } = buildDevotionalCorePrompt(input, repairNotes);
   const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
-  return { core: parseAndNormalizeDevotionalCore(generated.text, input), generated };
+  const parsed = parseAndNormalizeDevotionalCoreWithIssues(generated.text, input);
+  return { core: parsed.core, generated, issues: parsed.issues };
 }
 
 async function generateOpenAIAction(
@@ -89,11 +90,12 @@ async function generateWithOpenAIOrchestration(
   let escalated = false;
 
   if (!core) {
+    const failedReasons = coreAttempt.issues.length ? ` Reasons: ${coreAttempt.issues.join("; ")}.` : "";
     const repaired = await generateOpenAICore(
       input,
       fallbackRepairModel,
       apiKey,
-      "Previous devotional core failed validation. Repair sentence counts, remove practical commands from reflection, remove vague Christianese, keep near-quote scripture, and return the same JSON schema."
+      `Previous devotional core failed validation.${failedReasons} Repair by choosing only from the approved Scripture library, removing action language from reflection/prayer/scripture, making the reflection specific and Scripture-led, making the prayer concrete, and returning the same JSON schema.`
     );
     core = repaired.core;
     coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);

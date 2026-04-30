@@ -8,7 +8,14 @@ import type {
   JourneyArc,
   JourneyPackageRequest
 } from "./types";
-import { deterministicReference, normalizeReference, splitNormalizedReferences } from "./scripture";
+import {
+  approvedScriptureParaphraseForReferenceSet,
+  deterministicReference,
+  isApprovedScriptureReference,
+  normalizeReference,
+  splitNormalizedReferences,
+  splitReferenceCandidates
+} from "./scripture";
 
 const CHIP_MIN_WORDS = 2;
 const CHIP_MAX_WORDS = 8;
@@ -293,6 +300,10 @@ const contextualKeywordChipsEn: Array<{ pattern: RegExp; chips: string[] }> = [
     pattern: /(husband|wife|spouse|marriage)/i,
     chips: ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"]
   },
+  {
+    pattern: /(future|impact|ambition|calling|purpose|influenc|great things|world)/i,
+    chips: ["Name one fear clearly", "Pray over one ambition", "Do one focused work block", "Encourage one person"]
+  },
   { pattern: /(anx|worr|fear|stress|panic|calm|rest|peace)/i, chips: ["Pray through this worry", "Take five calm breaths"] },
   { pattern: /(focus|disciplin|habit|procrastin|delay|consisten)/i, chips: ["Start one focused block", "Finish one delayed task"] },
   { pattern: /(family|marriage|friend|relationship|team|community)/i, chips: ["Send one honest message", "Pray for this relationship"] },
@@ -477,7 +488,7 @@ function concreteContextSignals(input?: JourneyPackageRequest): boolean {
 }
 
 function hasConcreteStepLanguage(step: string): boolean {
-  return /(send|call|text|write|ask|buy|bring|schedule|plan|review|finish|start|remove|apologize|thank|serve|clean|cook|walk|budget|flowers|note|message|check-in|env[ií]a|llama|escribe|compra|agenda|revisa|termina|pide perd[oó]n|agradece|compre|envie|ligue|escreva|agende|revise|termine|entschuldige|kaufe|sende|schreibe|plane|prüfe|erledige|送る|書く|買う|予定|確認|終える|謝る|感謝|보내|쓰기|사|계획|확인|끝내|사과|감사)/i.test(step);
+  return /(send|call|text|write|ask|buy|bring|schedule|plan|review|finish|start|remove|apologize|thank|serve|clean|cook|walk|budget|flowers|note|message|check-in|name|pray|encourage|do|env[ií]a|llama|escribe|compra|agenda|revisa|termina|pide perd[oó]n|agradece|compre|envie|ligue|escreva|agende|revise|termine|entschuldige|kaufe|sende|schreibe|plane|prüfe|erledige|送る|書く|買う|予定|確認|終える|謝る|感謝|보내|쓰기|사|계획|확인|끝내|사과|감사)/i.test(step);
 }
 function reflectionUsesFirstPerson(value: string, language: SupportedLanguageCode): boolean {
   const normalized = value.toLowerCase().replace(/[’`]/g, "'");
@@ -1059,12 +1070,17 @@ const referenceOffTargetSignals: Record<string, string[]> = {
 };
 
 function fallbackParaphrase(reference: string, language: SupportedLanguageCode): string | undefined {
+  const approved = approvedScriptureParaphraseForReferenceSet(reference);
+  if (approved) return approved;
   const fallback = referenceParaphraseFallbacks[reference];
   if (!fallback) return undefined;
   return fallback[language] ?? fallback.en;
 }
 
 function enforceParaphraseFidelity(reference: string, paraphrase: string, language: SupportedLanguageCode): string {
+  const approved = approvedScriptureParaphraseForReferenceSet(reference);
+  if (approved) return approved;
+
   const references = splitNormalizedReferences(reference);
   if (references.length > 1) {
     if (paraphrase.trim()) {
@@ -1165,6 +1181,7 @@ function fallbackDailyTitle(input?: JourneyPackageRequest): string {
   const language = languageCode(input);
   const signals = contextSignals(input);
   if (/(husband|wife|spouse|marriage)/i.test(signals)) return "Learning Sacrificial Love";
+  if (/(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)) return "Holding Ambition Loosely";
   if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "Choosing Peace Today";
   if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "Practicing Steady Prayer";
   if (language === "es") return "El paso de hoy";
@@ -1172,15 +1189,16 @@ function fallbackDailyTitle(input?: JourneyPackageRequest): string {
   if (language === "de") return "Der heutige Schritt";
   if (language === "ja") return "今日の一歩";
   if (language === "ko") return "오늘의 걸음";
-  return "Today’s Faithful Step";
+  return "Receiving Today With God";
 }
 
 function fallbackTodayAim(input?: JourneyPackageRequest): string {
   const signals = contextSignals(input);
   if (/(husband|wife|spouse|marriage)/i.test(signals)) return "practice concrete love toward your spouse";
-  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "practice peace in one concrete moment";
+  if (/(future|impact|ambition|calling|purpose|influenc|great things|world)/i.test(signals)) return "hold ambition with humility and wisdom";
+  if (/(peace|anx|worr|fear|stress|calm)/i.test(signals)) return "receive God's peace with honesty about worry";
   if (/(prayer|consisten|disciplin|habit)/i.test(signals)) return "turn prayer into one steady practice";
-  return cleanText(input?.profile.growthGoal, 120) || cleanText(input?.profile.prayerFocus, 120) || "take one faithful step";
+  return cleanText(input?.profile.growthGoal, 120) || cleanText(input?.profile.prayerFocus, 120) || "listen for today's wise direction";
 }
 
 function normalizeJourneyArcFromObject(
@@ -1195,7 +1213,7 @@ function normalizeJourneyArcFromObject(
     existing?.journeyPurpose ||
     existing?.purpose ||
     cleanText(input?.profile.prayerFocus, 180) ||
-    "grow through faithful daily action";
+    "grow with God in this concern";
 
   const normalized: JourneyArc = {
     purpose,
@@ -1203,7 +1221,7 @@ function normalizeJourneyArcFromObject(
     currentStage:
       cleanText(source?.currentStage, 140) ||
       existing?.currentStage ||
-      "learning the first faithful response",
+      "beginning with honest attention",
     todayAim:
       cleanText(source?.todayAim, 140) ||
       cleanText(todayAim, 140) ||
@@ -1212,7 +1230,7 @@ function normalizeJourneyArcFromObject(
     nextMovement:
       cleanText(source?.nextMovement, 180) ||
       existing?.nextMovement ||
-      "Move from prayer into one concrete lived response.",
+      "Continue the same theme with more clarity, humility, and trust.",
     tone:
       cleanText(source?.tone, 100) ||
       existing?.tone ||
@@ -1258,6 +1276,92 @@ const DENSE_ABSTRACT_REFLECTION_WORDS = [
   /\babstraction\b/i,
   /\bformation\b/i
 ];
+
+const DEVOTIONAL_CORE_ACTION_LANGUAGE_REGEX =
+  /\b(take one faithful step|one faithful step|one concrete step|concrete step|faithful step|small step|next step|move forward today|move from prayer|as i act|what can you do|one faithful action|one simple response|concrete response|concrete act|guide my action|turn prayer into action)\b/i;
+
+const LOW_SPECIFICITY_PLACEHOLDER_REGEX =
+  /\b(this area of prayer|this journey|part of life|real growth|faith can form a patient path|everything looks resolved|the growth i am asking you for|today's next step)\b/i;
+
+const SPECIFICITY_STOPWORDS = new Set([
+  "about",
+  "again",
+  "better",
+  "christian",
+  "daily",
+  "faith",
+  "god",
+  "good",
+  "great",
+  "grow",
+  "growth",
+  "help",
+  "journey",
+  "lord",
+  "more",
+  "need",
+  "pray",
+  "prayer",
+  "really",
+  "some",
+  "that",
+  "the",
+  "thing",
+  "things",
+  "this",
+  "today",
+  "want",
+  "with",
+  "world"
+]);
+
+function hasDevotionalCoreActionLanguage(value: string): boolean {
+  return DEVOTIONAL_CORE_ACTION_LANGUAGE_REGEX.test(value);
+}
+
+function meaningfulContextTerms(input?: JourneyPackageRequest): string[] {
+  const signals = contextSignals(input);
+  const terms = new Set<string>();
+  for (const match of signals.matchAll(/[a-z][a-z'-]{2,}/gi)) {
+    const term = match[0].toLowerCase().replace(/'s$/i, "");
+    if (!SPECIFICITY_STOPWORDS.has(term) && term.length >= 4) {
+      terms.add(term);
+    }
+  }
+
+  if (/(anx|worr|fear|stress|panic)/i.test(signals)) {
+    ["anxiety", "worry", "fear", "peace"].forEach((term) => terms.add(term));
+  }
+  if (/(future|calling|purpose|tomorrow)/i.test(signals)) {
+    ["future", "calling", "purpose", "wisdom"].forEach((term) => terms.add(term));
+  }
+  if (/(impact|ambition|influenc|great things|world|success)/i.test(signals)) {
+    ["impact", "ambition", "influence", "service", "humility"].forEach((term) => terms.add(term));
+  }
+  if (/(husband|wife|spouse|marriage)/i.test(signals)) {
+    ["husband", "wife", "spouse", "marriage", "love"].forEach((term) => terms.add(term));
+  }
+  if (/(grief|loss|died|death|mourning|heartbroken)/i.test(signals)) {
+    ["grief", "loss", "death", "mourning", "comfort"].forEach((term) => terms.add(term));
+  }
+  if (/(basketball|sport|athlete|fitness|exercise|practice|training)/i.test(signals)) {
+    ["basketball", "sport", "practice", "discipline", "training"].forEach((term) => terms.add(term));
+  }
+
+  return Array.from(terms).slice(0, 18);
+}
+
+function hasLowSpecificity(value: string, input?: JourneyPackageRequest): boolean {
+  const language = languageCode(input);
+  if (language !== "en") return false;
+  if (LOW_SPECIFICITY_PLACEHOLDER_REGEX.test(value)) return true;
+
+  const terms = meaningfulContextTerms(input);
+  if (!terms.length) return false;
+
+  const lower = value.toLowerCase();
+  return !terms.some((term) => lower.includes(term));
+}
 
 function reflectionAssignsAction(value: string, language: SupportedLanguageCode): boolean {
   if (language !== "en") return false;
@@ -1493,13 +1597,14 @@ function scriptureMatchesJourneyContext(reference: string, input?: JourneyPackag
     }
   }
 
+  const matchingReferences = new Set<string>();
   for (const set of scriptureContextReferenceSets) {
     if (set.pattern.test(signals)) {
-      return references.some((item) => set.references.has(item));
+      set.references.forEach((reference) => matchingReferences.add(reference));
     }
   }
 
-  return true;
+  return matchingReferences.size === 0 || references.some((item) => matchingReferences.has(item));
 }
 
 export function parseAndNormalizeDevotionalCore(rawText: string, input?: JourneyPackageRequest): DevotionalCore | null {
@@ -1508,17 +1613,95 @@ export function parseAndNormalizeDevotionalCore(rawText: string, input?: Journey
   return normalizeDevotionalCoreFromObject(parsed as Record<string, unknown>, input);
 }
 
-export function normalizeDevotionalCoreFromObject(
+export function parseAndNormalizeDevotionalCoreWithIssues(
+  rawText: string,
+  input?: JourneyPackageRequest
+): { core: DevotionalCore | null; issues: string[] } {
+  const parsed = extractJSON(rawText);
+  if (!parsed || typeof parsed !== "object") {
+    return { core: null, issues: ["invalid JSON"] };
+  }
+  const source = parsed as Record<string, unknown>;
+  return {
+    core: normalizeDevotionalCoreFromObject(source, input),
+    issues: devotionalCoreValidationIssues(source, input)
+  };
+}
+
+export function devotionalCoreValidationIssues(
   source: Record<string, unknown>,
   input?: JourneyPackageRequest
-): DevotionalCore | null {
+): string[] {
   const language = languageCode(input);
-  const referenceCandidate = normalizeReference(cleanText(source.scriptureReference, 180));
+  const issues: string[] = [];
+  const rawReference = cleanText(source.scriptureReference, 180);
+  const rawReferenceParts = splitReferenceCandidates(rawReference);
+  if (!rawReferenceParts.length || rawReferenceParts.some((reference) => !isApprovedScriptureReference(reference))) {
+    issues.push("scripture mismatch: reference is not in the approved scripture library");
+  }
+
+  const referenceCandidate = normalizeReference(rawReference);
   const uniqueReference = nonRepeatingReference(referenceCandidate, input);
   const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
   const prayer = normalizeFirstPersonPrayer(source.prayer, input);
   const todayAim = cleanText(source.todayAim, 160);
   const dailyTitle = cleanText(source.dailyTitle, 80);
+  const centralConcern = cleanText(source.centralConcern, 160);
+  const biblicalTheme = cleanText(source.biblicalTheme, 120);
+  const devotionalPoint = cleanText(source.devotionalPoint, 220);
+  const scriptureFitReason = cleanText(source.scriptureFitReason, 220);
+  const arcSource =
+    source.updatedJourneyArc && typeof source.updatedJourneyArc === "object"
+      ? (source.updatedJourneyArc as Record<string, unknown>)
+      : source.journeyArc && typeof source.journeyArc === "object"
+        ? (source.journeyArc as Record<string, unknown>)
+        : undefined;
+
+  if (!dailyTitle || isGenericDailyTitle(dailyTitle, language)) issues.push("generic or missing daily title");
+  if (!centralConcern) issues.push("missing centralConcern");
+  if (!biblicalTheme) issues.push("missing biblicalTheme");
+  if (!devotionalPoint) issues.push("missing devotionalPoint");
+  if (!scriptureFitReason) issues.push("missing scriptureFitReason");
+  if (!todayAim) issues.push("missing todayAim");
+  if (!arcSource) issues.push("missing updatedJourneyArc");
+  if (!hasSentenceCount(reflectionThought, 4, 5)) issues.push("generic reflection: reflection must be 4-5 sentences");
+  if (reflectionUsesFirstPerson(reflectionThought, language)) issues.push("generic reflection: reflection uses first person");
+  if (reflectionAssignsAction(reflectionThought, language) || hasDevotionalCoreActionLanguage(reflectionThought)) {
+    issues.push("action language in devotional core reflection");
+  }
+  if (hasMetaDevotionalFraming(reflectionThought)) issues.push("generic reflection: meta-devotional framing");
+  if (hasOverlyDenseAbstractLanguage(reflectionThought, language)) issues.push("generic reflection: overly dense abstract language");
+  if (hasEmptyChristianese(reflectionThought)) issues.push("generic reflection: vague Christianese");
+  if (hasLowSpecificity(reflectionThought, input)) issues.push("low specificity: reflection lacks concrete journey context");
+  if (!scriptureMatchesJourneyContext(uniqueReference, input)) issues.push("scripture mismatch: reference does not fit the journey context");
+  if (!hasSentenceCount(prayer, 3, 4)) issues.push("vague prayer: prayer must be 3-4 sentences");
+  if (hasEmptyChristianese(prayer)) issues.push("vague prayer: empty Christianese");
+  if (hasDevotionalCoreActionLanguage(prayer)) issues.push("action language in devotional core prayer");
+  if (hasLowSpecificity(prayer, input)) issues.push("low specificity: prayer lacks concrete journey context");
+
+  return issues;
+}
+
+export function normalizeDevotionalCoreFromObject(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest
+): DevotionalCore | null {
+  const language = languageCode(input);
+  const rawReference = cleanText(source.scriptureReference, 180);
+  const rawReferenceParts = splitReferenceCandidates(rawReference);
+  if (!rawReferenceParts.length || rawReferenceParts.some((reference) => !isApprovedScriptureReference(reference))) {
+    return null;
+  }
+  const referenceCandidate = normalizeReference(rawReference);
+  const uniqueReference = nonRepeatingReference(referenceCandidate, input);
+  const reflectionThought = normalizeReflectionThought(source.reflectionThought, input);
+  const prayer = normalizeFirstPersonPrayer(source.prayer, input);
+  const todayAim = cleanText(source.todayAim, 160);
+  const dailyTitle = cleanText(source.dailyTitle, 80);
+  const centralConcern = cleanText(source.centralConcern, 160);
+  const biblicalTheme = cleanText(source.biblicalTheme, 120);
+  const devotionalPoint = cleanText(source.devotionalPoint, 220);
+  const scriptureFitReason = cleanText(source.scriptureFitReason, 220);
   const arcSource =
     source.updatedJourneyArc && typeof source.updatedJourneyArc === "object"
       ? (source.updatedJourneyArc as Record<string, unknown>)
@@ -1529,17 +1712,25 @@ export function normalizeDevotionalCoreFromObject(
   if (
     !dailyTitle ||
     isGenericDailyTitle(dailyTitle, language) ||
+    !centralConcern ||
+    !biblicalTheme ||
+    !devotionalPoint ||
+    !scriptureFitReason ||
     !todayAim ||
     !arcSource ||
     !hasSentenceCount(reflectionThought, 4, 5) ||
     reflectionUsesFirstPerson(reflectionThought, language) ||
     reflectionAssignsAction(reflectionThought, language) ||
+    hasDevotionalCoreActionLanguage(reflectionThought) ||
     hasMetaDevotionalFraming(reflectionThought) ||
     hasOverlyDenseAbstractLanguage(reflectionThought, language) ||
     hasEmptyChristianese(reflectionThought) ||
+    hasLowSpecificity(reflectionThought, input) ||
     !scriptureMatchesJourneyContext(uniqueReference, input) ||
     !hasSentenceCount(prayer, 3, 4) ||
-    hasEmptyChristianese(prayer)
+    hasEmptyChristianese(prayer) ||
+    hasDevotionalCoreActionLanguage(prayer) ||
+    hasLowSpecificity(prayer, input)
   ) {
     return null;
   }
@@ -1553,6 +1744,10 @@ export function normalizeDevotionalCoreFromObject(
   }
 
   return {
+    centralConcern,
+    biblicalTheme,
+    devotionalPoint,
+    scriptureFitReason,
     dailyTitle,
     scriptureReference: uniqueReference,
     scriptureParaphrase,

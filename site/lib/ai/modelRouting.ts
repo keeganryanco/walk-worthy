@@ -1,4 +1,4 @@
-export const AI_PACKAGE_QUALITY_VERSION = 4;
+export const AI_PACKAGE_QUALITY_VERSION = 6;
 
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();

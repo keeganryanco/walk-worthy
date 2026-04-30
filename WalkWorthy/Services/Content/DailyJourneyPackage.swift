@@ -20,7 +20,7 @@ struct CompletionSuggestion: Codable, Equatable {
 }
 
 struct DailyJourneyPackage: Codable, Equatable {
-    static let currentQualityVersion = 5
+    static let currentQualityVersion = 6
 
     let dailyTitle: String
     let reflectionThought: String
@@ -119,7 +119,7 @@ enum DailyJourneyPackageValidation {
     static var defaultDailyTitle: String {
         switch currentLanguage() {
         case .english:
-            return "Today’s Faithful Step"
+            return "Receiving Today With God"
         case .spanish:
             return "El paso de hoy"
         case .portugueseBrazil:
@@ -136,7 +136,7 @@ enum DailyJourneyPackageValidation {
     static var defaultTodayAim: String {
         switch currentLanguage() {
         case .english:
-            return "take one faithful step"
+            return "listen for today's wise direction"
         case .spanish:
             return "dar un paso fiel"
         case .portugueseBrazil:
@@ -170,7 +170,7 @@ enum DailyJourneyPackageValidation {
     static var defaultFirstPersonPrayer: String {
         switch currentLanguage() {
         case .english:
-            return "Lord, I place this journey in Your hands today. Give me wisdom for one concrete step. Help me follow through with steady faith. Keep my heart close to You as I act, amen."
+            return "Lord, I bring this concern to You honestly today. Give me wisdom for what is unclear and peace where I feel pressure. Shape my desires with humility and trust. Keep my heart open to what is true and good."
         case .spanish:
             return "Señor, pongo este camino en Tus manos hoy. Dame sabiduría para un paso concreto. Ayúdame a cumplirlo con fe firme. Mantén mi corazón cerca de Ti mientras actúo, amén."
         case .portugueseBrazil:
@@ -187,7 +187,7 @@ enum DailyJourneyPackageValidation {
     static var defaultReflectionThought: String {
         switch currentLanguage() {
         case .english:
-            return "Faithful growth usually begins with one concrete response. The journey does not need a dramatic leap today. A small action can make prayer visible in ordinary life. Returning tomorrow gives that action room to become a pattern."
+            return "Scripture gives this concern a steadier center than pressure can provide. God cares about the heart beneath the request, not only the outcome being hoped for. This journey can become a place to receive wisdom, patience, and trust. Growth begins to feel less vague when the concern is brought honestly before God."
         case .spanish:
             return "El crecimiento fiel suele comenzar con una respuesta concreta. Hoy no hace falta dar un salto enorme. Una acción pequeña puede hacer visible la oración en la vida diaria. Volver mañana permite que esa acción empiece a formar un patrón."
         case .portugueseBrazil:
@@ -634,7 +634,7 @@ enum DailyJourneyPackageValidation {
         } else {
             switch language {
             case .english:
-                chips = ["Pray over one next step", "Take one faithful action", "Finish one delayed task"]
+                chips = ["Pray over one concern", "Name one honest need", "Finish one delayed task"]
             case .spanish:
                 chips = ["Ora por un próximo paso", "Da una acción fiel", "Termina una tarea pendiente"]
             case .portugueseBrazil:
@@ -680,6 +680,15 @@ enum DailyJourneyPackageValidation {
                         : language == .korean
                             ? ["다정한 메모 하나를 쓰세요", "배려 깊은 질문 하나를 하세요", "배우자를 위해 기도하세요"]
                             : ["Write a kind note", "Ask one caring question", "Do one helpful chore", "Pray for your wife"],
+                at: 0
+            )
+        }
+        if signal.contains("future") || signal.contains("impact") || signal.contains("ambition") || signal.contains("calling")
+            || signal.contains("purpose") || signal.contains("influence") || signal.contains("world") {
+            chips.insert(
+                contentsOf: language == .english
+                    ? ["Name one fear clearly", "Pray over one ambition", "Do one focused work block", "Encourage one person"]
+                    : [],
                 at: 0
             )
         }
@@ -762,8 +771,8 @@ enum DailyJourneyPackageValidation {
             switch currentLanguage() {
             case .english:
                 return [
-                    "Pray over one next step",
-                    "Take one faithful action",
+                    "Pray over one concern",
+                    "Name one honest need",
                     "Finish one delayed task"
                 ]
             case .spanish:
@@ -836,16 +845,16 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
         )
         let paraphrase = ScriptureReferenceValidator.fallbackParaphrase(for: reference)
             ?? (isSpanish
-                ? "Presenta tus peticiones a Dios con confianza y da hoy un paso fiel."
+                ? "Presenta a Dios cada preocupación y petición con gratitud, y su paz guardará tu corazón y tu mente en Cristo."
                 : isPortuguese
-                    ? "Apresente seus pedidos a Deus com confiança e dê hoje um passo fiel."
+                    ? "Apresente a Deus cada preocupação e pedido com gratidão, e a paz dEle guardará seu coração e sua mente em Cristo."
                     : isGerman
-                        ? "Bringe deine Anliegen im Vertrauen zu Gott und gehe heute einen treuen Schritt."
+                        ? "Bring jede Sorge und Bitte mit Dank zu Gott, und sein Frieden wird dein Herz und deinen Sinn in Christus bewahren."
                     : isJapanese
-                        ? "神に願いを信頼してゆだね、今日、忠実な一歩を踏み出しましょう。"
+                        ? "あらゆる不安と願いを感謝とともに神にささげるなら、神の平安がキリストにあってあなたの心と思いを守ってくださいます。"
                     : isKorean
-                        ? "믿음으로 하나님께 간구를 올려 드리고, 오늘 신실한 한 걸음을 내딛으세요."
-                    : "Bring your requests to God with trust, and take one faithful step today.")
+                        ? "모든 염려와 간구를 감사함으로 하나님께 아뢰면, 그분의 평강이 그리스도 안에서 마음과 생각을 지켜 주십니다."
+                    : "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ.")
 
         return DailyJourneyPackage(
             dailyTitle: isSpanish
@@ -858,7 +867,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                         ? "今日の忠実な一歩"
                     : isKorean
                         ? "오늘의 신실한 한 걸음"
-                    : "One Faithful Step Today",
+                    : "Receiving Today With God",
             reflectionThought: isSpanish
                 ? "Dios encuentra a su pueblo en pasos pequeños y concretos. La fidelidad no siempre se ve grande, pero puede formar una dirección real para el día. La Escritura llama a entregar las cargas a Dios y caminar con confianza. Este camino puede avanzar hoy con una respuesta sencilla y sincera."
                 : isPortuguese
@@ -869,7 +878,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                         ? "神は小さく具体的な歩みの中で、ご自分の民に出会われます。忠実さは大きく見えないこともありますが、その日の方向を形づくります。聖書は重荷を神にゆだね、信頼して歩むよう招いています。この歩みは、今日の誠実な一つの応答によって前に進みます。"
                     : isKorean
                         ? "하나님은 작고 구체적인 걸음 속에서 자기 백성을 만나십니다. 신실함은 늘 크게 보이지 않지만, 오늘의 방향을 분명하게 세울 수 있습니다. 성경은 짐을 하나님께 맡기고 신뢰로 걸으라고 초대합니다. 이 여정은 오늘의 단순하고 진실한 응답으로 앞으로 나아갈 수 있습니다."
-                    : "God often meets His people in small, concrete steps. Faithfulness may not look dramatic, but it can give the day a clear direction. Scripture invites burdens to be brought to God with trust instead of carried alone. This journey can move forward today through one simple, sincere response.",
+                    : "Scripture gives this concern a steadier center than pressure can provide. God cares about the heart beneath the request, not only the outcome being hoped for. This journey can become a place to receive wisdom, patience, and trust. Growth begins to feel less vague when the concern is brought honestly before God.",
             scriptureReference: reference,
             scriptureParaphrase: paraphrase,
             prayer: isSpanish
@@ -882,7 +891,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                         ? "主よ、今日この歩みをあなたにゆだねます。私が本当に抱えていることの中で、あなたを信頼できるよう助けてください。小さく忠実な一歩を知る明確さを与えてください。"
                     : isKorean
                         ? "주님, 오늘 이 여정을 주님께 맡깁니다. 제가 실제로 짊어진 것 안에서 주님을 신뢰하게 도와주세요. 작고 신실한 한 걸음을 알 수 있는 분명함을 주세요."
-                    : "Lord, I place this journey in Your hands today. Help me trust You with what I am actually carrying. Give me clarity for one small, faithful step.",
+                    : "Lord, I bring this concern to You honestly today. Give me wisdom for what is unclear and peace where I feel pressure. Shape my desires with humility and trust. Keep my heart open to what is true and good.",
             todayAim: DailyJourneyPackageValidation.defaultTodayAim,
             smallStepQuestion: isSpanish
                 ? "¿Qué paso pequeño podrías dar hoy?"
@@ -894,7 +903,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                         ? "今日、どんな小さな一歩を踏み出せますか？"
                     : isKorean
                         ? "오늘 어떤 작은 걸음을 내딛을 수 있을까요?"
-                    : "What small step could you take today?",
+                    : "What is one wise thing you can do today?",
             suggestedSteps: [
                 isSpanish
                     ? "Ora cinco minutos por esto."
@@ -917,7 +926,7 @@ struct TemplateDailyJourneyPackageGenerator: DailyJourneyPackageGenerating {
                             ? "小さな一歩を選ぶ"
                         : isKorean
                             ? "작은 한 걸음 선택하기"
-                        : "Take one small step.",
+                        : "Name one honest need.",
                 isSpanish
                     ? "Pide oración a alguien."
                     : isPortuguese

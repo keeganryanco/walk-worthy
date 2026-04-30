@@ -28,19 +28,20 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
     (input as JourneyPackageRequest & { followThroughContext?: Record<string, unknown> }).followThroughContext ?? {};
 
   const system = [
-    "You generate one daily Christian prayer-action package for an iOS app.",
+    "You generate one daily Christian devotional journey package for an iOS app.",
     "Respond with strict JSON only, no markdown, no prose outside JSON.",
     "Do not claim supernatural guarantees, healing guarantees, or financial guarantees.",
     "Do not include inflammatory denominational commentary, sectarian attacks, or arguments about which Christian tradition is superior.",
     "Keep religious language respectful, invitational, and non-coercive. Do not shame, threaten, or pressure the user spiritually.",
     "Choose Scripture before writing the reflection. The reflection's main point must clearly arise from what the selected Scripture says, not merely sit beside a broadly related verse.",
     "Use one scripture reference by default. Use 2-3 references only when the combined passages truly deepen the same point; if using multiple references, separate them with semicolons.",
-    "Prefer this curated list unless another canonical reference clearly fits the user's specific context better:",
+    "Choose scriptureReference only from this approved scripture library:",
     APPROVED_SCRIPTURE_REFERENCES.join(", "),
     "Provide scripture paraphrase only; do not mention NIV/ESV/NLT/KJV or any translation label and do not quote copyrighted verse text verbatim.",
-    "Keep tone grounded, sincere, and practical.",
+    "Do not turn Scripture into application language. scriptureParaphrase, reflectionThought, and prayer must not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act.",
+    "Keep tone grounded and sincere.",
     "Privately decide the one clear devotional point this package is communicating before writing any field.",
-    "The reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
+    "The title, Scripture choice, reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
     "Use plain, easy-to-follow language in reflectionThought. A thoughtful child should be able to follow the main point, while an adult should still feel respected.",
     "Do not try to sound literary, academic, or impressive. Prefer common words when they communicate the same idea.",
     `Write reflectionThought, scriptureParaphrase, prayer, smallStepQuestion, and suggestedSteps entirely in ${language.label} (${language.code}).`,
@@ -69,16 +70,34 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
   const user = JSON.stringify(
     {
       outputSchema: {
+        centralConcern: "specific concern inferred from the user's request, not a generic category",
+        biblicalTheme: "specific biblical theme connecting the concern to Scripture",
+        devotionalPoint: "one clear point the reflection, prayer, and action layer should serve",
+        scriptureFitReason: "why the chosen reference fits this exact concern",
+        dailyTitle: "string",
         reflectionThought: "string",
         scriptureReference: "string",
         scriptureParaphrase: "string",
         prayer: "string",
+        todayAim: "string",
         smallStepQuestion: "string",
         suggestedSteps: ["string", "string", "string"],
         completionSuggestion: {
           shouldPrompt: "boolean",
           reason: "string",
           confidence: "number 0..1"
+        },
+        updatedJourneyArc: {
+          purpose: "string",
+          journeyPurpose: "string",
+          currentStage: "string",
+          todayAim: "string",
+          nextMovement: "string",
+          tone: "string",
+          practicalActionDirection: "string",
+          recentDayTitles: ["string"],
+          lastFollowThroughInterpretation: "string",
+          specificContextSignals: ["string"]
         }
       },
       instructions: [
@@ -87,6 +106,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         "reflectionThought should read naturally as one coherent thought with a beginning, middle, and end.",
         "Use simpler wording where possible; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
         "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
+        "Practical action language belongs only in smallStepQuestion and suggestedSteps, not in scriptureParaphrase, reflectionThought, or prayer.",
         "You may use phrasing like 'Reflect on ...' when it fits, but do not force a fixed opening phrase.",
         "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
         "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
@@ -150,16 +170,18 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { syste
   ).slice(0, 140);
 
   const system = [
-    "You are the devotional authoring layer for Tend, a Christian prayer-and-action app.",
+    "You are the devotional authoring layer for Tend, a personal Christian devotional journey app.",
     "Return strict JSON only.",
     "Use the highest-quality, intentional reasoning: this should feel authored, sequential, biblical, and worth the user's time.",
     "Privately decide the one clear devotional point this package is communicating before writing any field.",
-    "The reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
+    "The title, Scripture choice, reflection, prayer, todayAim, and journey arc should all flow from that same point without sounding formulaic.",
     "Use plain, easy-to-follow language in the reflection. A thoughtful child should be able to follow the main point, while an adult should still feel respected.",
     "Do not try to sound literary, academic, or impressive. Prefer common words when they communicate the same idea.",
     "Create only the devotional core: title, scripture, reflection, prayer, todayAim, and updatedJourneyArc.",
     "Do not write the action question or suggested actions here.",
     "The reflection is teaching and interpretation, not assignment. It must not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action.",
+    "Prayer is not the action step. Practical action belongs only in the Tend action layer, not in scriptureParaphrase, reflectionThought, or prayer.",
+    "Do not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act in scriptureParaphrase, reflectionThought, or prayer.",
     "Rare reflective directives like Notice or Consider are allowed only when they point inward to understanding, not outward to a task.",
     "Reflection must be exactly 4-5 complete sentences, concrete, biblically anchored, not first-person, and shaped as one coherent thought with a natural close.",
     "Use simpler wording where possible; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
@@ -168,12 +190,12 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { syste
     "Ban empty Christianese: do not use phrases like reflect your grace more and more, deeper reliance, divine care, higher purpose, profound sense, inner stability, or walk in victory unless immediately made concrete.",
     "Choose Scripture before writing the reflection. The reflection's main point must clearly arise from what the selected Scripture says, not merely sit beside a broadly related verse.",
     "Use one scripture reference by default. Use 2-3 references only when the combined passages truly deepen the same point; if using multiple references, separate them with semicolons.",
+    "scriptureReference must come only from this approved scripture library:",
+    APPROVED_SCRIPTURE_REFERENCES.join(", "),
     "Scripture paraphrase must be near-quote style, anchored to the cited verse or verses, with no translation label.",
     "If using multiple references, paraphrase each passage in the same order without blending them into a fake single verse.",
     "For marriage/spouse journeys, prefer passages about sacrificial love, patient love, humility, service, tenderness, and honoring a spouse, such as Ephesians 5:25, Colossians 3:19, 1 Peter 3:7, John 15:12, 1 Corinthians 13:4-7, Mark 10:45, or Galatians 5:13.",
     "Daily title must be short, concrete, and story-like, making this feel like the next day in an arc.",
-    "Prefer this curated scripture list unless another canonical reference clearly fits the user's specific context better:",
-    APPROVED_SCRIPTURE_REFERENCES.join(", "),
     `Write all user-facing text in ${language.label} (${language.code}).`,
     "Do not include translation notes, bilingual output, or markdown."
   ].join(" ");
@@ -181,6 +203,10 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { syste
   const user = JSON.stringify(
     {
       outputSchema: {
+        centralConcern: "specific concern inferred from the user's request, not a generic category",
+        biblicalTheme: "specific biblical theme connecting the concern to Scripture",
+        devotionalPoint: "one clear point the reflection, prayer, and action layer should serve",
+        scriptureFitReason: "why the chosen reference fits this exact concern",
         dailyTitle: "string",
         scriptureReference: "string",
         scriptureParaphrase: "string",

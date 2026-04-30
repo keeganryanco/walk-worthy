@@ -17,7 +17,7 @@ export interface CompletionSuggestion {
   confidence: number;
 }
 
-export const DAILY_JOURNEY_PACKAGE_QUALITY_VERSION = 5;
+export const DAILY_JOURNEY_PACKAGE_QUALITY_VERSION = 6;
 
 export interface JourneyArc {
   purpose: string;
@@ -108,6 +108,10 @@ export interface DailyJourneyPackage {
 }
 
 export interface DevotionalCore {
+  centralConcern?: string;
+  biblicalTheme?: string;
+  devotionalPoint?: string;
+  scriptureFitReason?: string;
   dailyTitle: string;
   scriptureReference: string;
   scriptureParaphrase: string;
