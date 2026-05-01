@@ -66,6 +66,7 @@ final class JourneyContentService {
             return JourneyPackageResult(package: cached.asPackage, source: .cache)
         }
 
+        var remoteFailedWhileOnline = false
         if isOnline {
             do {
                 let remote = try await remoteProvider.generatePackage(
@@ -107,7 +108,7 @@ final class JourneyContentService {
                 )
                 return JourneyPackageResult(package: uniqueScripturePackage, source: .remote)
             } catch {
-                // Fall back to deterministic local generation below.
+                remoteFailedWhileOnline = true
             }
         }
 
@@ -169,6 +170,10 @@ final class JourneyContentService {
             recentEntries: recentEntries,
             modelContext: modelContext
         )
+        guard !remoteFailedWhileOnline else {
+            return JourneyPackageResult(package: uniqueFallback, source: .template)
+        }
+
         persist(
             uniqueFallback,
             journeyID: journey.id,
@@ -205,7 +210,11 @@ final class JourneyContentService {
                 modelContext: modelContext
             )
 
-            if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) {
+            let completedToday = entries.contains { entry in
+                guard let completedAt = entry.completedAt else { return false }
+                return Calendar.current.isDate(completedAt, inSameDayAs: now)
+            }
+            if completedToday, let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) {
                 _ = await packageForDate(
                     profile: profile,
                     journey: journey,

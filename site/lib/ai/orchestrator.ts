@@ -118,31 +118,9 @@ async function generateWithOpenAIOrchestration(
   const fallbackRepairModel = repairModel();
   const stepModel = actionModel();
   const diagnostics: string[] = [];
-
-  const planAttempt = await generateOpenAIPlan(input, coreModel, apiKey);
-  let plan = planAttempt.plan;
-  let planUsage = usageWithCost("openai", coreModel, planAttempt.generated.usage);
   let escalated = false;
 
-  if (!plan) {
-    const failedReasons = planAttempt.issues.length ? ` Reasons: ${planAttempt.issues.join("; ")}.` : "";
-    diagnostics.push(`openai_plan_failed:${planAttempt.issues.join("|") || "unknown"}`);
-    const repairedPlan = await generateOpenAIPlan(
-      input,
-      fallbackRepairModel,
-      apiKey,
-      `Previous devotional plan failed validation.${failedReasons} Repair by choosing one narrow topic angle, a coherent devotional point, a title seed from that point, and approved Scripture references only.`
-    );
-    plan = repairedPlan.plan;
-    planUsage = combineUsage([planUsage, usageWithCost("openai", fallbackRepairModel, repairedPlan.generated.usage)]);
-    escalated = true;
-    if (!plan) {
-      diagnostics.push(`openai_plan_repair_failed:${repairedPlan.issues.join("|") || "unknown"}`);
-      throw new Error(diagnostics.join("; "));
-    }
-  }
-
-  const coreAttempt = await generateOpenAICore(input, coreModel, apiKey, plan);
+  const coreAttempt = await generateOpenAICore(input, coreModel, apiKey);
   let core = coreAttempt.core;
   let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated.usage);
 
@@ -153,7 +131,7 @@ async function generateWithOpenAIOrchestration(
       input,
       fallbackRepairModel,
       apiKey,
-      plan,
+      undefined,
       `Previous devotional core failed validation.${failedReasons} Repair by choosing only from the approved Scripture library, removing action language from reflection/prayer/scripture, making the reflection specific and Scripture-led, making the prayer concrete, and returning the same JSON schema.`
     );
     core = repaired.core;
@@ -205,10 +183,10 @@ async function generateWithOpenAIOrchestration(
   return {
     package: enforceCompletionPromptRules(input, mergePackageFromCoreAndAction(core, action)),
     provider: "openai",
-    model: `${coreModel}-plan+${coreModel}-core+${stepModel}`,
+    model: `${coreModel}-core+${stepModel}`,
     escalated,
     fallbackUsed: false,
-    usage: combineUsage([planUsage, coreUsage, actionUsage]),
+    usage: combineUsage([coreUsage, actionUsage]),
     diagnostics
   };
 }

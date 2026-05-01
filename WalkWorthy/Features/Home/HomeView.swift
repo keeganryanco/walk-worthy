@@ -378,6 +378,7 @@ struct JourneyGrowthPage: View {
     @State private var isGenerating = false
     @State private var showTendingSheet = false
     @State private var showJournalEntrySheet = false
+    @State private var alertMessage: String?
     
     @AppStorage("homeBackgroundTheme") private var backgroundTheme: HomeBackgroundTheme = .morningGarden
     
@@ -499,9 +500,10 @@ struct JourneyGrowthPage: View {
     private var todaysPackageRecord: DailyJourneyPackageRecord? {
         let dayKey = JourneyContentService.dayKey(for: TendingTestingClock.currentDate)
         let journeyID = journey.id
+        let entryID = todaysEntry?.id
         let descriptor = FetchDescriptor<DailyJourneyPackageRecord>(
             predicate: #Predicate {
-                $0.journeyID == journeyID && $0.dayKey == dayKey
+                $0.journeyID == journeyID && ($0.dayKey == dayKey || $0.linkedEntryID == entryID)
             }
         )
         return try? modelContext.fetch(descriptor).first
@@ -903,6 +905,14 @@ struct JourneyGrowthPage: View {
                 }
             }
         }
+        .alert(L10n.string("home.tend.unavailable_title", default: "Tend Not Ready"), isPresented: Binding(
+            get: { alertMessage != nil },
+            set: { if !$0 { alertMessage = nil } }
+        )) {
+            Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
+        } message: {
+            Text(alertMessage ?? "")
+        }
         .ignoresSafeArea()
     }
     
@@ -1023,7 +1033,14 @@ struct JourneyGrowthPage: View {
                             }
                             
                             Button {
-                                showTendingSheet = true
+                                if todaysPackageRecord == nil {
+                                    alertMessage = L10n.string(
+                                        "home.tend.package_missing",
+                                        default: "Today's Tend is still being prepared. Please try again in a moment."
+                                    )
+                                } else {
+                                    showTendingSheet = true
+                                }
                             } label: {
                                 Text(
                                     entry.actionStep.isEmpty
@@ -1682,6 +1699,14 @@ struct JourneyGrowthPage: View {
             isOnline: connectivityService.isOnline,
             modelContext: modelContext
         )
+
+        if connectivityService.isOnline && result.source == .template {
+            alertMessage = L10n.string(
+                "home.tend.generation_timeout",
+                default: "Today's Tend is taking longer than expected. Please try again in a moment."
+            )
+            return
+        }
         
         let entry = PrayerEntry(
             createdAt: generationDate,
