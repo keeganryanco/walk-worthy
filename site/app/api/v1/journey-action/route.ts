@@ -17,6 +17,16 @@ function authorize(request: NextRequest): boolean {
   return Boolean(provided) && provided === requiredSecret;
 }
 
+function safeFailure(message: string): { code: string; retryable: boolean; details: string } {
+  if (/timeout|timed out/i.test(message)) {
+    return { code: "provider_timeout", retryable: true, details: "The AI service took too long. Please try again." };
+  }
+  if (/rate_limit|429/i.test(message)) {
+    return { code: "provider_rate_limited", retryable: true, details: "The AI service is busy. Please try again soon." };
+  }
+  return { code: "generation_failed", retryable: true, details: "Today's Tend could not be prepared yet. Please try again." };
+}
+
 function isValidRequestPayload(payload: unknown): payload is JourneyActionRequest {
   if (!payload || typeof payload !== "object") return false;
   const source = payload as Record<string, unknown>;
@@ -78,7 +88,7 @@ export async function POST(request: NextRequest) {
       provider: result.provider,
       model: result.model,
       escalated: result.escalated,
-      fallback_used: false,
+      fallback_used: result.fallbackUsed,
       input_tokens: result.usage?.inputTokens ?? 0,
       output_tokens: result.usage?.outputTokens ?? 0,
       total_tokens: result.usage?.totalTokens ?? 0,
@@ -95,7 +105,7 @@ export async function POST(request: NextRequest) {
         provider: result.provider,
         model: result.model,
         escalated: result.escalated,
-        fallbackUsed: false,
+        fallbackUsed: result.fallbackUsed,
         generatedAt: new Date().toISOString(),
         usage: result.usage ?? null,
         diagnostics: result.diagnostics ?? []
@@ -104,6 +114,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown action generation error";
     console.error(`[journey-action][${rid}] unhandled error: ${message}`);
-    return NextResponse.json({ error: "Journey action generation failed", details: message }, { status: 500 });
+    const failure = safeFailure(message);
+    return NextResponse.json(
+      {
+        error: "Journey action generation failed",
+        code: failure.code,
+        retryable: failure.retryable,
+        details: failure.details,
+        requestId: rid
+      },
+      { status: 500 }
+    );
   }
 }

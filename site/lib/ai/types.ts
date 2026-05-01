@@ -227,6 +227,7 @@ export interface JourneyActionOrchestratedResult {
   provider: AIProvider;
   model: string;
   escalated: boolean;
+  fallbackUsed: boolean;
   usage?: AIUsageMetrics;
   diagnostics?: string[];
 }

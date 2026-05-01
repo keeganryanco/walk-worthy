@@ -10,7 +10,7 @@ struct HomeView: View {
     let profile: OnboardingProfile
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
-    let onRequestDailyWarmup: (UUID) -> Void
+    let onRequestDailyWarmup: (UUID) async -> JourneyPackageWarmupResult
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -375,7 +375,7 @@ struct JourneyGrowthPage: View {
     let contentService: JourneyContentService
     let shouldShowReignitePrompt: Bool
     let onConsumeReignitePrompt: () -> Void
-    let onRequestDailyWarmup: (UUID) -> Void
+    let onRequestDailyWarmup: (UUID) async -> JourneyPackageWarmupResult
     @Binding var suppressHomePageIndicator: Bool
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     
@@ -919,7 +919,7 @@ struct JourneyGrowthPage: View {
             refreshEngagementState()
             handleNotificationReignitePromptIfNeeded()
             if todaysPackageRecord == nil {
-                onRequestDailyWarmup(journey.id)
+                Task { _ = await onRequestDailyWarmup(journey.id) }
             }
         }
         .onChange(of: entries.map(\.id)) { _, _ in
@@ -1850,8 +1850,18 @@ struct JourneyGrowthPage: View {
             return
         }
 
-        onRequestDailyWarmup(journey.id)
         isPreparingTend = true
+        Task {
+            let result = await onRequestDailyWarmup(journey.id)
+            guard isPreparingTend, todaysPackageRecord == nil else { return }
+            if !result.didPreparePackage {
+                isPreparingTend = false
+                alertMessage = result.message ?? L10n.string(
+                    "home.generating.error.generic",
+                    default: "Today's Tend could not be prepared yet. Please try again."
+                )
+            }
+        }
         prepareTimeoutTask?.cancel()
         prepareTimeoutTask = Task {
             try? await Task.sleep(nanoseconds: 90_000_000_000)

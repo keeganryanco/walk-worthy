@@ -211,7 +211,7 @@ final class WalkWorthyTests: XCTestCase {
         let warmup = JourneyPackageWarmupService(contentService: content)
         let date = Date(timeIntervalSince1970: 1_800_000_000)
 
-        async let first: Void = warmup.warmToday(
+        async let first: JourneyPackageWarmupResult = warmup.warmToday(
             profile: profile,
             journey: journey,
             entries: [],
@@ -220,7 +220,7 @@ final class WalkWorthyTests: XCTestCase {
             modelContext: context,
             date: date
         )
-        async let second: Void = warmup.warmToday(
+        async let second: JourneyPackageWarmupResult = warmup.warmToday(
             profile: profile,
             journey: journey,
             entries: [],

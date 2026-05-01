@@ -54,7 +54,7 @@ struct RootView: View {
                     isPremium: subscriptionService.isPremium,
                     onRequirePaywall: triggerPaywall,
                     onRequestDailyWarmup: { journeyID in
-                        Task { await warmJourneyIfPossible(journeyID: journeyID) }
+                        await warmJourneyIfPossible(journeyID: journeyID)
                     }
                 )
             } else {
@@ -456,12 +456,12 @@ struct RootView: View {
         syncWidgetSnapshot()
     }
 
-    private func warmJourneyIfPossible(journeyID: UUID) async {
-        guard connectivityService.isOnline, let profile else { return }
-        guard let journey = activeJourneys.first(where: { $0.id == journeyID }) else { return }
+    private func warmJourneyIfPossible(journeyID: UUID) async -> JourneyPackageWarmupResult {
+        guard connectivityService.isOnline, let profile else { return .skipped }
+        guard let journey = activeJourneys.first(where: { $0.id == journeyID }) else { return .skipped }
         let entries = allEntries.filter { $0.journey?.id == journeyID }
         let memory = memorySnapshots.first(where: { $0.journeyID == journeyID })
-        await packageWarmupService.warmToday(
+        let result = await packageWarmupService.warmToday(
             profile: profile,
             journey: journey,
             entries: entries,
@@ -470,6 +470,7 @@ struct RootView: View {
             modelContext: modelContext
         )
         syncWidgetSnapshot()
+        return result
     }
 
     private func nextLikelyRefreshDate() -> Date {
@@ -546,7 +547,7 @@ struct RootView: View {
             syncWidgetSnapshot()
             rootLogger.log("bootstrap seed succeeded journeyTitle=\(seed.journeyTitle, privacy: .public) theme=\(seed.themeKey, privacy: .public)")
             analytics.track(.journeyCreated, properties: ["source": "bootstrap_seed"])
-            await warmJourneyIfPossible(journeyID: firstJourney.id)
+            _ = await warmJourneyIfPossible(journeyID: firstJourney.id)
         } catch {
             let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             rootLogger.error("bootstrap failed error=\(details, privacy: .public)")

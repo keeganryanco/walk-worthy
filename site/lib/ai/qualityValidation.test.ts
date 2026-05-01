@@ -8,7 +8,7 @@ import {
   normalizeDevotionalPlanFromObject
 } from "./validate.ts";
 import { normalizeReference } from "./scripture.ts";
-import { fallbackPackage } from "./fallback.ts";
+import { fallbackActionLayer, fallbackPackage } from "./fallback.ts";
 import { actionModel, devotionalModel, repairModel } from "./modelRouting.ts";
 import { buildOpenAIResponsesRequestBody } from "./providers/openai.ts";
 import { DAILY_JOURNEY_PACKAGE_QUALITY_VERSION } from "./types.ts";
@@ -584,6 +584,42 @@ test("near-duplicate suggested steps are rejected instead of displayed", () => {
   );
 
   assert.equal(action, null);
+});
+
+test("local action fallback stays spouse-specific when action model validation fails", () => {
+  const action = fallbackActionLayer(husbandRequest, {
+    centralConcern: "becoming a more loving husband",
+    biblicalTheme: "sacrificial love",
+    devotionalPoint: "Christlike love becomes visible in patient attention and service.",
+    scriptureFitReason: "Ephesians 5:25 speaks directly to a husband's love.",
+    dailyTitle: "Learning Sacrificial Love",
+    scriptureReference: "Ephesians 5:25",
+    scriptureParaphrase: "Husbands, love your wives as Christ loved the church and gave Himself up for her.",
+    reflectionThought:
+      "Paul points husbands toward the love of Christ. This love is patient, costly, and attentive. Marriage becomes a daily place where selfishness is exposed and love can mature. A husband grows as service becomes more natural than defensiveness.",
+    prayer:
+      "Jesus, I bring my marriage to You today. Teach me patience, humility, and tenderness toward my wife. Help me love her with attention instead of passivity.",
+    todayAim: "practice concrete love toward your wife",
+    updatedJourneyArc: {
+      purpose: "grow as a husband",
+      journeyPurpose: "grow as a husband",
+      currentStage: "learning concrete love",
+      todayAim: "practice concrete love toward your wife",
+      nextMovement: "Continue practicing patient attention.",
+      tone: "specific and pastoral",
+      practicalActionDirection: "Prefer spouse-specific actions.",
+      recentDayTitles: ["Learning Sacrificial Love"],
+      specificContextSignals: ["wife", "marriage", "husband"],
+      lastFollowThroughInterpretation: ""
+    }
+  });
+
+  assert.deepEqual(action.suggestedSteps, [
+    "Write a kind note",
+    "Ask one caring question",
+    "Do one helpful chore",
+    "Pray for your wife"
+  ]);
 });
 
 test("fallback output never pairs a random reference with generic action paraphrase", () => {

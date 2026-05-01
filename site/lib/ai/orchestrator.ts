@@ -1,4 +1,4 @@
-import { fallbackPackage } from "./fallback";
+import { fallbackActionLayer, fallbackPackage } from "./fallback";
 import {
   mergePackageFromCoreAndAction,
   devotionalPlanValidationIssues,
@@ -78,6 +78,29 @@ async function generateOpenAICore(
   return { core: parsed.core, generated, issues: parsed.issues };
 }
 
+function providerIssue(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/content_filter/i.test(message)) return "provider_content_filter";
+  if (/incomplete/i.test(message)) return "provider_incomplete";
+  if (/timeout|timed out/i.test(message)) return "provider_timeout";
+  if (/rate_limit|429/i.test(message)) return "provider_rate_limit";
+  return "provider_exception";
+}
+
+async function tryGenerateOpenAICore(
+  input: JourneyPackageRequest,
+  model: string,
+  apiKey: string,
+  plan?: DevotionalPlan,
+  repairNotes?: string
+): Promise<{ core: DevotionalCore | null; generated?: ProviderGenerationResult; issues: string[] }> {
+  try {
+    return await generateOpenAICore(input, model, apiKey, plan, repairNotes);
+  } catch (error) {
+    return { core: null, issues: [providerIssue(error)] };
+  }
+}
+
 async function generateOpenAIPlan(
   input: JourneyPackageRequest,
   model: string,
@@ -149,14 +172,14 @@ export async function generateJourneyCore(input: JourneyPackageRequest): Promise
   const fallbackRepairModel = repairModel();
   const diagnostics: string[] = [];
 
-  const coreAttempt = await generateOpenAICore(input, coreModel, openAIKey);
+  const coreAttempt = await tryGenerateOpenAICore(input, coreModel, openAIKey);
   let core = coreAttempt.core;
-  let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated.usage);
+  let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated?.usage);
   let escalated = false;
 
   if (!core) {
     diagnostics.push(`openai_core_failed:${coreAttempt.issues.join("|") || "unknown"}`);
-    const repaired = await generateOpenAICore(
+    const repaired = await tryGenerateOpenAICore(
       input,
       fallbackRepairModel,
       openAIKey,
@@ -164,11 +187,11 @@ export async function generateJourneyCore(input: JourneyPackageRequest): Promise
       devotionalCoreRepairNotes(coreAttempt.issues, "general")
     );
     core = repaired.core;
-    coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);
+    coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated?.usage)]);
     escalated = true;
     if (!core) {
       diagnostics.push(`openai_core_repair_failed:${repaired.issues.join("|") || "unknown"}`);
-      const sentenceRescue = await generateOpenAICore(
+      const sentenceRescue = await tryGenerateOpenAICore(
         input,
         fallbackRepairModel,
         openAIKey,
@@ -176,7 +199,7 @@ export async function generateJourneyCore(input: JourneyPackageRequest): Promise
         devotionalCoreRepairNotes(repaired.issues, "sentence-count-rescue")
       );
       core = sentenceRescue.core;
-      coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, sentenceRescue.generated.usage)]);
+      coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, sentenceRescue.generated?.usage)]);
       if (!core) {
         diagnostics.push(`openai_core_sentence_rescue_failed:${sentenceRescue.issues.join("|") || "unknown"}`);
       }
@@ -241,7 +264,15 @@ export async function generateJourneyAction(input: JourneyActionRequest): Promis
 
   if (!action) {
     diagnostics.push("openai_action_escalation_failed");
-    throw new Error(diagnostics.join("; "));
+    return {
+      action: fallbackActionLayer(input, input.core),
+      provider: "openai",
+      model: `${stepModel}+${fallbackRepairModel}+local-action-fallback`,
+      escalated: true,
+      fallbackUsed: true,
+      usage: actionUsage,
+      diagnostics: [...diagnostics, "local_action_fallback_used"]
+    };
   }
 
   return {
@@ -249,6 +280,7 @@ export async function generateJourneyAction(input: JourneyActionRequest): Promis
     provider: "openai",
     model: escalated ? `${stepModel}+${fallbackRepairModel}` : stepModel,
     escalated,
+    fallbackUsed: false,
     usage: actionUsage,
     diagnostics
   };

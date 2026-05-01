@@ -1,7 +1,7 @@
 import {
   DAILY_JOURNEY_PACKAGE_QUALITY_VERSION,
 } from "./types";
-import type { DailyJourneyPackage, JourneyArc, JourneyPackageRequest } from "./types";
+import type { ActionLayerOutput, DailyJourneyPackage, DevotionalCore, JourneyArc, JourneyPackageRequest } from "./types";
 import {
   approvedScriptureParaphraseForReferenceSet,
   deterministicReference,
@@ -152,6 +152,36 @@ function fallbackChips(input: JourneyPackageRequest): string[] {
   }
 
   return byTheme[theme] ?? byTheme.basic;
+}
+
+export function fallbackActionLayer(input: JourneyPackageRequest, core?: DevotionalCore): ActionLayerOutput {
+  const language = languageCode(input);
+  const status = followThroughStatus(input);
+  const todayAim = core?.todayAim?.trim() ?? "";
+  const signals = `${input.profile.prayerFocus} ${input.profile.growthGoal} ${input.journey.title} ${input.journey.category} ${todayAim}`.toLowerCase();
+
+  let smallStepQuestion =
+    status === "partial" || status === "no"
+      ? "What small step can you finish today?"
+      : "What can you do today?";
+
+  if (language === "en" && /(husband|wife|spouse|marriage)/i.test(signals)) {
+    smallStepQuestion = "What is one simple way to show love today?";
+  } else if (language === "en" && /(test|exam|school|act|sat)/i.test(signals)) {
+    smallStepQuestion = "How will you prepare with calm today?";
+  } else if (language === "en" && /(future|impact|ambition|calling|purpose|business|work|career)/i.test(signals)) {
+    smallStepQuestion = "What is one wise way to face your future today?";
+  }
+
+  return {
+    smallStepQuestion,
+    suggestedSteps: fallbackChips(input),
+    completionSuggestion: {
+      shouldPrompt: false,
+      reason: "",
+      confidence: 0
+    }
+  };
 }
 
 const referenceFallbackParaphrases: Record<string, Record<"en" | "es" | "pt" | "de" | "ja" | "ko", string>> = {

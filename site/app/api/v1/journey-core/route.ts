@@ -17,6 +17,23 @@ function authorize(request: NextRequest): boolean {
   return Boolean(provided) && provided === requiredSecret;
 }
 
+function safeFailure(message: string): { code: string; retryable: boolean; details: string } {
+  if (/content_filter/i.test(message)) {
+    return {
+      code: "provider_content_filter",
+      retryable: true,
+      details: "The AI service could not finish this generation. Please try again."
+    };
+  }
+  if (/timeout|timed out/i.test(message)) {
+    return { code: "provider_timeout", retryable: true, details: "The AI service took too long. Please try again." };
+  }
+  if (/rate_limit|429/i.test(message)) {
+    return { code: "provider_rate_limited", retryable: true, details: "The AI service is busy. Please try again soon." };
+  }
+  return { code: "generation_failed", retryable: true, details: "Today's Tend could not be prepared yet. Please try again." };
+}
+
 function isValidRequestPayload(payload: unknown): payload is JourneyPackageRequest {
   if (!payload || typeof payload !== "object") return false;
   const source = payload as Record<string, unknown>;
@@ -97,6 +114,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown core generation error";
     console.error(`[journey-core][${rid}] unhandled error: ${message}`);
-    return NextResponse.json({ error: "Journey core generation failed", details: message }, { status: 500 });
+    const failure = safeFailure(message);
+    return NextResponse.json(
+      {
+        error: "Journey core generation failed",
+        code: failure.code,
+        retryable: failure.retryable,
+        details: failure.details,
+        requestId: rid
+      },
+      { status: failure.code === "provider_content_filter" ? 422 : 500 }
+    );
   }
 }

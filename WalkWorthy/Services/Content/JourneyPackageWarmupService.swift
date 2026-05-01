@@ -1,10 +1,18 @@
 import Foundation
 import SwiftData
 
+struct JourneyPackageWarmupResult: Equatable {
+    let didPreparePackage: Bool
+    let message: String?
+
+    static let prepared = JourneyPackageWarmupResult(didPreparePackage: true, message: nil)
+    static let skipped = JourneyPackageWarmupResult(didPreparePackage: false, message: nil)
+}
+
 @MainActor
 final class JourneyPackageWarmupService {
     private let contentService: JourneyContentService
-    private var inFlight: [String: Task<Void, Never>] = [:]
+    private var inFlight: [String: Task<JourneyPackageWarmupResult, Never>] = [:]
 
     init(contentService: JourneyContentService? = nil) {
         self.contentService = contentService ?? JourneyContentService()
@@ -18,22 +26,21 @@ final class JourneyPackageWarmupService {
         isOnline: Bool,
         modelContext: ModelContext,
         date: Date = .now
-    ) async {
-        guard isOnline else { return }
+    ) async -> JourneyPackageWarmupResult {
+        guard isOnline else { return .skipped }
         let dayKey = JourneyContentService.dayKey(for: date)
         let key = "\(journey.id.uuidString)-\(dayKey)"
 
         if hasCurrentPackage(journeyID: journey.id, dayKey: dayKey, modelContext: modelContext) {
-            return
+            return .prepared
         }
 
         if let existing = inFlight[key] {
-            await existing.value
-            return
+            return await existing.value
         }
 
         let task = Task { @MainActor [contentService] in
-            _ = await contentService.packageForDate(
+            let result = await contentService.packageForDate(
                 profile: profile,
                 journey: journey,
                 recentEntries: entries,
@@ -42,10 +49,18 @@ final class JourneyPackageWarmupService {
                 isOnline: true,
                 modelContext: modelContext
             )
+            if hasCurrentPackage(journeyID: journey.id, dayKey: dayKey, modelContext: modelContext) {
+                return JourneyPackageWarmupResult.prepared
+            }
+            return JourneyPackageWarmupResult(
+                didPreparePackage: false,
+                message: result.preparationFailureMessage
+            )
         }
         inFlight[key] = task
-        await task.value
+        let result = await task.value
         inFlight[key] = nil
+        return result
     }
 
     func warmActiveJourneys(
@@ -61,7 +76,7 @@ final class JourneyPackageWarmupService {
         guard isOnline else { return }
         let targets = limit.map { Array(journeys.prefix($0)) } ?? journeys
         for journey in targets {
-            await warmToday(
+            _ = await warmToday(
                 profile: profile,
                 journey: journey,
                 entries: entriesByJourneyID[journey.id] ?? [],

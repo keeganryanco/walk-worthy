@@ -10,7 +10,7 @@ struct MainTabView: View {
     let profile: OnboardingProfile
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
-    let onRequestDailyWarmup: (UUID) -> Void
+    let onRequestDailyWarmup: (UUID) async -> JourneyPackageWarmupResult
 
     var body: some View {
         ZStack(alignment: .bottom) {

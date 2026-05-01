@@ -33,6 +33,17 @@ struct NoRemoteDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
 struct JourneyPackageResult {
     let package: DailyJourneyPackage
     let source: DailyJourneyPackageSource
+    let preparationFailureMessage: String?
+
+    init(
+        package: DailyJourneyPackage,
+        source: DailyJourneyPackageSource,
+        preparationFailureMessage: String? = nil
+    ) {
+        self.package = package
+        self.source = source
+        self.preparationFailureMessage = preparationFailureMessage
+    }
 }
 
 @MainActor
@@ -66,7 +77,7 @@ final class JourneyContentService {
             return JourneyPackageResult(package: cached.asPackage, source: .cache)
         }
 
-        var remoteFailedWhileOnline = false
+        var remoteFailureMessage: String?
         if isOnline {
             do {
                 let remote = try await remoteProvider.generatePackage(
@@ -108,7 +119,7 @@ final class JourneyContentService {
                 )
                 return JourneyPackageResult(package: uniqueScripturePackage, source: .remote)
             } catch {
-                remoteFailedWhileOnline = true
+                remoteFailureMessage = Self.preparationFailureMessage(for: error)
             }
         }
 
@@ -170,8 +181,12 @@ final class JourneyContentService {
             recentEntries: recentEntries,
             modelContext: modelContext
         )
-        guard !remoteFailedWhileOnline else {
-            return JourneyPackageResult(package: uniqueFallback, source: .template)
+        if let remoteFailureMessage {
+            return JourneyPackageResult(
+                package: uniqueFallback,
+                source: .template,
+                preparationFailureMessage: remoteFailureMessage
+            )
         }
 
         persist(
@@ -183,6 +198,26 @@ final class JourneyContentService {
         )
 
         return JourneyPackageResult(package: uniqueFallback, source: .template)
+    }
+
+    private static func preparationFailureMessage(for error: Error) -> String {
+        let description = error.localizedDescription.lowercased()
+        if description.contains("provider_content_filter") || description.contains("content_filter") {
+            return L10n.string(
+                "home.generating.error.filtered",
+                default: "The AI service could not finish this Tend. Please try again."
+            )
+        }
+        if description.contains("timed out") || description.contains("timeout") {
+            return L10n.string(
+                "home.generating.error.timeout",
+                default: "Preparing today's Tend took too long. Please try again."
+            )
+        }
+        return L10n.string(
+            "home.generating.error.generic",
+            default: "Today's Tend could not be prepared yet. Please try again."
+        )
     }
 
     func prefetchForTodayAndTomorrow(
