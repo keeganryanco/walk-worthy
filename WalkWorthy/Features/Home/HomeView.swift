@@ -28,6 +28,7 @@ struct HomeView: View {
     @State private var reigniteRouteJourneyID: UUID?
     @State private var isJourneySwitcherPresented = false
     @State private var isCreatingJourney = false
+    @AppStorage("homeOverlayActive") private var homeOverlayActive = false
     @AppStorage(AppConstants.DeepLink.pendingJourneyStorageKey) private var pendingJourneyIDRaw = ""
     @AppStorage(AppConstants.DeepLink.pendingActionStorageKey) private var pendingActionRaw = ""
 
@@ -67,7 +68,7 @@ struct HomeView: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if !activeJourneys.isEmpty {
+                if !activeJourneys.isEmpty && !homeOverlayActive {
                     Button {
                         isJourneySwitcherPresented = true
                     } label: {
@@ -472,6 +473,34 @@ struct JourneyGrowthPage: View {
         journey.hydrationStage
     }
 
+    private var plantGrowthTitle: String {
+        "\(plantDisplayName): Growth Stage \(plantStage)"
+    }
+
+    private var plantDisplayName: String {
+        switch availableThemeSuffix {
+        case "peace": return "Lily"
+        case "resilience": return "Oak"
+        case "patience": return "Bamboo"
+        case "faith": return "Sunflower"
+        case "joy": return "Cherry Blossom"
+        case "wisdom": return "Bonsai"
+        case "healing": return "Aloe Vera"
+        case "discipline": return "Succulent"
+        case "community": return "Morning Vines"
+        default: return "Tend Plant"
+        }
+    }
+
+    private var plantGrowthStreakText: String {
+        let count = max(currentStreakCount, 1)
+        let format = L10n.string(
+            count == 1 ? "home.streak.day_count.single" : "home.streak.day_count.multi",
+            default: count == 1 ? "%d day" : "%d days"
+        )
+        return String(format: format, count)
+    }
+
     private var themeSuffix: String {
         if journey.themeKey != .basic {
             return journey.themeKey.rawValue
@@ -758,8 +787,8 @@ struct JourneyGrowthPage: View {
                         // Dark Vignette
                         LinearGradient(
                             colors: [
-                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.45 : 0.18),
-                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.28 : 0.10)
+                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.66 : 0.52),
+                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.48 : 0.36)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -810,8 +839,23 @@ struct JourneyGrowthPage: View {
                             }
                             .frame(height: proxy.size.height * 0.5)
 
-                            // Push up the rest
-                            Spacer().frame(height: proxy.size.height * 0.5)
+                            if evolutionStep >= 3 {
+                                PlantGrowthMilestoneOverlay(
+                                    plantTitle: plantGrowthTitle,
+                                    message: L10n.string(
+                                        "home.plant_growth.message",
+                                        default: "Consistent tending helped this plant grow."
+                                    ),
+                                    streakText: plantGrowthStreakText,
+                                    waterText: hydrationStatusLabel,
+                                    onContinue: continueAfterPlantGrowth
+                                )
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                                .padding(.top, 6)
+                                .padding(.horizontal, 28)
+                            }
+
+                            Spacer(minLength: 0)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1542,14 +1586,6 @@ struct JourneyGrowthPage: View {
         if reduceMotion {
             isEvolving = true
             evolutionStep = 3
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isEvolving = false
-                evolutionStep = 0
-                if shouldShowStreakAfterEvolution {
-                    shouldShowStreakAfterEvolution = false
-                    withAnimation { showStreakOverlay = true }
-                }
-            }
             return
         }
 
@@ -1568,18 +1604,24 @@ struct JourneyGrowthPage: View {
                     evolutionStep = 3 // Color reveal & scale bounce
                 }
                 
-                // Step 4: Dismiss Overlay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
-                    withAnimation(.easeOut(duration: 0.5)) {
-                        isEvolving = false
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        evolutionStep = 0 // Reset for next time
-                        if shouldShowStreakAfterEvolution {
-                            shouldShowStreakAfterEvolution = false
-                            withAnimation { showStreakOverlay = true }
-                        }
-                    }
+                // Hold on the new stage until the user continues to the streak moment.
+            }
+        }
+    }
+
+    private func continueAfterPlantGrowth() {
+        let dismissAnimation = reduceMotion ? nil : Animation.easeOut(duration: 0.28)
+        withAnimation(dismissAnimation) {
+            isEvolving = false
+        }
+
+        let resetDelay: TimeInterval = reduceMotion ? 0.02 : 0.18
+        DispatchQueue.main.asyncAfter(deadline: .now() + resetDelay) {
+            evolutionStep = 0
+            if shouldShowStreakAfterEvolution {
+                shouldShowStreakAfterEvolution = false
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.24)) {
+                    showStreakOverlay = true
                 }
             }
         }
@@ -2568,6 +2610,73 @@ struct TendingFlowView: View {
         }
 
         return streak
+    }
+}
+
+struct PlantGrowthMilestoneOverlay: View {
+    let plantTitle: String
+    let message: String
+    let streakText: String
+    let waterText: String
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(spacing: 22) {
+            VStack(spacing: 12) {
+                Text(plantTitle)
+                    .font(WWTypography.heading(28))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+
+                Text(message)
+                    .font(WWTypography.body(17))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.horizontal, 4)
+            }
+
+            HStack(spacing: 10) {
+                plantStatusBadge(systemName: "sun.max.fill", text: streakText)
+                plantStatusBadge(systemName: "drop.fill", text: waterText)
+            }
+
+            Button(action: onContinue) {
+                Text(L10n.string("Continue", default: "Continue"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+            .padding(.top, 8)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 34)
+        .frame(maxWidth: 380)
+    }
+
+    private func plantStatusBadge(systemName: String, text: String) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(WWColor.growGreen)
+
+            Text(text)
+                .font(WWTypography.caption(12).weight(.semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+                .minimumScaleFactor(0.84)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(
+            Capsule()
+                .fill(.white.opacity(0.14))
+        )
+        .overlay(
+            Capsule()
+                .stroke(.white.opacity(0.12), lineWidth: 1)
+        )
     }
 }
 
