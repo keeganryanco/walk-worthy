@@ -379,6 +379,9 @@ struct JourneyGrowthPage: View {
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     
     @State private var isGenerating = false
+    @State private var isPreparingTend = false
+    @State private var preparingDotCount = 1
+    @State private var prepareTimeoutTask: Task<Void, Never>?
     @State private var showTendingSheet = false
     @State private var showJournalEntrySheet = false
     @State private var alertMessage: String?
@@ -510,6 +513,15 @@ struct JourneyGrowthPage: View {
             }
         )
         return try? modelContext.fetch(descriptor).first
+    }
+
+    private var isPreparingMissingPackage: Bool {
+        isPreparingTend && todaysPackageRecord == nil
+    }
+
+    private var preparingTendLabel: String {
+        let base = L10n.string("home.generating.preparing_base", default: "Preparing today's Tend")
+        return base + String(repeating: ".", count: max(1, min(preparingDotCount, 3)))
     }
     
     private var plantImageName: String {
@@ -874,6 +886,10 @@ struct JourneyGrowthPage: View {
                 showReigniteOverlay = false
             }
         }
+        .onChange(of: todaysPackageRecord?.id) { _, newValue in
+            guard newValue != nil else { return }
+            stopPreparingTend()
+        }
         .onChange(of: shouldShowReignitePrompt) { _, _ in
             handleNotificationReignitePromptIfNeeded()
         }
@@ -1040,7 +1056,7 @@ struct JourneyGrowthPage: View {
                             
                             Button {
                                 if todaysPackageRecord == nil {
-                                    onRequestDailyWarmup(journey.id)
+                                    beginPreparingTend()
                                     alertMessage = L10n.string(
                                         "home.tend.package_missing",
                                         default: "Today's Tend is being prepared. Please try again in a moment."
@@ -1079,22 +1095,16 @@ struct JourneyGrowthPage: View {
                 } else {
                     Button {
                         if let packageRecord = todaysPackageRecord {
+                            stopPreparingTend()
                             createEntryFromCachedPackage(packageRecord)
                             showTendingSheet = true
                         } else {
-                            isGenerating = true
-                            onRequestDailyWarmup(journey.id)
-                            Task {
-                                try? await Task.sleep(nanoseconds: 1_200_000_000)
-                                await MainActor.run { isGenerating = false }
-                            }
+                            beginPreparingTend()
                         }
                     } label: {
-                        if isGenerating {
+                        if isPreparingMissingPackage {
                             HStack(spacing: 10) {
-                                ProgressView()
-                                    .tint(WWColor.nearBlack)
-                                Text(L10n.string("home.generating.preparing", default: "Preparing today's Tend..."))
+                                Text(preparingTendLabel)
                                     .font(WWTypography.heading(20))
                                     .foregroundStyle(WWColor.nearBlack)
                             }
@@ -1138,10 +1148,10 @@ struct JourneyGrowthPage: View {
                     .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
                     .buttonStyle(.plain)
                     .padding(.horizontal, 32)
-                    .disabled(isGenerating)
-                    .opacity(isGenerating ? 0.88 : 1.0)
+                    .disabled(isPreparingMissingPackage)
+                    .opacity(isPreparingMissingPackage ? 0.88 : 1.0)
                     .accessibilityLabel(
-                        isGenerating
+                        isPreparingMissingPackage
                             ? L10n.string("home.generating.preparing_accessibility", default: "Preparing today's Tend")
                             : L10n.string("home.generating.reveal_accessibility", default: "Reveal today's step")
                     )
@@ -1151,6 +1161,16 @@ struct JourneyGrowthPage: View {
                             default: "Generates today's reflection, prayer, and next step."
                         )
                     )
+                    .task(id: isPreparingMissingPackage) {
+                        guard isPreparingMissingPackage else { return }
+                        while !Task.isCancelled && isPreparingTend && todaysPackageRecord == nil {
+                            try? await Task.sleep(nanoseconds: 450_000_000)
+                            guard !Task.isCancelled else { return }
+                            await MainActor.run {
+                                preparingDotCount = preparingDotCount >= 3 ? 1 : preparingDotCount + 1
+                            }
+                        }
+                    }
                 }
 
                 streakSection
@@ -1788,6 +1808,35 @@ struct JourneyGrowthPage: View {
         )
         try? modelContext.save()
         WidgetSyncService.publishFromModelContext(modelContext)
+    }
+
+    private func beginPreparingTend() {
+        guard todaysPackageRecord == nil else {
+            stopPreparingTend()
+            return
+        }
+
+        onRequestDailyWarmup(journey.id)
+        isPreparingTend = true
+        preparingDotCount = 1
+        prepareTimeoutTask?.cancel()
+        prepareTimeoutTask = Task {
+            try? await Task.sleep(nanoseconds: 90_000_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                if todaysPackageRecord == nil {
+                    isPreparingTend = false
+                }
+                prepareTimeoutTask = nil
+            }
+        }
+    }
+
+    private func stopPreparingTend() {
+        isPreparingTend = false
+        preparingDotCount = 1
+        prepareTimeoutTask?.cancel()
+        prepareTimeoutTask = nil
     }
 }
 
