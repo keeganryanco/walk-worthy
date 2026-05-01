@@ -120,6 +120,24 @@ struct ExperimentalOnboardingFlowView: View {
         actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var prayerConcernText: String {
+        prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var devotionalSummaryLine: String {
+        let dailyTitle = generatedPackage?.dailyTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !dailyTitle.isEmpty {
+            return "Today’s Tend begins with: \(dailyTitle)."
+        }
+
+        let focus = inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !focus.isEmpty {
+            return "Today’s Tend is shaped around \(focus)."
+        }
+
+        return "Today’s Tend is shaped around what you brought to prayer."
+    }
+
     private var supportsWidgetsOnCurrentDevice: Bool {
         UIDevice.current.userInterfaceIdiom != .pad
     }
@@ -552,12 +570,27 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var tendReflectionContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ritualStageLabel(copy("tend_ritual_stage_scripture", fallback: "Scripture"))
+        VStack(alignment: .leading, spacing: 18) {
+            if !prayerConcernText.isEmpty {
+                Text("“\(prayerConcernText)”")
+                    .font(WWTypography.caption(13).weight(.semibold))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(WWColor.surface.opacity(0.96))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(WWColor.nearBlack.opacity(0.06), lineWidth: 1)
+                    )
+            }
 
-            Text(copy("tend_reflection_title", fallback: "Begin with Scripture."))
-                .font(WWTypography.display(36))
+            Text(devotionalSummaryLine)
+                .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.nearBlack)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             ritualSurface {
@@ -632,7 +665,7 @@ struct ExperimentalOnboardingFlowView: View {
                     .foregroundStyle(WWColor.growGreen)
                     .tracking(1.2)
 
-                TextField(copy("tend_step_placeholder", fallback: "write one lived response..."), text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
+                TextField(copy("tend_step_placeholder", fallback: "Type one small step you can actually do today."), text: newlineDismissBinding(for: $actionStepText), axis: .vertical)
                     .focused($focusedField, equals: .action)
                     .submitLabel(.done)
                     .onSubmit { focusedField = nil }
