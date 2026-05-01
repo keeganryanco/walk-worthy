@@ -417,6 +417,31 @@ final class WalkWorthyTests: XCTestCase {
         )
     }
 
+    func testDailyJourneyPackageValidationRemovesNearDuplicateSuggestedSteps() {
+        let package = DailyJourneyPackage(
+            reflectionThought: "Scripture names fear honestly and points toward a steadier mind. A test can feel large without becoming ultimate. God cares about the pressure carried into that moment. Calm grows when fear is brought into the light.",
+            scriptureReference: "2 Timothy 1:7",
+            scriptureParaphrase: "God has not given us a spirit of fear, but of power, love, and self-control.",
+            prayer: "Father, I bring You the fear I feel about this test. Give me a clear mind and a steady heart. Help me trust Your presence more than this pressure.",
+            smallStepQuestion: "How will you pause for calm before your test?",
+            suggestedSteps: [
+                "Pray through this worry",
+                "Take five calm breaths",
+                "Pray through one worry",
+                "Pray through this specific worry"
+            ],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            generatedAt: .now
+        )
+
+        let validated = DailyJourneyPackageValidation.validated(package)
+
+        XCTAssertTrue(validated.suggestedSteps.contains("Pray through this worry"))
+        XCTAssertTrue(validated.suggestedSteps.contains("Take five calm breaths"))
+        XCTAssertFalse(validated.suggestedSteps.contains("Pray through one worry"))
+        XCTAssertFalse(validated.suggestedSteps.contains("Pray through this specific worry"))
+    }
+
     func testLatestAnsweredContextIncludesPreviousCommitmentAndStatus() {
         let now = Date(timeIntervalSince1970: 20_000)
         let entry = PrayerEntry(

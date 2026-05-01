@@ -184,6 +184,8 @@ export function buildActionLayerPrompt(input: JourneyPackageRequest, core: Devot
     "The question and every suggested step must flow from todayAim, the devotional core's central point, and the journey context.",
     "This is the only layer where practical action language belongs; do not rewrite the Scripture, reflection, or prayer.",
     "No unrelated generic steps. If the journey is about being a better husband, do not suggest praying for a friend or generic check-ins.",
+    "Do not repeat the same action with tiny wording changes. Avoid near-duplicates like 'Pray through this worry', 'Pray through one worry', and 'Pray through this specific worry' in the same list.",
+    "Use varied action types: at most one prayer-focused chip, plus concrete options like preparation, communication, rest, work, service, naming a fear, or asking for help when they fit the devotional.",
     "For specific contexts, include at least two real-world actions, one lower-friction option when helpful, and one prayer/spiritual option only if it directly relates.",
     "Suggested steps should be short, practical, safe, and not expensive or manipulative.",
     "Question should be one simple practical question, usually under 14 words."

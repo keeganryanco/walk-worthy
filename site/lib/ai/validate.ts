@@ -586,12 +586,37 @@ function dedupeChips(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const chip of values) {
-    const key = chip.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const keys = chipSimilarityKeys(chip);
+    if (keys.some((key) => seen.has(key))) continue;
+    keys.forEach((key) => seen.add(key));
     result.push(chip);
   }
   return result;
+}
+
+function chipSimilarityKeys(value: string): string[] {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((word) => !new Set(["a", "an", "the", "this", "that", "one", "specific", "today", "your", "my"]).has(word));
+  const compact = normalized.join(" ");
+  const keys = [compact];
+  if (normalized.length >= 3) {
+    keys.push(normalized.slice(0, 3).join(" "));
+  }
+  if (normalized[0] === "pray" && normalized.length >= 3) {
+    keys.push(`pray:${normalized.slice(1, 3).join(" ")}`);
+  }
+  return keys.filter(Boolean);
+}
+
+function chipsHaveMeaningfulVariety(values: string[]): boolean {
+  if (values.length < CHIP_FALLBACK_COUNT) return false;
+  const firstWords = new Set(values.map((value) => value.toLowerCase().split(/\s+/)[0]).filter(Boolean));
+  const prayerCount = values.filter((value) => /^pray\b/i.test(value)).length;
+  return firstWords.size >= 2 && prayerCount <= 1;
 }
 
 function contextSignals(input?: JourneyPackageRequest): string {
@@ -1907,6 +1932,9 @@ export function normalizeActionLayerFromObject(
   const generatedSuggested = dedupeChips(
     suggestedRaw.map((item) => normalizeChip(item, language)).filter(Boolean)
   ).slice(0, CHIP_LIMIT);
+  if (!chipsHaveMeaningfulVariety(generatedSuggested)) {
+    return null;
+  }
   if (isMarriageContext(input) && generatedSuggested.some(hasOffContextMarriageStep)) {
     return null;
   }
@@ -1919,7 +1947,7 @@ export function normalizeActionLayerFromObject(
   const confidence = Math.min(1, Math.max(0, confidenceRaw));
   const question = normalizeSmallStepQuestion(source.smallStepQuestion, input);
 
-  if (!actionLayerMatchesContext(suggested, input)) {
+  if (!chipsHaveMeaningfulVariety(suggested) || !actionLayerMatchesContext(suggested, input)) {
     return null;
   }
 

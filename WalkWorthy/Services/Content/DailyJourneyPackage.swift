@@ -361,9 +361,9 @@ enum DailyJourneyPackageValidation {
             guard !["and", "or", "to", "for", "with", "because", "if", "when"].contains(first) else { continue }
             guard !danglingEndings.contains(last) else { continue }
 
-            let key = compact.lowercased()
-            guard !seen.contains(key) else { continue }
-            seen.insert(key)
+            let keys = chipSimilarityKeys(compact)
+            guard !keys.contains(where: { seen.contains($0) }) else { continue }
+            keys.forEach { seen.insert($0) }
             chips.append(compact)
 
             if chips.count == 4 {
@@ -372,6 +372,29 @@ enum DailyJourneyPackageValidation {
         }
 
         return chips
+    }
+
+    private static func chipSimilarityKeys(_ value: String) -> [String] {
+        let ignored = Set(["a", "an", "the", "this", "that", "one", "specific", "today", "your", "my"])
+        let words = value
+            .lowercased()
+            .replacingOccurrences(of: #"[^a-z0-9\s'-]"#, with: " ", options: .regularExpression)
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !ignored.contains($0) }
+
+        var keys: [String] = []
+        let compact = words.joined(separator: " ")
+        if !compact.isEmpty {
+            keys.append(compact)
+        }
+        if words.count >= 3 {
+            keys.append(words.prefix(3).joined(separator: " "))
+        }
+        if words.first == "pray", words.count >= 3 {
+            keys.append("pray:\(words.dropFirst().prefix(2).joined(separator: " "))")
+        }
+        return keys
     }
 
     private static func normalizedFirstPersonPrayer(_ value: String, language: SupportedLanguage) -> String {
@@ -758,9 +781,9 @@ enum DailyJourneyPackageValidation {
         var merged: [String] = []
 
         for value in (primary + fallback) {
-            let key = value.lowercased()
-            guard !seen.contains(key) else { continue }
-            seen.insert(key)
+            let keys = chipSimilarityKeys(value)
+            guard !keys.contains(where: { seen.contains($0) }) else { continue }
+            keys.forEach { seen.insert($0) }
             merged.append(value)
             if merged.count == 4 {
                 break

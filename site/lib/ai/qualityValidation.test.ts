@@ -526,6 +526,66 @@ test("future impact anxiety action layer stays practical and related", () => {
   ]);
 });
 
+test("near-duplicate suggested steps are rejected instead of displayed", () => {
+  const core = normalizeDevotionalCoreFromObject(
+    {
+      centralConcern: "anxiety about a school test",
+      biblicalTheme: "peace and self-control under pressure",
+      devotionalPoint: "God gives a steady mind when a test feels larger than it is.",
+      scriptureFitReason: "2 Timothy 1:7 names power, love, and self-control instead of fear.",
+      dailyTitle: "Receiving A Steady Mind",
+      scriptureReference: "2 Timothy 1:7",
+      scriptureParaphrase: "God has not given us a spirit of fear, but of power, love, and self-control.",
+      reflectionThought:
+        "Paul reminds Timothy that fear is not the spirit God gives. God gives power, love, and a clear mind when pressure feels loud. A school test can make one moment feel bigger than the whole person taking it. Peace grows when the test is treated as real but not ultimate.",
+      prayer:
+        "Father, I bring You the fear I feel about this test. Give me a clear mind, a steady heart, and patience with myself. Help me trust Your presence more than the pressure of this moment.",
+      todayAim: "receive calm before the test starts",
+      updatedJourneyArc: {
+        purpose: "bring test anxiety to God",
+        journeyPurpose: "bring test anxiety to God",
+        currentStage: "receiving steadiness before the test",
+        todayAim: "receive calm before the test starts",
+        nextMovement: "Continue facing pressure with peace and clear thinking.",
+        tone: "calm, specific, biblically anchored",
+        practicalActionDirection: "Use practical steps tied to test preparation and calm.",
+        recentDayTitles: ["Receiving A Steady Mind"],
+        specificContextSignals: ["test", "anxiety", "calm", "pressure"],
+        lastFollowThroughInterpretation: ""
+      }
+    },
+    {
+      ...futureImpactRequest,
+      profile: { prayerFocus: "anxiety about my test", growthGoal: "feel calm before the test" },
+      journey: { id: "journey-test", title: "Test Anxiety", category: "School", themeKey: "peace" },
+      recentJourneySignals: ["test", "anxiety", "calm"]
+    }
+  );
+  assert.ok(core);
+
+  const action = normalizeActionLayerFromObject(
+    {
+      smallStepQuestion: "How will you pause for calm before your test?",
+      suggestedSteps: [
+        "Pray through this worry",
+        "Take five calm breaths",
+        "Pray through one worry",
+        "Pray through this specific worry"
+      ],
+      completionSuggestion: { shouldPrompt: false, reason: "", confidence: 0 }
+    },
+    {
+      ...futureImpactRequest,
+      profile: { prayerFocus: "anxiety about my test", growthGoal: "feel calm before the test" },
+      journey: { id: "journey-test", title: "Test Anxiety", category: "School", themeKey: "peace" },
+      recentJourneySignals: ["test", "anxiety", "calm"]
+    },
+    core
+  );
+
+  assert.equal(action, null);
+});
+
 test("fallback output never pairs a random reference with generic action paraphrase", () => {
   const output = fallbackPackage(futureImpactRequest);
 
