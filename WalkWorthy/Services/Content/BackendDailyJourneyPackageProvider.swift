@@ -2,6 +2,7 @@ import Foundation
 import os
 
 private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend", category: "AI")
+private let aiGatewayRequestTimeout: TimeInterval = 75
 
 struct JourneyArcPayload: Codable, Equatable {
     let purpose: String
@@ -159,7 +160,7 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         aiLogger.log("journey-package request start endpoint=\(endpoint.absoluteString, privacy: .public)")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 20
+        request.timeoutInterval = aiGatewayRequestTimeout
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -395,7 +396,7 @@ struct BackendJourneyBootstrapProvider {
         aiLogger.log("journey-bootstrap request start endpoint=\(endpoint.absoluteString, privacy: .public)")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 20
+        request.timeoutInterval = aiGatewayRequestTimeout
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)

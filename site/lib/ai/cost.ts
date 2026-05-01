@@ -1,4 +1,4 @@
-import { AITokenUsage, AIProvider } from "./types";
+import type { AITokenUsage, AIProvider } from "./types";
 
 function sanitizeModelForEnv(model: string): string {
   return model

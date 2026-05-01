@@ -1,7 +1,7 @@
 import { fallbackPackage } from "./fallback";
 import { generateWithGeminiPrompt } from "./providers/gemini";
 import { generateWithOpenAIPrompt } from "./providers/openai";
-import {
+import type {
   BootstrapOrchestratedResult,
   JourneyPackageRequest,
   JourneyBootstrapRequest,

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJourneyBootstrap } from "../../../../lib/ai/bootstrap";
-import { JourneyBootstrapRequest } from "../../../../lib/ai/types";
+import type { JourneyBootstrapRequest } from "../../../../lib/ai/types";
 import { capturePostHogEvent } from "../../../../lib/analytics/posthog";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function requestId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
