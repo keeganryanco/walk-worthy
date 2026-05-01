@@ -10,6 +10,7 @@ struct HomeView: View {
     let profile: OnboardingProfile
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onRequestDailyWarmup: (UUID) -> Void
 
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived }, sort: \PrayerJourney.createdAt, order: .reverse)
     private var activeJourneys: [PrayerJourney]
@@ -55,6 +56,7 @@ struct HomeView: View {
                                         reigniteRouteJourneyID = nil
                                     }
                                 },
+                                onRequestDailyWarmup: onRequestDailyWarmup,
                                 suppressHomePageIndicator: $suppressHomePageIndicator
                             )
                             .tag(journey.id as UUID?)
@@ -372,6 +374,7 @@ struct JourneyGrowthPage: View {
     let contentService: JourneyContentService
     let shouldShowReignitePrompt: Bool
     let onConsumeReignitePrompt: () -> Void
+    let onRequestDailyWarmup: (UUID) -> Void
     @Binding var suppressHomePageIndicator: Bool
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     
@@ -861,6 +864,9 @@ struct JourneyGrowthPage: View {
         .onAppear {
             refreshEngagementState()
             handleNotificationReignitePromptIfNeeded()
+            if todaysPackageRecord == nil {
+                onRequestDailyWarmup(journey.id)
+            }
         }
         .onChange(of: entries.map(\.id)) { _, _ in
             refreshEngagementState()
@@ -1034,9 +1040,10 @@ struct JourneyGrowthPage: View {
                             
                             Button {
                                 if todaysPackageRecord == nil {
+                                    onRequestDailyWarmup(journey.id)
                                     alertMessage = L10n.string(
                                         "home.tend.package_missing",
-                                        default: "Today's Tend is still being prepared. Please try again in a moment."
+                                        default: "Today's Tend is being prepared. Please try again in a moment."
                                     )
                                 } else {
                                     showTendingSheet = true
@@ -1071,13 +1078,23 @@ struct JourneyGrowthPage: View {
                     }
                 } else {
                     Button {
-                        Task { await generateEntry() }
+                        if let packageRecord = todaysPackageRecord {
+                            createEntryFromCachedPackage(packageRecord)
+                            showTendingSheet = true
+                        } else {
+                            isGenerating = true
+                            onRequestDailyWarmup(journey.id)
+                            Task {
+                                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                                await MainActor.run { isGenerating = false }
+                            }
+                        }
                     } label: {
                         if isGenerating {
                             HStack(spacing: 10) {
                                 ProgressView()
                                     .tint(WWColor.nearBlack)
-                                Text(L10n.string("home.generating.revealing", default: "Revealing..."))
+                                Text(L10n.string("home.generating.preparing", default: "Preparing today's Tend..."))
                                     .font(WWTypography.heading(20))
                                     .foregroundStyle(WWColor.nearBlack)
                             }
@@ -1088,7 +1105,11 @@ struct JourneyGrowthPage: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 18, weight: .semibold))
-                                Text(L10n.string("Reveal Today's Step", default: "Reveal Today's Step"))
+                                Text(
+                                    todaysPackageRecord == nil
+                                        ? L10n.string("home.generating.prepare_cta", default: "Prepare Today's Tend")
+                                        : L10n.string("Reveal Today's Step", default: "Reveal Today's Step")
+                                )
                                     .font(WWTypography.heading(20))
                             }
                             .foregroundStyle(WWColor.nearBlack)
@@ -1121,7 +1142,7 @@ struct JourneyGrowthPage: View {
                     .opacity(isGenerating ? 0.88 : 1.0)
                     .accessibilityLabel(
                         isGenerating
-                            ? L10n.string("home.generating.revealing_accessibility", default: "Revealing today's step")
+                            ? L10n.string("home.generating.preparing_accessibility", default: "Preparing today's Tend")
                             : L10n.string("home.generating.reveal_accessibility", default: "Reveal today's step")
                     )
                     .accessibilityHint(
@@ -1730,6 +1751,34 @@ struct JourneyGrowthPage: View {
                 "journey_id": journey.id.uuidString,
                 "is_online": connectivityService.isOnline ? "true" : "false"
             ]
+        )
+        JourneyMemoryService.refreshSnapshot(
+            for: journey,
+            entries: entries + [entry],
+            profile: profile,
+            modelContext: modelContext
+        )
+        try? modelContext.save()
+        WidgetSyncService.publishFromModelContext(modelContext)
+    }
+
+    private func createEntryFromCachedPackage(_ record: DailyJourneyPackageRecord) {
+        let package = record.asPackage
+        let entry = PrayerEntry(
+            createdAt: TendingTestingClock.currentDate,
+            prompt: package.prayer,
+            scriptureReference: package.scriptureReference,
+            scriptureText: package.scriptureParaphrase,
+            actionStep: "",
+            journey: journey
+        )
+        modelContext.insert(entry)
+        record.linkedEntryID = entry.id
+        JourneyProgressService.logEvent(
+            journeyID: journey.id,
+            type: .packageGenerated,
+            notes: "Daily package opened from warmed cache.",
+            modelContext: modelContext
         )
         JourneyMemoryService.refreshSnapshot(
             for: journey,

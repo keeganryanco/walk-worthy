@@ -1,7 +1,76 @@
 import XCTest
+import SwiftData
 @testable import WalkWorthy
 
 final class WalkWorthyTests: XCTestCase {
+    @MainActor
+    private func makeInMemoryContext() throws -> ModelContext {
+        let schema = Schema([
+            PrayerJourney.self,
+            PrayerEntry.self,
+            AnsweredPrayer.self,
+            OnboardingProfile.self,
+            AppSettings.self,
+            ReminderSchedule.self,
+            JourneyMemorySnapshot.self,
+            GlobalLightMemory.self,
+            JourneyProgressEvent.self,
+            DailyJourneyPackageRecord.self
+        ])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        )
+        return ModelContext(container)
+    }
+
+    private final class CountingRemoteProvider: RemoteDailyJourneyPackageProviding {
+        var calls = 0
+        let package: DailyJourneyPackage
+
+        init(package: DailyJourneyPackage = WalkWorthyTests.validRemotePackage()) {
+            self.package = package
+        }
+
+        func generatePackage(
+            profile: OnboardingProfile,
+            journey: PrayerJourney,
+            recentEntries: [PrayerEntry],
+            memory: JourneyMemorySnapshot?
+        ) async throws -> DailyJourneyPackage {
+            calls += 1
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            return package
+        }
+    }
+
+    private struct FailingRemoteProvider: RemoteDailyJourneyPackageProviding {
+        func generatePackage(
+            profile: OnboardingProfile,
+            journey: PrayerJourney,
+            recentEntries: [PrayerEntry],
+            memory: JourneyMemorySnapshot?
+        ) async throws -> DailyJourneyPackage {
+            throw NSError(domain: "test", code: -1)
+        }
+    }
+
+    private static func validRemotePackage() -> DailyJourneyPackage {
+        DailyJourneyPackage(
+            dailyTitle: "Bringing Worry to God",
+            reflectionThought: "Paul teaches that anxious thoughts can be brought honestly before God. Prayer is not a way to deny fear, but a way to place fear before the One who gives peace. An exam can feel heavy when the result seems to carry too much weight. God's peace guards the heart by reminding it that a test is real, but it is not ultimate.",
+            scriptureReference: "Philippians 4:6-7",
+            scriptureParaphrase: "Do not be anxious about anything, but bring every concern to God in prayer with thanksgiving. The peace of God will guard your heart and mind in Christ Jesus.",
+            prayer: "Lord, I bring my anxiety about this test to You. Help me study with focus and rest without fear. Remind me that my future is held by You, not by one score.",
+            todayAim: "bring test anxiety to God with honesty",
+            smallStepQuestion: "What is one focused way to prepare today?",
+            suggestedSteps: ["Review one section", "Pray over one fear", "Take a short break", "Pack test supplies"],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            qualityVersion: DailyJourneyPackage.currentQualityVersion,
+            generatedAt: Date(timeIntervalSince1970: 100)
+        )
+    }
+
     func testTemplateGeneratorProducesCard() {
         let generator = TemplateTodayCardGenerator()
         let profile = OnboardingProfile(
@@ -126,6 +195,109 @@ final class WalkWorthyTests: XCTestCase {
         components.hour = 12
         let date = Calendar.current.date(from: components) ?? .now
         XCTAssertEqual(JourneyContentService.dayKey(for: date), "2026-03-17")
+    }
+
+    @MainActor
+    func testWarmupDedupesRepeatedRequestsForSameJourneyAndDay() async throws {
+        let context = try makeInMemoryContext()
+        let profile = OnboardingProfile(name: "Friend", prayerFocus: "ACT anxiety", growthGoal: "peace", reminderWindow: "Morning", blocker: "")
+        let journey = PrayerJourney(title: "ACT Peace", category: "School", growthFocus: "ACT anxiety")
+        context.insert(profile)
+        context.insert(journey)
+        try context.save()
+
+        let remote = CountingRemoteProvider()
+        let content = JourneyContentService(remoteProvider: remote)
+        let warmup = JourneyPackageWarmupService(contentService: content)
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+
+        async let first: Void = warmup.warmToday(
+            profile: profile,
+            journey: journey,
+            entries: [],
+            memory: nil,
+            isOnline: true,
+            modelContext: context,
+            date: date
+        )
+        async let second: Void = warmup.warmToday(
+            profile: profile,
+            journey: journey,
+            entries: [],
+            memory: nil,
+            isOnline: true,
+            modelContext: context,
+            date: date
+        )
+        _ = await (first, second)
+
+        XCTAssertEqual(remote.calls, 1)
+    }
+
+    @MainActor
+    func testPackageForDateUsesCurrentCacheBeforeRemote() async throws {
+        let context = try makeInMemoryContext()
+        let profile = OnboardingProfile(name: "Friend", prayerFocus: "ACT anxiety", growthGoal: "peace", reminderWindow: "Morning", blocker: "")
+        let journey = PrayerJourney(title: "ACT Peace", category: "School", growthFocus: "ACT anxiety")
+        let dayKey = JourneyContentService.dayKey(for: Date(timeIntervalSince1970: 1_800_000_000))
+        context.insert(profile)
+        context.insert(journey)
+        context.insert(DailyJourneyPackageRecord(
+            journeyID: journey.id,
+            dayKey: dayKey,
+            dailyTitle: "Cached Title",
+            reflectionThought: "Cached reflection.",
+            scriptureReference: "Philippians 4:6-7",
+            scriptureParaphrase: "Cached scripture.",
+            prayer: "Lord, help me.",
+            todayAim: "cached aim",
+            smallStepQuestion: "What can you prepare?",
+            suggestedSteps: ["Review one section"],
+            completionSuggestion: CompletionSuggestion(shouldPrompt: false, reason: "", confidence: 0),
+            qualityVersion: DailyJourneyPackage.currentQualityVersion,
+            generatedAt: .now,
+            source: .remote
+        ))
+        try context.save()
+
+        let remote = CountingRemoteProvider()
+        let result = await JourneyContentService(remoteProvider: remote).packageForDate(
+            profile: profile,
+            journey: journey,
+            recentEntries: [],
+            memory: nil,
+            date: Date(timeIntervalSince1970: 1_800_000_000),
+            isOnline: true,
+            modelContext: context
+        )
+
+        XCTAssertEqual(result.source, .cache)
+        XCTAssertEqual(result.package.dailyTitle, "Cached Title")
+        XCTAssertEqual(remote.calls, 0)
+    }
+
+    @MainActor
+    func testOnlineRemoteFailureDoesNotPersistTemplatePackage() async throws {
+        let context = try makeInMemoryContext()
+        let profile = OnboardingProfile(name: "Friend", prayerFocus: "ACT anxiety", growthGoal: "peace", reminderWindow: "Morning", blocker: "")
+        let journey = PrayerJourney(title: "ACT Peace", category: "School", growthFocus: "ACT anxiety")
+        context.insert(profile)
+        context.insert(journey)
+        try context.save()
+
+        let result = await JourneyContentService(remoteProvider: FailingRemoteProvider()).packageForDate(
+            profile: profile,
+            journey: journey,
+            recentEntries: [],
+            memory: nil,
+            date: Date(timeIntervalSince1970: 1_800_000_000),
+            isOnline: true,
+            modelContext: context
+        )
+
+        let records = try context.fetch(FetchDescriptor<DailyJourneyPackageRecord>())
+        XCTAssertEqual(result.source, .template)
+        XCTAssertTrue(records.isEmpty)
     }
 
     func testWidgetSnapshotDecodesWithMissingFields() throws {

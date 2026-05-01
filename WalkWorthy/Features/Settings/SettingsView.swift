@@ -348,8 +348,14 @@ private struct DebugOnboardingSimulatorView: View {
         Group {
             if let container = debugContainer {
                 ExperimentalOnboardingFlowView(
+                    onPrepare: { _, _ in
+                        nil
+                    },
                     onGenerate: { name, prayer in
                         await debugBootstrapResult(name: name, prayer: prayer, container: container)
+                    },
+                    onCommitPrepared: { prepared, _, _ in
+                        await debugCommitPrepared(prepared, container: container)
                     },
                     onComplete: { _ in
                         dismiss()
@@ -503,6 +509,64 @@ private struct DebugOnboardingSimulatorView: View {
                     : details
             }
             return nil
+        }
+    }
+
+    private func debugCommitPrepared(
+        _ prepared: PreparedOnboardingJourney,
+        container: ModelContainer
+    ) async -> OnboardingBootstrapResult? {
+        await MainActor.run {
+            let modelContext = container.mainContext
+            let seed = prepared.seed
+            let initialPackage = DailyJourneyPackageValidation.validated(prepared.package)
+            let inferredGrowthFocus = seed.growthFocus ?? seed.journeyCategory
+            let theme = JourneyThemeKey(rawValue: seed.themeKey.lowercased()) ?? .basic
+            let journey = PrayerJourney(
+                title: seed.journeyTitle,
+                category: seed.journeyCategory,
+                themeKey: theme,
+                growthFocus: inferredGrowthFocus,
+                journeyArc: encodeJourneyArc(seed.journeyArc),
+                status: .active
+            )
+            modelContext.insert(journey)
+            let entry = PrayerEntry(
+                prompt: initialPackage.prayer,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureText: initialPackage.scriptureParaphrase,
+                actionStep: "",
+                journey: journey
+            )
+            modelContext.insert(entry)
+            let record = DailyJourneyPackageRecord(
+                journeyID: journey.id,
+                dayKey: JourneyContentService.dayKey(for: .now),
+                dailyTitle: initialPackage.dailyTitle,
+                reflectionThought: initialPackage.reflectionThought,
+                scriptureReference: initialPackage.scriptureReference,
+                scriptureParaphrase: initialPackage.scriptureParaphrase,
+                prayer: initialPackage.prayer,
+                todayAim: initialPackage.todayAim,
+                smallStepQuestion: initialPackage.smallStepQuestion,
+                suggestedSteps: initialPackage.suggestedSteps,
+                completionSuggestion: initialPackage.completionSuggestion,
+                updatedJourneyArc: initialPackage.updatedJourneyArc,
+                qualityVersion: initialPackage.qualityVersion,
+                generatedAt: initialPackage.generatedAt,
+                source: .remote,
+                linkedEntryID: entry.id
+            )
+            modelContext.insert(record)
+            modelContext.insert(JourneyMemorySnapshot(
+                journeyID: journey.id,
+                summary: seed.initialMemory.summary,
+                winsSummary: seed.initialMemory.winsSummary,
+                blockersSummary: seed.initialMemory.blockersSummary,
+                preferredTone: seed.initialMemory.preferredTone
+            ))
+            try? modelContext.save()
+            return OnboardingBootstrapResult(package: record, inferredGrowthFocus: inferredGrowthFocus)
         }
     }
 }

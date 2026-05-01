@@ -12,6 +12,11 @@ import { actionModel, devotionalModel, repairModel } from "./modelRouting.ts";
 import { buildOpenAIResponsesRequestBody } from "./providers/openai.ts";
 import { DAILY_JOURNEY_PACKAGE_QUALITY_VERSION } from "./types.ts";
 import type { JourneyPackageRequest } from "./types.ts";
+import {
+  LIVE_TEMPLATE_FALLBACK_STATUS,
+  liveTemplateFallbackDetails,
+  shouldRejectLiveTemplateFallback
+} from "./liveRoutePolicy.ts";
 
 const husbandRequest: JourneyPackageRequest = {
   profile: {
@@ -111,6 +116,27 @@ test("OpenAI gpt-5.5 request omits unsupported temperature", () => {
   assert.equal(body.model, "gpt-5.5");
   assert.equal("temperature" in body, false);
   assert.equal(body.max_output_tokens, 2600);
+});
+
+test("OpenAI staged requests can use smaller max output windows", () => {
+  const seedBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5", 1200);
+  const coreBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5", 1800);
+  const actionBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.1", 900);
+
+  assert.equal(seedBody.max_output_tokens, 1200);
+  assert.equal(coreBody.max_output_tokens, 1800);
+  assert.equal(actionBody.max_output_tokens, 900);
+  assert.equal("temperature" in seedBody, false);
+  assert.equal("temperature" in coreBody, false);
+  assert.equal("temperature" in actionBody, false);
+});
+
+test("live routes reject template fallback as a successful online result", () => {
+  assert.equal(shouldRejectLiveTemplateFallback({ fallbackUsed: true }), true);
+  assert.equal(shouldRejectLiveTemplateFallback({ fallbackUsed: false }), false);
+  assert.equal(LIVE_TEMPLATE_FALLBACK_STATUS, 502);
+  assert.equal(liveTemplateFallbackDetails([], "template fallback disabled"), "template fallback disabled");
+  assert.equal(liveTemplateFallbackDetails(["openai_timeout", "gemini_timeout"]), "openai_timeout|gemini_timeout");
 });
 
 test("OpenAI non-gpt-5 request may include temperature", () => {

@@ -121,6 +121,20 @@ export interface DevotionalCore {
   updatedJourneyArc: JourneyArc;
 }
 
+export interface JourneySeedResponse {
+  journeyTitle: string;
+  journeyCategory: string;
+  themeKey: JourneyThemeKey;
+  growthFocus: string;
+  journeyArc: JourneyArc;
+  initialMemory: {
+    summary: string;
+    winsSummary: string;
+    blockersSummary: string;
+    preferredTone: string;
+  };
+}
+
 export interface DevotionalPlan {
   centralConcern: string;
   journeyDirection: string;
@@ -138,6 +152,10 @@ export interface ActionLayerOutput {
   smallStepQuestion: string;
   suggestedSteps: string[];
   completionSuggestion: CompletionSuggestion;
+}
+
+export interface JourneyActionRequest extends JourneyPackageRequest {
+  core: DevotionalCore;
 }
 
 export interface OrchestratedResult {
@@ -181,6 +199,34 @@ export interface BootstrapOrchestratedResult {
   model: string;
   escalated: boolean;
   fallbackUsed: boolean;
+  usage?: AIUsageMetrics;
+  diagnostics?: string[];
+}
+
+export interface JourneySeedOrchestratedResult {
+  seed: JourneySeedResponse;
+  provider: AIProvider;
+  model: string;
+  escalated: boolean;
+  fallbackUsed: boolean;
+  usage?: AIUsageMetrics;
+  diagnostics?: string[];
+}
+
+export interface JourneyCoreOrchestratedResult {
+  core: DevotionalCore;
+  provider: AIProvider;
+  model: string;
+  escalated: boolean;
+  usage?: AIUsageMetrics;
+  diagnostics?: string[];
+}
+
+export interface JourneyActionOrchestratedResult {
+  action: ActionLayerOutput;
+  provider: AIProvider;
+  model: string;
+  escalated: boolean;
   usage?: AIUsageMetrics;
   diagnostics?: string[];
 }

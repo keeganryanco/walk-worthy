@@ -6,6 +6,8 @@ import type {
   JourneyPackageRequest,
   JourneyBootstrapRequest,
   JourneyBootstrapResponse,
+  JourneySeedOrchestratedResult,
+  JourneySeedResponse,
   JourneyArc,
   JourneyThemeKey
 } from "./types";
@@ -14,6 +16,7 @@ import { estimateCostUSD } from "./cost";
 import { devotionalModel as configuredDevotionalModel, repairModel as configuredRepairModel } from "./modelRouting";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 import type { ProviderGenerationResult } from "./providers/openai";
+import { generateJourneyPackage } from "./orchestrator";
 
 const THEME_KEYS: JourneyThemeKey[] = [
   "basic",
@@ -240,6 +243,206 @@ function fallbackBootstrap(request: JourneyBootstrapRequest): JourneyBootstrapRe
   };
 }
 
+function fallbackSeed(request: JourneyBootstrapRequest): JourneySeedResponse {
+  const bootstrap = fallbackBootstrap(request);
+  return {
+    journeyTitle: bootstrap.journeyTitle,
+    journeyCategory: bootstrap.journeyCategory,
+    themeKey: bootstrap.themeKey,
+    growthFocus: bootstrap.growthFocus,
+    journeyArc: bootstrap.journeyArc,
+    initialMemory: bootstrap.initialMemory
+  };
+}
+
+function buildSeedPrompt(request: JourneyBootstrapRequest, repairNotes?: string): { system: string; user: string } {
+  const language = targetLanguage(request);
+  const system = [
+    "You are creating only the fast journey seed for Tend, a personal Christian devotional journey app.",
+    "Return strict JSON only.",
+    "Do not write a devotional, prayer, Scripture, action question, or suggested steps.",
+    "Create the smallest useful metadata needed for the app to show and persist a new journey while devotional content warms in the background.",
+    "Infer a concrete journey direction from the user's concern without overfitting or sounding clinical.",
+    "Create a journeyArc that can guide an ongoing devotional story.",
+    "The journeyTitle should be short, natural, and specific enough to feel personal.",
+    "The journeyCategory should be 2-5 words.",
+    "themeKey must be one of:",
+    THEME_KEYS.join(", "),
+    "Keep all fields concise so this call is fast.",
+    `Write all user-facing text in ${language.label} (${language.code}).`
+  ].join(" ");
+
+  const user = JSON.stringify(
+    {
+      outputSchema: {
+        journeyTitle: "string",
+        journeyCategory: "string",
+        themeKey: "one fixed theme key",
+        growthFocus: "short inferred growth direction string",
+        journeyArc: {
+          purpose: "string",
+          journeyPurpose: "string",
+          currentStage: "string",
+          todayAim: "string",
+          nextMovement: "string",
+          tone: "string",
+          practicalActionDirection: "string",
+          recentDayTitles: ["string"],
+          lastFollowThroughInterpretation: "string",
+          specificContextSignals: ["string"]
+        },
+        initialMemory: {
+          summary: "string",
+          winsSummary: "string",
+          blockersSummary: "string",
+          preferredTone: "string"
+        }
+      },
+      repairNotes: repairNotes ?? null,
+      context: request
+    },
+    null,
+    2
+  );
+
+  return { system, user };
+}
+
+function parseSeed(raw: string, request: JourneyBootstrapRequest): JourneySeedResponse | null {
+  const parsed = extractJSON(raw);
+  if (!parsed || typeof parsed !== "object") return null;
+  const source = parsed as Record<string, unknown>;
+  const fallback = fallbackSeed(request);
+  const themeCandidate = cleanText(source.themeKey, 40).toLowerCase() as JourneyThemeKey;
+  const themeKey = THEME_KEYS.includes(themeCandidate) ? themeCandidate : fallback.themeKey;
+  const growthFocus = cleanText(source.growthFocus, 80) || fallback.growthFocus;
+  const arcSource =
+    source.journeyArc && typeof source.journeyArc === "object"
+      ? (source.journeyArc as Record<string, unknown>)
+      : {};
+  const fallbackArc = fallbackJourneyArc(request, themeKey, growthFocus);
+
+  const journeyArc: JourneyArc = {
+    purpose: cleanText(arcSource.purpose, 180) || fallbackArc.purpose,
+    journeyPurpose:
+      cleanText(arcSource.journeyPurpose, 180) ||
+      cleanText(arcSource.purpose, 180) ||
+      fallbackArc.journeyPurpose ||
+      fallbackArc.purpose,
+    currentStage: cleanText(arcSource.currentStage, 140) || fallbackArc.currentStage,
+    todayAim: cleanText(arcSource.todayAim, 140) || fallbackArc.todayAim,
+    nextMovement: cleanText(arcSource.nextMovement, 180) || fallbackArc.nextMovement,
+    tone: cleanText(arcSource.tone, 100) || fallbackArc.tone,
+    practicalActionDirection: cleanText(arcSource.practicalActionDirection, 180) || fallbackArc.practicalActionDirection,
+    recentDayTitles: Array.isArray(arcSource.recentDayTitles)
+      ? arcSource.recentDayTitles.map((item) => cleanText(item, 80)).filter(Boolean).slice(0, 8)
+      : [],
+    specificContextSignals: Array.isArray(arcSource.specificContextSignals)
+      ? arcSource.specificContextSignals.map((item) => cleanText(item, 80)).filter(Boolean).slice(0, 8)
+      : fallbackArc.specificContextSignals,
+    lastFollowThroughInterpretation: cleanText(arcSource.lastFollowThroughInterpretation, 160) || ""
+  };
+
+  const memorySource =
+    source.initialMemory && typeof source.initialMemory === "object"
+      ? (source.initialMemory as Record<string, unknown>)
+      : {};
+
+  return {
+    journeyTitle: cleanText(source.journeyTitle, 60) || fallback.journeyTitle,
+    journeyCategory: cleanText(source.journeyCategory, 40) || fallback.journeyCategory,
+    themeKey,
+    growthFocus,
+    journeyArc,
+    initialMemory: {
+      summary: cleanText(memorySource.summary, 240) || fallback.initialMemory.summary,
+      winsSummary: cleanText(memorySource.winsSummary, 200) || fallback.initialMemory.winsSummary,
+      blockersSummary: cleanText(memorySource.blockersSummary, 200) || fallback.initialMemory.blockersSummary,
+      preferredTone: cleanText(memorySource.preferredTone, 80) || fallback.initialMemory.preferredTone
+    }
+  };
+}
+
+export async function generateJourneySeed(
+  request: JourneyBootstrapRequest
+): Promise<JourneySeedOrchestratedResult> {
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  const devotionalModel = configuredDevotionalModel();
+  const repairModel = configuredRepairModel();
+  const diagnostics: string[] = [];
+
+  if (!openAIKey) {
+    diagnostics.push("missing_OPENAI_API_KEY");
+    return {
+      seed: fallbackSeed(request),
+      provider: "template",
+      model: "local-template",
+      escalated: true,
+      fallbackUsed: true,
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCostUSD: 0
+      },
+      diagnostics
+    };
+  }
+
+  const attempts = [
+    { model: devotionalModel, escalated: false, repairNotes: undefined },
+    {
+      model: repairModel,
+      escalated: true,
+      repairNotes: "Previous seed failed validation. Return concise journey metadata only, with a valid themeKey and complete journeyArc."
+    }
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const { system, user } = buildSeedPrompt(request, attempt.repairNotes);
+      const generated = await generateWithOpenAIPrompt(system, user, attempt.model, openAIKey, 1200);
+      const seed = parseSeed(generated.text, request);
+      if (!seed) {
+        diagnostics.push(`openai_${attempt.model}_seed_parse_failed`);
+        continue;
+      }
+      return {
+        seed,
+        provider: "openai",
+        model: attempt.model,
+        escalated: attempt.escalated,
+        fallbackUsed: false,
+        usage: generated.usage
+          ? {
+              ...generated.usage,
+              estimatedCostUSD: estimateCostUSD("openai", attempt.model, generated.usage)
+            }
+          : undefined,
+        diagnostics
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      diagnostics.push(`openai_${attempt.model}_seed_exception:${message}`);
+    }
+  }
+
+  return {
+    seed: fallbackSeed(request),
+    provider: "template",
+    model: "local-template",
+    escalated: true,
+    fallbackUsed: true,
+    usage: {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostUSD: 0
+    },
+    diagnostics
+  };
+}
+
 function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: string): { system: string; user: string } {
   const language = targetLanguage(request);
   const system = [
@@ -437,6 +640,58 @@ function parseBootstrap(raw: string, request: JourneyBootstrapRequest): JourneyB
 export async function generateJourneyBootstrap(
   request: JourneyBootstrapRequest
 ): Promise<BootstrapOrchestratedResult> {
+  const seedResult = await generateJourneySeed(request);
+  const diagnostics = [...(seedResult.diagnostics ?? [])];
+
+  if (!seedResult.fallbackUsed) {
+    try {
+      const packageResult = await generateJourneyPackage({
+        profile: {
+          prayerFocus: request.prayerIntentText,
+          growthGoal: seedResult.seed.growthFocus,
+          reminderWindow: request.reminderWindow
+        },
+        journey: {
+          id: "bootstrap",
+          title: seedResult.seed.journeyTitle,
+          category: seedResult.seed.journeyCategory,
+          themeKey: seedResult.seed.themeKey
+        },
+        journeyArc: seedResult.seed.journeyArc,
+        recentJourneySignals: [request.prayerIntentText, request.goalIntentText ?? "", seedResult.seed.growthFocus].filter(
+          (signal) => signal.trim().length > 0
+        ),
+        languageCode: request.languageCode,
+        localeIdentifier: request.localeIdentifier,
+        telemetry: request.telemetry
+      });
+
+      return {
+        bootstrap: {
+          ...seedResult.seed,
+          initialPackage: packageResult.package
+        },
+        provider: packageResult.provider,
+        model: `${seedResult.model}-seed+${packageResult.model}`,
+        escalated: seedResult.escalated || packageResult.escalated,
+        fallbackUsed: packageResult.fallbackUsed,
+        usage:
+          seedResult.usage || packageResult.usage
+            ? {
+                inputTokens: (seedResult.usage?.inputTokens ?? 0) + (packageResult.usage?.inputTokens ?? 0),
+                outputTokens: (seedResult.usage?.outputTokens ?? 0) + (packageResult.usage?.outputTokens ?? 0),
+                totalTokens: (seedResult.usage?.totalTokens ?? 0) + (packageResult.usage?.totalTokens ?? 0),
+                estimatedCostUSD: (seedResult.usage?.estimatedCostUSD ?? 0) + (packageResult.usage?.estimatedCostUSD ?? 0)
+              }
+            : undefined,
+        diagnostics: [...diagnostics, ...(packageResult.diagnostics ?? [])]
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      diagnostics.push(`bootstrap_package_exception:${message}`);
+    }
+  }
+
   const openAIKey = process.env.OPENAI_API_KEY?.trim();
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const devotionalModel = configuredDevotionalModel();
@@ -448,8 +703,6 @@ export async function generateJourneyBootstrap(
     escalated: boolean;
     call: () => Promise<ProviderGenerationResult>;
   }> = [];
-  const diagnostics: string[] = [];
-
   if (openAIKey) {
     candidates.push({
       provider: "openai",

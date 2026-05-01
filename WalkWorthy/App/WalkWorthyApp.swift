@@ -25,6 +25,7 @@ struct TendApp: App {
             ])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            DailyPackageBackgroundRefreshService.register(modelContainer: modelContainer)
         } catch {
             fatalError("Failed to initialize model container: \(error)")
         }

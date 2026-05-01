@@ -20,6 +20,8 @@
 		A11A0B1C2D3E4F5061728397 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B22B0C1D2E3F405162738497 /* Localizable.strings */; };
 		13BD91DFBDE51D78A9397315 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AA0E3967F94C0E2BBC3633 /* PaywallView.swift */; };
 		16BF2B30791EFC9C34CBD405 /* BackendDailyJourneyPackageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */; };
+		16BF2B30791EFC9C34CBD406 /* DailyPackageBackgroundRefreshService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C0D15557C5C992BA0F0041 /* DailyPackageBackgroundRefreshService.swift */; };
+		16BF2B30791EFC9C34CBD407 /* JourneyPackageWarmupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C0D15557C5C992BA0F0042 /* JourneyPackageWarmupService.swift */; };
 		16C8F6A4F09C90CC81365482 /* PlusJakartaSans-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF6340BAF3FDCC36BFA86FFC /* PlusJakartaSans-SemiBoldItalic.ttf */; };
 		16D814679C281C30AA2C119D /* ScriptureReferenceValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */; };
 		185A5FF8B5C2EE873B98F80B /* PrayerJourney.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C70184C4C4518128D5846F /* PrayerJourney.swift */; };
@@ -182,6 +184,8 @@
 		72C18C8E45D3B58226D593CA /* WalkWorthyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWorthyUITests.swift; sourceTree = "<group>"; };
 		77EC2817706030DE811C7189 /* WWColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WWColor.swift; sourceTree = "<group>"; };
 		79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendDailyJourneyPackageProvider.swift; sourceTree = "<group>"; };
+		79C0D15557C5C992BA0F0041 /* DailyPackageBackgroundRefreshService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPackageBackgroundRefreshService.swift; sourceTree = "<group>"; };
+		79C0D15557C5C992BA0F0042 /* JourneyPackageWarmupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPackageWarmupService.swift; sourceTree = "<group>"; };
 		7A5443904D4F17D5CBA711B3 /* OnboardingProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingProfile.swift; sourceTree = "<group>"; };
 		7F31C623BA3D2509776849C8 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		80300270996D16A15C471F4F /* PlusJakartaSans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlusJakartaSans-BoldItalic.ttf"; sourceTree = "<group>"; };
@@ -468,9 +472,11 @@
 				9AE3E9FB55CEAC85D7B7141E /* AIContentClient.swift */,
 				79C0D15557C5C992BA0F0040 /* BackendDailyJourneyPackageProvider.swift */,
 				5BD8EB66D447FC5512ED3AA9 /* DailyJourneyPackage.swift */,
+				79C0D15557C5C992BA0F0041 /* DailyPackageBackgroundRefreshService.swift */,
 				D0429D8BACD93FE60BEBB3C5 /* FollowThroughService.swift */,
 				3CC407782E281A614393C914 /* JourneyContentService.swift */,
 				B1A2A9E1E169A3CEC209A553 /* JourneyMemoryService.swift */,
+				79C0D15557C5C992BA0F0042 /* JourneyPackageWarmupService.swift */,
 				5222DE8FB9CBEAC9CB97F58F /* JourneyProgressService.swift */,
 				A8DB2D76A1B4E2BE93383E35 /* ScriptureReferenceValidator.swift */,
 				6A01BFFC55578F2BA6469432 /* TemplateTodayCardGenerator.swift */,
@@ -873,6 +879,7 @@
 				16BF2B30791EFC9C34CBD405 /* BackendDailyJourneyPackageProvider.swift in Sources */,
 				B866044E4E3BA553614C3A0C /* ConnectivityService.swift in Sources */,
 				911F081CDC31FE8B266C59F8 /* DailyJourneyPackage.swift in Sources */,
+				16BF2B30791EFC9C34CBD406 /* DailyPackageBackgroundRefreshService.swift in Sources */,
 				E24503D858F0834E942FBCC9 /* DailyJourneyPackageRecord.swift in Sources */,
 				1FC05C2B62BFB292D25C7167 /* ExperimentalOnboardingFlowView.swift in Sources */,
 				CBBFB75D1DDF3A55053F9842 /* FirstTendFlowOrchestrator.swift in Sources */,
@@ -885,6 +892,7 @@
 				383F7E1B05C71C2E7CCD29B5 /* JourneyCreationPolicy.swift in Sources */,
 				6628BAC2E67194F4A4C70F6F /* JourneyMemoryService.swift in Sources */,
 				375C0753F5A86193369F7AA6 /* JourneyMemorySnapshot.swift in Sources */,
+				16BF2B30791EFC9C34CBD407 /* JourneyPackageWarmupService.swift in Sources */,
 				DA6305B6B75E5CA401F6A649 /* JourneyProgressEvent.swift in Sources */,
 				C7EC052CA8D9DA46E0E083D3 /* JourneyProgressService.swift in Sources */,
 				A11A0B1C2D3E4F5061728391 /* Localization.swift in Sources */,

@@ -41,6 +41,42 @@ struct JourneyArcPayload: Codable, Equatable {
     }
 }
 
+struct JourneySeedPayload: Codable, Equatable {
+    struct InitialMemory: Codable, Equatable {
+        let summary: String
+        let winsSummary: String
+        let blockersSummary: String
+        let preferredTone: String
+    }
+
+    let journeyTitle: String
+    let journeyCategory: String
+    let themeKey: String
+    let growthFocus: String?
+    let journeyArc: JourneyArcPayload?
+    let initialMemory: InitialMemory
+}
+
+struct DevotionalCorePayload: Codable, Equatable {
+    let centralConcern: String?
+    let biblicalTheme: String?
+    let devotionalPoint: String?
+    let scriptureFitReason: String?
+    let dailyTitle: String
+    let scriptureReference: String
+    let scriptureParaphrase: String
+    let reflectionThought: String
+    let prayer: String
+    let todayAim: String
+    let updatedJourneyArc: JourneyArcPayload?
+}
+
+struct ActionLayerPayload: Codable, Equatable {
+    let smallStepQuestion: String
+    let suggestedSteps: [String]
+    let completionSuggestion: CompletionSuggestion
+}
+
 struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
     private struct RequestBody: Encodable {
         struct Telemetry: Encodable {
@@ -116,6 +152,32 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         let meta: Meta
     }
 
+    private struct CoreResponseBody: Decodable {
+        let core: DevotionalCorePayload
+    }
+
+    private struct ActionRequestBody: Encodable {
+        let profile: RequestBody.Profile
+        let journey: RequestBody.Journey
+        let memory: RequestBody.Memory?
+        let journeyArc: JourneyArcPayload?
+        let recentEntries: [RequestBody.RecentEntry]
+        let usedScriptureReferences: [String]
+        let followThroughContext: RequestBody.FollowThroughContext?
+        let cycleCount: Int
+        let completionCount: Int
+        let recentJourneySignals: [String]
+        let dateISO: String
+        let languageCode: String
+        let localeIdentifier: String
+        let telemetry: RequestBody.Telemetry
+        let core: DevotionalCorePayload
+    }
+
+    private struct ActionResponseBody: Decodable {
+        let action: ActionLayerPayload
+    }
+
     private enum ProviderError: LocalizedError {
         case missingBaseURL
         case invalidURL
@@ -145,19 +207,120 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         recentEntries: [PrayerEntry],
         memory: JourneyMemorySnapshot?
     ) async throws -> DailyJourneyPackage {
+        let core = try await generateCore(
+            profile: profile,
+            journey: journey,
+            recentEntries: recentEntries,
+            memory: memory
+        )
+        let action = try await generateAction(
+            profile: profile,
+            journey: journey,
+            recentEntries: recentEntries,
+            memory: memory,
+            core: core
+        )
+        return DailyJourneyPackageValidation.validated(
+            DailyJourneyPackage(
+                dailyTitle: core.dailyTitle,
+                reflectionThought: core.reflectionThought,
+                scriptureReference: core.scriptureReference,
+                scriptureParaphrase: core.scriptureParaphrase,
+                prayer: core.prayer,
+                todayAim: core.todayAim,
+                smallStepQuestion: action.smallStepQuestion,
+                suggestedSteps: action.suggestedSteps,
+                completionSuggestion: action.completionSuggestion,
+                updatedJourneyArc: core.updatedJourneyArc,
+                qualityVersion: DailyJourneyPackage.currentQualityVersion,
+                generatedAt: .now
+            ),
+            followThroughStatus: FollowThroughService
+                .latestAnsweredContext(from: recentEntries)?
+                .previousFollowThroughStatus
+        )
+    }
+
+    func generateCore(
+        profile: OnboardingProfile,
+        journey: PrayerJourney,
+        recentEntries: [PrayerEntry],
+        memory: JourneyMemorySnapshot?
+    ) async throws -> DevotionalCorePayload {
+        let body = buildBody(profile: profile, journey: journey, recentEntries: recentEntries, memory: memory)
+        let endpoint = try endpoint(path: "/api/v1/journey-core", logLabel: "journey-core")
+        let data = try await postJSON(body, to: endpoint, logLabel: "journey-core")
+        let decoded: CoreResponseBody
+        do {
+            decoded = try JSONDecoder().decode(CoreResponseBody.self, from: data)
+        } catch {
+            let snippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400) ?? "<non-utf8>"
+            aiLogger.error("journey-core decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
+            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
+        }
+        return decoded.core
+    }
+
+    func generateAction(
+        profile: OnboardingProfile,
+        journey: PrayerJourney,
+        recentEntries: [PrayerEntry],
+        memory: JourneyMemorySnapshot?,
+        core: DevotionalCorePayload
+    ) async throws -> ActionLayerPayload {
+        let baseBody = buildBody(profile: profile, journey: journey, recentEntries: recentEntries, memory: memory)
+        let body = ActionRequestBody(
+            profile: baseBody.profile,
+            journey: baseBody.journey,
+            memory: baseBody.memory,
+            journeyArc: baseBody.journeyArc,
+            recentEntries: baseBody.recentEntries,
+            usedScriptureReferences: baseBody.usedScriptureReferences,
+            followThroughContext: baseBody.followThroughContext,
+            cycleCount: baseBody.cycleCount,
+            completionCount: baseBody.completionCount,
+            recentJourneySignals: baseBody.recentJourneySignals,
+            dateISO: baseBody.dateISO,
+            languageCode: baseBody.languageCode,
+            localeIdentifier: baseBody.localeIdentifier,
+            telemetry: baseBody.telemetry,
+            core: core
+        )
+        let endpoint = try endpoint(path: "/api/v1/journey-action", logLabel: "journey-action")
+        let data = try await postJSON(body, to: endpoint, logLabel: "journey-action")
+        let decoded: ActionResponseBody
+        do {
+            decoded = try JSONDecoder().decode(ActionResponseBody.self, from: data)
+        } catch {
+            let snippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400) ?? "<non-utf8>"
+            aiLogger.error("journey-action decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
+            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
+        }
+        return decoded.action
+    }
+
+    private func endpoint(path: String, logLabel: String) throws -> URL {
         let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !baseURLString.isEmpty else {
-            aiLogger.error("journey-package blocked: TENDAI_BASE_URL is empty")
+            aiLogger.error("\(logLabel, privacy: .public) blocked: TENDAI_BASE_URL is empty")
             throw ProviderError.missingBaseURL
         }
 
         guard let baseURL = URL(string: baseURLString) else {
-            aiLogger.error("journey-package blocked: TENDAI_BASE_URL invalid '\(baseURLString, privacy: .public)'")
+            aiLogger.error("\(logLabel, privacy: .public) blocked: TENDAI_BASE_URL invalid '\(baseURLString, privacy: .public)'")
             throw ProviderError.invalidURL
         }
 
-        let endpoint = baseURL.appendingPathComponent("/api/v1/journey-package")
-        aiLogger.log("journey-package request start endpoint=\(endpoint.absoluteString, privacy: .public)")
+        let endpoint = baseURL.appendingPathComponent(path)
+        aiLogger.log("\(logLabel, privacy: .public) request start endpoint=\(endpoint.absoluteString, privacy: .public)")
+        return endpoint
+    }
+
+    private func postJSON<T: Encodable>(_ body: T, to endpoint: URL, logLabel: String) async throws -> Data {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = aiGatewayRequestTimeout
@@ -167,47 +330,29 @@ struct BackendDailyJourneyPackageProvider: RemoteDailyJourneyPackageProviding {
         if !appKey.isEmpty {
             request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
         } else {
-            aiLogger.error("journey-package warning: TENDAI_APP_KEY empty (request will be unauthorized if backend requires shared secret)")
+            aiLogger.error("\(logLabel, privacy: .public) warning: TENDAI_APP_KEY empty (request will be unauthorized if backend requires shared secret)")
         }
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.withoutEscapingSlashes]
-        let body = buildBody(profile: profile, journey: journey, recentEntries: recentEntries, memory: memory)
         request.httpBody = try encoder.encode(body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            aiLogger.error("journey-package failed: non-HTTP response")
+            aiLogger.error("\(logLabel, privacy: .public) failed: non-HTTP response")
             throw ProviderError.failedResponse(statusCode: -1, bodySnippet: nil)
         }
 
-        aiLogger.log("journey-package response status=\(httpResponse.statusCode)")
+        aiLogger.log("\(logLabel, privacy: .public) response status=\(httpResponse.statusCode)")
         guard (200...299).contains(httpResponse.statusCode) else {
             let bodySnippet = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .prefix(400)
             let snippet = bodySnippet.map(String.init)
-            aiLogger.error("journey-package failed status=\(httpResponse.statusCode) body=\(snippet ?? "<empty>", privacy: .public)")
+            aiLogger.error("\(logLabel, privacy: .public) failed status=\(httpResponse.statusCode) body=\(snippet ?? "<empty>", privacy: .public)")
             throw ProviderError.failedResponse(statusCode: httpResponse.statusCode, bodySnippet: snippet)
         }
-
-        let decoded: ResponseBody
-        do {
-            decoded = try JSONDecoder().decode(ResponseBody.self, from: data)
-        } catch {
-            let snippet = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .prefix(400) ?? "<non-utf8>"
-            aiLogger.error("journey-package decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
-            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
-        }
-        let followThroughStatus = FollowThroughService
-            .latestAnsweredContext(from: recentEntries)?
-            .previousFollowThroughStatus
-        return DailyJourneyPackageValidation.validated(
-            decoded.package,
-            followThroughStatus: followThroughStatus
-        )
+        return data
     }
 
     private func buildBody(
@@ -352,6 +497,10 @@ struct BackendJourneyBootstrapProvider {
         let bootstrap: JourneyBootstrapPayload
     }
 
+    private struct SeedResponseBody: Decodable {
+        let seed: JourneySeedPayload
+    }
+
     private enum ProviderError: LocalizedError {
         case missingBaseURL
         case invalidURL
@@ -449,6 +598,88 @@ struct BackendJourneyBootstrapProvider {
             throw ProviderError.decodeFailure(bodySnippet: String(snippet))
         }
         return decoded.bootstrap
+    }
+
+    func seed(
+        name: String,
+        prayerIntentText: String,
+        goalIntentText: String? = nil,
+        reminderWindow: String
+    ) async throws -> JourneySeedPayload {
+        let endpoint = try endpoint(path: "/api/v1/journey-seed", logLabel: "journey-seed")
+        let payload = RequestBody(
+            name: name,
+            prayerIntentText: prayerIntentText,
+            goalIntentText: goalIntentText?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            reminderWindow: reminderWindow,
+            languageCode: AppLanguage.aiLanguageCode(),
+            localeIdentifier: AppLanguage.aiLocaleIdentifier(),
+            telemetry: RequestBody.Telemetry(
+                distinctID: analyticsDistinctID(),
+                appVersion: appVersion(),
+                buildNumber: buildNumber(),
+                platform: "ios"
+            )
+        )
+        let data = try await postJSON(payload, to: endpoint, logLabel: "journey-seed")
+        do {
+            return try JSONDecoder().decode(SeedResponseBody.self, from: data).seed
+        } catch {
+            let snippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400) ?? "<non-utf8>"
+            aiLogger.error("journey-seed decode failed error=\(error.localizedDescription, privacy: .public) body=\(String(snippet), privacy: .public)")
+            throw ProviderError.decodeFailure(bodySnippet: String(snippet))
+        }
+    }
+
+    private func endpoint(path: String, logLabel: String) throws -> URL {
+        let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !baseURLString.isEmpty else {
+            aiLogger.error("\(logLabel, privacy: .public) blocked: TENDAI_BASE_URL is empty")
+            throw ProviderError.missingBaseURL
+        }
+
+        guard let baseURL = URL(string: baseURLString) else {
+            aiLogger.error("\(logLabel, privacy: .public) blocked: TENDAI_BASE_URL invalid '\(baseURLString, privacy: .public)'")
+            throw ProviderError.invalidURL
+        }
+
+        let endpoint = baseURL.appendingPathComponent(path)
+        aiLogger.log("\(logLabel, privacy: .public) request start endpoint=\(endpoint.absoluteString, privacy: .public)")
+        return endpoint
+    }
+
+    private func postJSON<T: Encodable>(_ body: T, to endpoint: URL, logLabel: String) async throws -> Data {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = aiGatewayRequestTimeout
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !appKey.isEmpty {
+            request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
+        } else {
+            aiLogger.error("\(logLabel, privacy: .public) warning: TENDAI_APP_KEY empty (request will be unauthorized if backend requires shared secret)")
+        }
+
+        request.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            aiLogger.error("\(logLabel, privacy: .public) failed: non-HTTP response")
+            throw ProviderError.failedResponse(statusCode: -1, bodySnippet: nil)
+        }
+
+        aiLogger.log("\(logLabel, privacy: .public) response status=\(httpResponse.statusCode)")
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let bodySnippet = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .prefix(400)
+            let snippet = bodySnippet.map(String.init)
+            aiLogger.error("\(logLabel, privacy: .public) failed status=\(httpResponse.statusCode) body=\(snippet ?? "<empty>", privacy: .public)")
+            throw ProviderError.failedResponse(statusCode: httpResponse.statusCode, bodySnippet: snippet)
+        }
+        return data
     }
 }
 

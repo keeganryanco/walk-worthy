@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateJourneyPackage } from "../../../../lib/ai/orchestrator";
 import type { JourneyPackageRequest } from "../../../../lib/ai/types";
 import { capturePostHogEvent } from "../../../../lib/analytics/posthog";
+import {
+  LIVE_TEMPLATE_FALLBACK_STATUS,
+  liveTemplateFallbackDetails,
+  shouldRejectLiveTemplateFallback
+} from "../../../../lib/ai/liveRoutePolicy";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,6 +84,13 @@ export async function POST(request: NextRequest) {
     console.info(
       `[journey-package][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1} diagnostics=${(result.diagnostics ?? []).join("|") || "none"}`
     );
+
+    if (shouldRejectLiveTemplateFallback(result)) {
+      return NextResponse.json(
+        { error: "Journey package generation failed", details: liveTemplateFallbackDetails(result.diagnostics) },
+        { status: LIVE_TEMPLATE_FALLBACK_STATUS }
+      );
+    }
 
     const distinctID =
       typedPayload.telemetry?.distinctID?.trim() ||

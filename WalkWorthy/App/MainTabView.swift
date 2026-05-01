@@ -10,6 +10,7 @@ struct MainTabView: View {
     let profile: OnboardingProfile
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onRequestDailyWarmup: (UUID) -> Void
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -17,7 +18,8 @@ struct MainTabView: View {
                 HomeView(
                     profile: profile,
                     isPremium: isPremium,
-                    onRequirePaywall: onRequirePaywall
+                    onRequirePaywall: onRequirePaywall,
+                    onRequestDailyWarmup: onRequestDailyWarmup
                 )
                     .tag(RootTab.home)
                     .toolbar(.hidden, for: .tabBar)

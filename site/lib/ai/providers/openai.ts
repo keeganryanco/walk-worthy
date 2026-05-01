@@ -6,17 +6,22 @@ export interface ProviderGenerationResult {
   usage?: AITokenUsage;
 }
 
-const OPENAI_MAX_OUTPUT_TOKENS = 2600;
+export const DEFAULT_OPENAI_MAX_OUTPUT_TOKENS = 2600;
 
 function supportsTemperature(model: string): boolean {
   return !/^gpt-5(?:\.|-|$)/i.test(model.trim());
 }
 
-export function buildOpenAIResponsesRequestBody(system: string, user: string, model: string): Record<string, unknown> {
+export function buildOpenAIResponsesRequestBody(
+  system: string,
+  user: string,
+  model: string,
+  maxOutputTokens = DEFAULT_OPENAI_MAX_OUTPUT_TOKENS
+): Record<string, unknown> {
   return {
     model,
     ...(supportsTemperature(model) ? { temperature: 0.35 } : {}),
-    max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS,
+    max_output_tokens: maxOutputTokens,
     input: [
       { role: "system", content: [{ type: "input_text", text: system }] },
       { role: "user", content: [{ type: "input_text", text: user }] }
@@ -37,7 +42,8 @@ export async function generateWithOpenAIPrompt(
   system: string,
   user: string,
   model: string,
-  apiKey: string
+  apiKey: string,
+  maxOutputTokens = DEFAULT_OPENAI_MAX_OUTPUT_TOKENS
 ): Promise<ProviderGenerationResult> {
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -46,7 +52,7 @@ export async function generateWithOpenAIPrompt(
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify(buildOpenAIResponsesRequestBody(system, user, model))
+    body: JSON.stringify(buildOpenAIResponsesRequestBody(system, user, model, maxOutputTokens))
   });
 
   if (!response.ok) {

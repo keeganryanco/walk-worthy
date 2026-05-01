@@ -11,6 +11,9 @@ import type {
   ActionLayerOutput,
   DevotionalCore,
   DevotionalPlan,
+  JourneyActionRequest,
+  JourneyActionOrchestratedResult,
+  JourneyCoreOrchestratedResult,
   JourneyPackageRequest,
   OrchestratedResult,
   AIUsageMetrics,
@@ -70,7 +73,7 @@ async function generateOpenAICore(
   repairNotes?: string
 ): Promise<{ core: DevotionalCore | null; generated: ProviderGenerationResult; issues: string[] }> {
   const { system, user } = buildDevotionalCorePrompt(input, plan, repairNotes);
-  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
+  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey, 1800);
   const parsed = parseAndNormalizeDevotionalCoreWithIssues(generated.text, input);
   return { core: parsed.core, generated, issues: parsed.issues };
 }
@@ -82,7 +85,7 @@ async function generateOpenAIPlan(
   repairNotes?: string
 ): Promise<{ plan: DevotionalPlan | null; generated: ProviderGenerationResult; issues: string[] }> {
   const { system, user } = buildDevotionalPlanPrompt(input, repairNotes);
-  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
+  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey, 1200);
   const parsed = parseAndNormalizeDevotionalPlan(generated.text, input);
   const raw = (() => {
     try {
@@ -106,8 +109,112 @@ async function generateOpenAIAction(
   repairNotes?: string
 ): Promise<{ action: ActionLayerOutput | null; generated: ProviderGenerationResult }> {
   const { system, user } = buildActionLayerPrompt(input, core, repairNotes);
-  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey);
+  const generated = await generateWithOpenAIPrompt(system, user, model, apiKey, 900);
   return { action: parseAndNormalizeActionLayer(generated.text, input, core), generated };
+}
+
+export async function generateJourneyCore(input: JourneyPackageRequest): Promise<JourneyCoreOrchestratedResult> {
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  if (!openAIKey) {
+    throw new Error("missing_OPENAI_API_KEY");
+  }
+
+  const coreModel = devotionalModel();
+  const fallbackRepairModel = repairModel();
+  const diagnostics: string[] = [];
+
+  const coreAttempt = await generateOpenAICore(input, coreModel, openAIKey);
+  let core = coreAttempt.core;
+  let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated.usage);
+  let escalated = false;
+
+  if (!core) {
+    const failedReasons = coreAttempt.issues.length ? ` Reasons: ${coreAttempt.issues.join("; ")}.` : "";
+    diagnostics.push(`openai_core_failed:${coreAttempt.issues.join("|") || "unknown"}`);
+    const repaired = await generateOpenAICore(
+      input,
+      fallbackRepairModel,
+      openAIKey,
+      undefined,
+      `Previous devotional core failed validation.${failedReasons} Repair by choosing only from the approved Scripture library, removing action language from reflection/prayer/scripture, making the reflection specific and Scripture-led, making the prayer concrete, and returning the same JSON schema.`
+    );
+    core = repaired.core;
+    coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);
+    escalated = true;
+    if (!core) {
+      diagnostics.push(`openai_core_repair_failed:${repaired.issues.join("|") || "unknown"}`);
+    }
+  }
+
+  if (!core) {
+    throw new Error(diagnostics.join("; ") || "openai_core_failed");
+  }
+
+  return {
+    core,
+    provider: "openai",
+    model: coreModel,
+    escalated,
+    usage: coreUsage,
+    diagnostics
+  };
+}
+
+export async function generateJourneyAction(input: JourneyActionRequest): Promise<JourneyActionOrchestratedResult> {
+  const openAIKey = process.env.OPENAI_API_KEY?.trim();
+  if (!openAIKey) {
+    throw new Error("missing_OPENAI_API_KEY");
+  }
+
+  const stepModel = actionModel();
+  const fallbackRepairModel = repairModel();
+  const diagnostics: string[] = [];
+  let escalated = false;
+
+  const actionAttempt = await generateOpenAIAction(input, input.core, stepModel, openAIKey);
+  let action = actionAttempt.action;
+  let actionUsage = usageWithCost("openai", stepModel, actionAttempt.generated.usage);
+
+  if (!action) {
+    diagnostics.push("openai_action_failed");
+    const repairedAction = await generateOpenAIAction(
+      input,
+      input.core,
+      stepModel,
+      openAIKey,
+      "Previous action layer failed validation. Make every suggested step relevant to the journey and today's question; include concrete real-world steps when context supports it."
+    );
+    action = repairedAction.action;
+    actionUsage = combineUsage([actionUsage, usageWithCost("openai", stepModel, repairedAction.generated.usage)]);
+  }
+
+  if (!action) {
+    diagnostics.push("openai_action_repair_failed");
+    const escalatedAction = await generateOpenAIAction(
+      input,
+      input.core,
+      fallbackRepairModel,
+      openAIKey,
+      "Action layer still failed. Use specific, relevant, safe practical steps. Do not return unrelated generic spiritual chips."
+    );
+    action = escalatedAction.action;
+    actionUsage = combineUsage([actionUsage, usageWithCost("openai", fallbackRepairModel, escalatedAction.generated.usage)]);
+    escalated = true;
+  }
+
+  if (!action) {
+    diagnostics.push("openai_action_escalation_failed");
+    throw new Error(diagnostics.join("; "));
+  }
+
+  return {
+    action,
+    provider: "openai",
+    model: escalated ? `${stepModel}+${fallbackRepairModel}` : stepModel,
+    escalated,
+    usage: actionUsage,
+    diagnostics
+  };
 }
 
 async function generateWithOpenAIOrchestration(

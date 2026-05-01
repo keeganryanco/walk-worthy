@@ -33,6 +33,7 @@ struct RootView: View {
     private let bootstrapProvider = BackendJourneyBootstrapProvider()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     private let onboardingExperimentProvider: OnboardingExperimentConfigProviding = OnboardingExperimentServiceFactory.makeDefault()
+    @State private var packageWarmupService = JourneyPackageWarmupService()
 
     private var profile: OnboardingProfile? {
         profiles.first
@@ -51,12 +52,24 @@ struct RootView: View {
                     selectedTab: $selectedTab,
                     profile: profile,
                     isPremium: subscriptionService.isPremium,
-                    onRequirePaywall: triggerPaywall
+                    onRequirePaywall: triggerPaywall,
+                    onRequestDailyWarmup: { journeyID in
+                        Task { await warmJourneyIfPossible(journeyID: journeyID) }
+                    }
                 )
             } else {
                 ExperimentalOnboardingFlowView(
+                    onPrepare: { name, prayer in
+                        return await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
+                    },
                     onGenerate: { name, prayer in
-                        return await generateJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
+                        if let prepared = await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System") {
+                            return await commitPreparedJourney(prepared, name: name, prayer: prayer)
+                        }
+                        return nil
+                    },
+                    onCommitPrepared: { prepared, name, prayer in
+                        return await commitPreparedJourney(prepared, name: name, prayer: prayer)
                     },
                     onComplete: { completedProfile in
                         Task { await completeOnboarding(with: completedProfile) }
@@ -89,6 +102,7 @@ struct RootView: View {
             syncPaywallPresentationState()
             await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
+            DailyPackageBackgroundRefreshService.schedule(earliestBeginDate: nextLikelyRefreshDate())
             syncWidgetSnapshot()
             if notificationService.authorizationStatus == .authorized {
                 let reminders = fetchReminderSchedules()
@@ -123,12 +137,20 @@ struct RootView: View {
             syncWidgetSnapshot()
             Task { await prefetchDailyPackagesIfPossible() }
         }
+        .onChange(of: allEntries.count) { _, _ in
+            Task { await prefetchDailyPackagesIfPossible() }
+        }
         .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                DailyPackageBackgroundRefreshService.schedule(earliestBeginDate: nextLikelyRefreshDate())
+                return
+            }
             guard newPhase == .active else { return }
             syncPaywallPresentationState()
             Task {
                 await notificationService.refreshAuthorizationStatus()
                 notificationService.recordAppOpen(modelContext: modelContext)
+                await prefetchDailyPackagesIfPossible()
                 guard notificationService.authorizationStatus == .authorized else { return }
                 await notificationService.scheduleReminderSchedules(
                     fetchReminderSchedules().filter(\.isEnabled),
@@ -256,102 +278,150 @@ struct RootView: View {
         prayer: String,
         reminderWindow: String
     ) async -> OnboardingBootstrapResult? {
+        guard let prepared = await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: reminderWindow) else {
+            return nil
+        }
+        return await commitPreparedJourney(prepared, name: name, prayer: prayer)
+    }
+
+    private func prepareJourneyInline(
+        name: String,
+        prayer: String,
+        reminderWindow: String
+    ) async -> PreparedOnboardingJourney? {
         guard connectivityService.isOnline else {
-            rootLogger.log("inline bootstrap skipped: offline")
+            rootLogger.log("inline prepare skipped: offline")
             return nil
         }
         guard !isBootstrappingJourney else {
-            rootLogger.log("inline bootstrap skipped: already running")
+            rootLogger.log("inline prepare skipped: already running")
             return nil
         }
 
         isBootstrappingJourney = true
         defer { isBootstrappingJourney = false }
-        rootLogger.log("inline bootstrap started")
+        rootLogger.log("inline prepare started")
 
         do {
-            let payload = try await bootstrapProvider.bootstrap(
+            let seed = try await bootstrapProvider.seed(
                 name: name,
                 prayerIntentText: prayer,
                 goalIntentText: nil,
                 reminderWindow: reminderWindow
             )
-            let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
-            let inferredGrowthFocus = payload.growthFocus ?? payload.journeyCategory
+            let inferredGrowthFocus = seed.growthFocus ?? seed.journeyCategory
 
-            let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
-            let firstJourney = PrayerJourney(
-                title: payload.journeyTitle,
-                category: payload.journeyCategory,
+            let theme = JourneyThemeKey(rawValue: seed.themeKey.lowercased()) ?? .basic
+            let temporaryJourney = PrayerJourney(
+                title: seed.journeyTitle,
+                category: seed.journeyCategory,
                 themeKey: theme,
                 growthFocus: inferredGrowthFocus,
-                journeyArc: encodeJourneyArc(payload.journeyArc),
+                journeyArc: encodeJourneyArc(seed.journeyArc),
                 status: .active
             )
-            modelContext.insert(firstJourney)
-
-            let entry = PrayerEntry(
-                prompt: initialPackage.prayer,
-                scriptureReference: initialPackage.scriptureReference,
-                scriptureText: initialPackage.scriptureParaphrase,
-                actionStep: "",
-                journey: firstJourney
+            let temporaryProfile = OnboardingProfile(
+                name: name,
+                prayerFocus: prayer,
+                growthGoal: inferredGrowthFocus,
+                reminderWindow: reminderWindow,
+                blocker: ""
             )
-            modelContext.insert(entry)
-
-            let dayKey = JourneyContentService.dayKey(for: .now)
-            let record = DailyJourneyPackageRecord(
-                journeyID: firstJourney.id,
-                dayKey: dayKey,
-                dailyTitle: initialPackage.dailyTitle,
-                reflectionThought: initialPackage.reflectionThought,
-                scriptureReference: initialPackage.scriptureReference,
-                scriptureParaphrase: initialPackage.scriptureParaphrase,
-                prayer: initialPackage.prayer,
-                todayAim: initialPackage.todayAim,
-                smallStepQuestion: initialPackage.smallStepQuestion,
-                suggestedSteps: initialPackage.suggestedSteps,
-                completionSuggestion: initialPackage.completionSuggestion,
-                updatedJourneyArc: initialPackage.updatedJourneyArc,
-                qualityVersion: initialPackage.qualityVersion,
-                generatedAt: initialPackage.generatedAt,
-                source: .remote,
-                linkedEntryID: entry.id
+            let temporaryMemory = JourneyMemorySnapshot(
+                journeyID: temporaryJourney.id,
+                summary: seed.initialMemory.summary,
+                winsSummary: seed.initialMemory.winsSummary,
+                blockersSummary: seed.initialMemory.blockersSummary,
+                preferredTone: seed.initialMemory.preferredTone
             )
-            modelContext.insert(record)
-
-            let snapshot = JourneyMemorySnapshot(
-                journeyID: firstJourney.id,
-                summary: payload.initialMemory.summary,
-                winsSummary: payload.initialMemory.winsSummary,
-                blockersSummary: payload.initialMemory.blockersSummary,
-                preferredTone: payload.initialMemory.preferredTone
+            let package = try await BackendDailyJourneyPackageProvider().generatePackage(
+                profile: temporaryProfile,
+                journey: temporaryJourney,
+                recentEntries: [],
+                memory: temporaryMemory
             )
-            modelContext.insert(snapshot)
-
-            JourneyProgressService.logEvent(
-                journeyID: firstJourney.id,
-                type: .packageGenerated,
-                notes: "Initial onboarding package seeded from inline endpoint.",
-                modelContext: modelContext
-            )
-
-            try? modelContext.save()
-            syncWidgetSnapshot()
-            rootLogger.log("inline bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public)")
-            analytics.track(.journeyCreated, properties: ["source": "inline_bootstrap"])
-            return OnboardingBootstrapResult(
-                package: record,
-                inferredGrowthFocus: inferredGrowthFocus
-            )
+            rootLogger.log("inline prepare succeeded journeyTitle=\(seed.journeyTitle, privacy: .public)")
+            return PreparedOnboardingJourney(seed: seed, package: package)
         } catch {
             let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            rootLogger.error("inline bootstrap failed error=\(details, privacy: .public)")
+            rootLogger.error("inline prepare failed error=\(details, privacy: .public)")
             onboardingErrorMessage = details.isEmpty
                 ? "We couldn't create your first journey right now. Connect to the internet and try again."
                 : "We couldn't create your first journey: \(details)"
             return nil
         }
+    }
+
+    @MainActor
+    private func commitPreparedJourney(
+        _ prepared: PreparedOnboardingJourney,
+        name: String,
+        prayer: String
+    ) async -> OnboardingBootstrapResult? {
+        let seed = prepared.seed
+        let initialPackage = DailyJourneyPackageValidation.validated(prepared.package)
+        let inferredGrowthFocus = seed.growthFocus ?? seed.journeyCategory
+        let theme = JourneyThemeKey(rawValue: seed.themeKey.lowercased()) ?? .basic
+        let firstJourney = PrayerJourney(
+            title: seed.journeyTitle,
+            category: seed.journeyCategory,
+            themeKey: theme,
+            growthFocus: inferredGrowthFocus,
+            journeyArc: encodeJourneyArc(seed.journeyArc),
+            status: .active
+        )
+        modelContext.insert(firstJourney)
+
+        let entry = PrayerEntry(
+            prompt: initialPackage.prayer,
+            scriptureReference: initialPackage.scriptureReference,
+            scriptureText: initialPackage.scriptureParaphrase,
+            actionStep: "",
+            journey: firstJourney
+        )
+        modelContext.insert(entry)
+
+        let dayKey = JourneyContentService.dayKey(for: .now)
+        let record = DailyJourneyPackageRecord(
+            journeyID: firstJourney.id,
+            dayKey: dayKey,
+            dailyTitle: initialPackage.dailyTitle,
+            reflectionThought: initialPackage.reflectionThought,
+            scriptureReference: initialPackage.scriptureReference,
+            scriptureParaphrase: initialPackage.scriptureParaphrase,
+            prayer: initialPackage.prayer,
+            todayAim: initialPackage.todayAim,
+            smallStepQuestion: initialPackage.smallStepQuestion,
+            suggestedSteps: initialPackage.suggestedSteps,
+            completionSuggestion: initialPackage.completionSuggestion,
+            updatedJourneyArc: initialPackage.updatedJourneyArc,
+            qualityVersion: initialPackage.qualityVersion,
+            generatedAt: initialPackage.generatedAt,
+            source: .remote,
+            linkedEntryID: entry.id
+        )
+        modelContext.insert(record)
+
+        let snapshot = JourneyMemorySnapshot(
+            journeyID: firstJourney.id,
+            summary: seed.initialMemory.summary,
+            winsSummary: seed.initialMemory.winsSummary,
+            blockersSummary: seed.initialMemory.blockersSummary,
+            preferredTone: seed.initialMemory.preferredTone
+        )
+        modelContext.insert(snapshot)
+
+        JourneyProgressService.logEvent(
+            journeyID: firstJourney.id,
+            type: .packageGenerated,
+            notes: "Initial onboarding package seeded from prepared staged endpoints.",
+            modelContext: modelContext
+        )
+
+        try? modelContext.save()
+        syncWidgetSnapshot()
+        analytics.track(.journeyCreated, properties: ["source": "inline_staged_prepare"])
+        return OnboardingBootstrapResult(package: record, inferredGrowthFocus: inferredGrowthFocus)
     }
 
     private func trackOnboardingStartedIfNeeded() {
@@ -375,7 +445,7 @@ struct RootView: View {
 
         let memoryByJourneyID = Dictionary(uniqueKeysWithValues: memorySnapshots.map { ($0.journeyID, $0) })
 
-        await journeyContentService.prefetchForTodayAndTomorrow(
+        await packageWarmupService.warmActiveJourneys(
             profile: profile,
             journeys: activeJourneys,
             entriesByJourneyID: entriesByJourneyID,
@@ -384,6 +454,35 @@ struct RootView: View {
             modelContext: modelContext
         )
         syncWidgetSnapshot()
+    }
+
+    private func warmJourneyIfPossible(journeyID: UUID) async {
+        guard connectivityService.isOnline, let profile else { return }
+        guard let journey = activeJourneys.first(where: { $0.id == journeyID }) else { return }
+        let entries = allEntries.filter { $0.journey?.id == journeyID }
+        let memory = memorySnapshots.first(where: { $0.journeyID == journeyID })
+        await packageWarmupService.warmToday(
+            profile: profile,
+            journey: journey,
+            entries: entries,
+            memory: memory,
+            isOnline: true,
+            modelContext: modelContext
+        )
+        syncWidgetSnapshot()
+    }
+
+    private func nextLikelyRefreshDate() -> Date {
+        let enabled = fetchReminderSchedules().filter(\.isEnabled)
+        let targetHour = enabled.first?.hour ?? hourForReminderWindow(profile?.reminderWindow ?? "Morning")
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+        components.hour = max(0, targetHour - 1)
+        components.minute = 0
+        let todayTarget = Calendar.current.date(from: components) ?? .now
+        if todayTarget > .now {
+            return todayTarget
+        }
+        return Calendar.current.date(byAdding: .day, value: 1, to: todayTarget) ?? Calendar.current.date(byAdding: .hour, value: 6, to: .now) ?? .now
     }
 
     private func bootstrapFirstJourneyIfNeeded() async {
@@ -409,75 +508,45 @@ struct RootView: View {
         rootLogger.log("bootstrap started")
 
         do {
-            let payload = try await bootstrapProvider.bootstrap(
+            let seed = try await bootstrapProvider.seed(
                 name: profile.name,
                 prayerIntentText: profile.prayerFocus,
                 goalIntentText: profile.growthGoal,
                 reminderWindow: profile.reminderWindow
             )
-            let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
 
-            let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
+            let theme = JourneyThemeKey(rawValue: seed.themeKey.lowercased()) ?? .basic
             let firstJourney = PrayerJourney(
-                title: payload.journeyTitle,
-                category: payload.journeyCategory,
+                title: seed.journeyTitle,
+                category: seed.journeyCategory,
                 themeKey: theme,
-                growthFocus: payload.growthFocus ?? payload.journeyCategory,
-                journeyArc: encodeJourneyArc(payload.journeyArc),
+                growthFocus: seed.growthFocus ?? seed.journeyCategory,
+                journeyArc: encodeJourneyArc(seed.journeyArc),
                 status: .active
             )
             modelContext.insert(firstJourney)
 
-            let entry = PrayerEntry(
-                prompt: initialPackage.prayer,
-                scriptureReference: initialPackage.scriptureReference,
-                scriptureText: initialPackage.scriptureParaphrase,
-                actionStep: "",
-                journey: firstJourney
-            )
-            modelContext.insert(entry)
-
-            let dayKey = JourneyContentService.dayKey(for: .now)
-            let record = DailyJourneyPackageRecord(
-                journeyID: firstJourney.id,
-                dayKey: dayKey,
-                dailyTitle: initialPackage.dailyTitle,
-                reflectionThought: initialPackage.reflectionThought,
-                scriptureReference: initialPackage.scriptureReference,
-                scriptureParaphrase: initialPackage.scriptureParaphrase,
-                prayer: initialPackage.prayer,
-                todayAim: initialPackage.todayAim,
-                smallStepQuestion: initialPackage.smallStepQuestion,
-                suggestedSteps: initialPackage.suggestedSteps,
-                completionSuggestion: initialPackage.completionSuggestion,
-                updatedJourneyArc: initialPackage.updatedJourneyArc,
-                qualityVersion: initialPackage.qualityVersion,
-                generatedAt: initialPackage.generatedAt,
-                source: .remote,
-                linkedEntryID: entry.id
-            )
-            modelContext.insert(record)
-
             let snapshot = JourneyMemorySnapshot(
                 journeyID: firstJourney.id,
-                summary: payload.initialMemory.summary,
-                winsSummary: payload.initialMemory.winsSummary,
-                blockersSummary: payload.initialMemory.blockersSummary,
-                preferredTone: payload.initialMemory.preferredTone
+                summary: seed.initialMemory.summary,
+                winsSummary: seed.initialMemory.winsSummary,
+                blockersSummary: seed.initialMemory.blockersSummary,
+                preferredTone: seed.initialMemory.preferredTone
             )
             modelContext.insert(snapshot)
 
             JourneyProgressService.logEvent(
                 journeyID: firstJourney.id,
                 type: .packageGenerated,
-                notes: "Initial onboarding package seeded from bootstrap endpoint.",
+                notes: "Initial journey seeded; package warmup requested.",
                 modelContext: modelContext
             )
 
             try? modelContext.save()
             syncWidgetSnapshot()
-            rootLogger.log("bootstrap succeeded journeyTitle=\(payload.journeyTitle, privacy: .public) theme=\(payload.themeKey, privacy: .public)")
-            analytics.track(.journeyCreated, properties: ["source": "bootstrap"])
+            rootLogger.log("bootstrap seed succeeded journeyTitle=\(seed.journeyTitle, privacy: .public) theme=\(seed.themeKey, privacy: .public)")
+            analytics.track(.journeyCreated, properties: ["source": "bootstrap_seed"])
+            await warmJourneyIfPossible(journeyID: firstJourney.id)
         } catch {
             let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             rootLogger.error("bootstrap failed error=\(details, privacy: .public)")

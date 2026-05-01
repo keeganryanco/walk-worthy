@@ -47,11 +47,19 @@
 	<string>$(TENDAI_APP_KEY)</string>
 	<key>TENDAIBaseURL</key>
 	<string>$(TENDAI_BASE_URL)</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>co.keeganryan.tend.daily-package-refresh</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIAppFonts</key>

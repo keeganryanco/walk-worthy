@@ -7,6 +7,11 @@ struct OnboardingBootstrapResult {
     let inferredGrowthFocus: String
 }
 
+struct PreparedOnboardingJourney {
+    let seed: JourneySeedPayload
+    let package: DailyJourneyPackage
+}
+
 struct ExperimentalOnboardingFlowView: View {
     enum Step: Int, CaseIterable {
         case intro
@@ -29,7 +34,9 @@ struct ExperimentalOnboardingFlowView: View {
         case widget
     }
 
+    let onPrepare: (String, String) async -> PreparedOnboardingJourney?
     let onGenerate: (String, String) async -> OnboardingBootstrapResult?
+    let onCommitPrepared: (PreparedOnboardingJourney, String, String) async -> OnboardingBootstrapResult?
     let onComplete: (OnboardingProfile) -> Void
     let onRequirePaywall: (PaywallTriggerReason) -> Void
     let experimentConfig: OnboardingExperimentConfig
@@ -68,6 +75,9 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var celebrationTomorrowCueVisible = false
     @State private var generationSequencePhase = 0
     @State private var generationIsReady = false
+    @State private var preparedJourney: PreparedOnboardingJourney?
+    @State private var preparedJourneyKey = ""
+    @State private var preparedJourneyTask: Task<PreparedOnboardingJourney?, Never>?
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -1766,6 +1776,10 @@ struct ExperimentalOnboardingFlowView: View {
         guard canAdvance else { return }
         let nextStep = nextStepInFlow()
 
+        if step == .prayerIntent {
+            startPreparingJourneyIfNeeded(name: "Friend")
+        }
+
         if nextStep == .generating {
             generatedPackage = nil
             inferredGrowthFocus = ""
@@ -1773,7 +1787,15 @@ struct ExperimentalOnboardingFlowView: View {
             generationSequencePhase = 0
             withAnimation(.default) { step = .generating }
             Task {
-                if let result = await onGenerate(firstNameDisplay, prayerIntentText) {
+                let prepared = await preparedJourneyForGeneration()
+                let result: OnboardingBootstrapResult?
+                if let prepared {
+                    result = await onCommitPrepared(prepared, firstNameDisplay, prayerIntentText)
+                } else {
+                    result = await onGenerate(firstNameDisplay, prayerIntentText)
+                }
+
+                if let result {
                     await MainActor.run {
                         self.generatedPackage = result.package
                         self.inferredGrowthFocus = result.inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1833,6 +1855,46 @@ struct ExperimentalOnboardingFlowView: View {
         }
 
         proceedToNextStep()
+    }
+
+    private func preparationKey(for prayer: String) -> String {
+        prayer.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func startPreparingJourneyIfNeeded(name: String) {
+        let prayer = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prayer.isEmpty else { return }
+        let key = preparationKey(for: prayer)
+        if preparedJourneyKey == key, preparedJourney != nil || preparedJourneyTask != nil {
+            return
+        }
+        preparedJourneyKey = key
+        preparedJourney = nil
+        preparedJourneyTask?.cancel()
+        preparedJourneyTask = Task {
+            await onPrepare(name, prayer)
+        }
+    }
+
+    private func preparedJourneyForGeneration() async -> PreparedOnboardingJourney? {
+        let prayer = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = preparationKey(for: prayer)
+        if preparedJourneyKey == key, let preparedJourney {
+            return preparedJourney
+        }
+        if preparedJourneyKey != key || preparedJourneyTask == nil {
+            await MainActor.run {
+                startPreparingJourneyIfNeeded(name: firstNameDisplay)
+            }
+        }
+        guard let task = preparedJourneyTask else { return nil }
+        let prepared = await task.value
+        await MainActor.run {
+            if preparedJourneyKey == key {
+                preparedJourney = prepared
+            }
+        }
+        return prepared
     }
 
     private func proceedToNextStep() {

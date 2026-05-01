@@ -538,7 +538,7 @@ struct CreateJourneyView: View {
         isSubmitting = true
         Task {
             do {
-                let payload = try await bootstrapProvider.bootstrap(
+                let seed = try await bootstrapProvider.seed(
                     name: displayName,
                     prayerIntentText: prayer,
                     goalIntentText: nil,
@@ -546,62 +546,31 @@ struct CreateJourneyView: View {
                 )
 
                 await MainActor.run {
-                    let initialPackage = DailyJourneyPackageValidation.validated(payload.initialPackage)
-                    let theme = JourneyThemeKey(rawValue: payload.themeKey.lowercased()) ?? .basic
+                    let theme = JourneyThemeKey(rawValue: seed.themeKey.lowercased()) ?? .basic
 
                     let journey = PrayerJourney(
-                        title: payload.journeyTitle,
-                        category: payload.journeyCategory,
+                        title: seed.journeyTitle,
+                        category: seed.journeyCategory,
                         themeKey: theme,
-                        growthFocus: payload.growthFocus ?? payload.journeyCategory,
-                        journeyArc: encodeJourneyArc(payload.journeyArc),
+                        growthFocus: seed.growthFocus ?? seed.journeyCategory,
+                        journeyArc: encodeJourneyArc(seed.journeyArc),
                         status: .active
                     )
                     modelContext.insert(journey)
 
-                    let entry = PrayerEntry(
-                        prompt: initialPackage.prayer,
-                        scriptureReference: initialPackage.scriptureReference,
-                        scriptureText: initialPackage.scriptureParaphrase,
-                        actionStep: "",
-                        journey: journey
-                    )
-                    modelContext.insert(entry)
-
-                    let dayKey = JourneyContentService.dayKey(for: .now)
-                    let record = DailyJourneyPackageRecord(
-                        journeyID: journey.id,
-                        dayKey: dayKey,
-                        dailyTitle: initialPackage.dailyTitle,
-                        reflectionThought: initialPackage.reflectionThought,
-                        scriptureReference: initialPackage.scriptureReference,
-                        scriptureParaphrase: initialPackage.scriptureParaphrase,
-                        prayer: initialPackage.prayer,
-                        todayAim: initialPackage.todayAim,
-                        smallStepQuestion: initialPackage.smallStepQuestion,
-                        suggestedSteps: initialPackage.suggestedSteps,
-                        completionSuggestion: initialPackage.completionSuggestion,
-                        updatedJourneyArc: initialPackage.updatedJourneyArc,
-                        qualityVersion: initialPackage.qualityVersion,
-                        generatedAt: initialPackage.generatedAt,
-                        source: .remote,
-                        linkedEntryID: entry.id
-                    )
-                    modelContext.insert(record)
-
                     let snapshot = JourneyMemorySnapshot(
                         journeyID: journey.id,
-                        summary: payload.initialMemory.summary,
-                        winsSummary: payload.initialMemory.winsSummary,
-                        blockersSummary: payload.initialMemory.blockersSummary,
-                        preferredTone: payload.initialMemory.preferredTone
+                        summary: seed.initialMemory.summary,
+                        winsSummary: seed.initialMemory.winsSummary,
+                        blockersSummary: seed.initialMemory.blockersSummary,
+                        preferredTone: seed.initialMemory.preferredTone
                     )
                     modelContext.insert(snapshot)
 
                     JourneyProgressService.logEvent(
                         journeyID: journey.id,
                         type: .packageGenerated,
-                        notes: "Initial package seeded from create journey flow.",
+                        notes: "Journey seed created; package warmup requested by root.",
                         modelContext: modelContext
                     )
 

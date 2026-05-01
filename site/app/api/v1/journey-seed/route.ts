@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateJourneyBootstrap } from "../../../../lib/ai/bootstrap";
+import { generateJourneySeed } from "../../../../lib/ai/bootstrap";
 import type { JourneyBootstrapRequest } from "../../../../lib/ai/types";
 import { capturePostHogEvent } from "../../../../lib/analytics/posthog";
 import {
@@ -9,7 +9,7 @@ import {
 } from "../../../../lib/ai/liveRoutePolicy";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 function requestId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -17,10 +17,7 @@ function requestId(): string {
 
 function authorize(request: NextRequest): boolean {
   const requiredSecret = process.env.TEND_APP_SHARED_SECRET?.trim();
-  if (!requiredSecret) {
-    return true;
-  }
-
+  if (!requiredSecret) return true;
   const provided = request.headers.get("x-tend-app-key")?.trim();
   return Boolean(provided) && provided === requiredSecret;
 }
@@ -40,10 +37,10 @@ function isValidPayload(payload: unknown): payload is JourneyBootstrapRequest {
 
 export async function POST(request: NextRequest) {
   const rid = requestId();
-  console.info(`[journey-bootstrap][${rid}] request received`);
+  console.info(`[journey-seed][${rid}] request received`);
 
   if (!authorize(request)) {
-    console.warn(`[journey-bootstrap][${rid}] unauthorized`);
+    console.warn(`[journey-seed][${rid}] unauthorized`);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -51,43 +48,32 @@ export async function POST(request: NextRequest) {
   try {
     payload = await request.json();
   } catch {
-    console.warn(`[journey-bootstrap][${rid}] invalid JSON`);
+    console.warn(`[journey-seed][${rid}] invalid JSON`);
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
   if (!isValidPayload(payload)) {
-    console.warn(`[journey-bootstrap][${rid}] invalid schema`);
+    console.warn(`[journey-seed][${rid}] invalid schema`);
     return NextResponse.json({ error: "Invalid request schema" }, { status: 422 });
   }
 
   const typedPayload = payload as JourneyBootstrapRequest;
-  console.info(
-    `[journey-bootstrap][${rid}] start generation reminderWindow=${typedPayload.reminderWindow} prayerLen=${typedPayload.prayerIntentText.length} goalLen=${typedPayload.goalIntentText?.length ?? 0}`
-  );
-
   try {
-    const result = await generateJourneyBootstrap(typedPayload);
+    const result = await generateJourneySeed(typedPayload);
     console.info(
-      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1} diagnostics=${(result.diagnostics ?? []).join("|") || "none"}`
+      `[journey-seed][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.seed.themeKey} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1} diagnostics=${(result.diagnostics ?? []).join("|") || "none"}`
     );
 
     if (shouldRejectLiveTemplateFallback(result)) {
       return NextResponse.json(
-        { error: "Journey bootstrap failed", details: liveTemplateFallbackDetails(result.diagnostics) },
+        { error: "Journey seed generation failed", details: liveTemplateFallbackDetails(result.diagnostics) },
         { status: LIVE_TEMPLATE_FALLBACK_STATUS }
       );
     }
 
-    const distinctID = typedPayload.telemetry?.distinctID?.trim() || `anon_bootstrap_${typedPayload.name || "unknown"}`;
-    const estimatedCostUSD =
-      typeof result.usage?.estimatedCostUSD === "number"
-        ? result.usage.estimatedCostUSD
-        : 0;
-    const projectedMonthlyCostUSD = Number((estimatedCostUSD * (1095 / 12)).toFixed(2));
-    const projectedYearlyCostUSD = Number((estimatedCostUSD * 1095).toFixed(2));
-
+    const distinctID = typedPayload.telemetry?.distinctID?.trim() || `anon_seed_${typedPayload.name || "unknown"}`;
     void capturePostHogEvent("ai_generation_usage", distinctID, {
-      endpoint: "journey_bootstrap",
+      endpoint: "journey_seed",
       request_id: rid,
       provider: result.provider,
       model: result.model,
@@ -96,13 +82,7 @@ export async function POST(request: NextRequest) {
       input_tokens: result.usage?.inputTokens ?? 0,
       output_tokens: result.usage?.outputTokens ?? 0,
       total_tokens: result.usage?.totalTokens ?? 0,
-      estimated_cost_usd: estimatedCostUSD,
-      cost_guardrail_package_exceeded: estimatedCostUSD > 0.035,
-      projected_monthly_cost_usd: projectedMonthlyCostUSD,
-      cost_guardrail_monthly_exceeded: projectedMonthlyCostUSD > 1,
-      projected_yearly_cost_usd: projectedYearlyCostUSD,
-      cost_guardrail_yearly_exceeded: projectedYearlyCostUSD > 30,
-      theme_key: result.bootstrap.themeKey,
+      estimated_cost_usd: result.usage?.estimatedCostUSD ?? 0,
       app_platform: typedPayload.telemetry?.platform ?? "ios",
       app_version: typedPayload.telemetry?.appVersion ?? "",
       app_build_number: typedPayload.telemetry?.buildNumber ?? "",
@@ -110,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      bootstrap: result.bootstrap,
+      seed: result.seed,
       meta: {
         provider: result.provider,
         model: result.model,
@@ -122,8 +102,8 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown bootstrap error";
-    console.error(`[journey-bootstrap][${rid}] unhandled error: ${message}`);
-    return NextResponse.json({ error: "Journey bootstrap failed", details: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown seed generation error";
+    console.error(`[journey-seed][${rid}] unhandled error: ${message}`);
+    return NextResponse.json({ error: "Journey seed generation failed", details: message }, { status: 500 });
   }
 }
