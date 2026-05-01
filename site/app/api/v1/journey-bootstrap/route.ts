@@ -9,7 +9,7 @@ import {
 } from "../../../../lib/ai/liveRoutePolicy";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 function requestId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

@@ -144,7 +144,13 @@ struct HomeView: View {
                 )
             }
             .sheet(isPresented: $isCreatingJourney) {
-                CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+                CreateJourneyView(
+                    isPremium: isPremium,
+                    onRequirePaywall: onRequirePaywall,
+                    onJourneyCreated: { journeyID in
+                        Task { _ = await onRequestDailyWarmup(journeyID) }
+                    }
+                )
             }
         }
     }
@@ -1864,7 +1870,7 @@ struct JourneyGrowthPage: View {
         }
         prepareTimeoutTask?.cancel()
         prepareTimeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 90_000_000_000)
+            try? await Task.sleep(nanoseconds: 180_000_000_000)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 if todaysPackageRecord == nil {

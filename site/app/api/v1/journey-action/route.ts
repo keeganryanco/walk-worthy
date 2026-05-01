@@ -4,7 +4,7 @@ import type { JourneyActionRequest } from "../../../../lib/ai/types";
 import { capturePostHogEvent } from "../../../../lib/analytics/posthog";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 90;
 
 function requestId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

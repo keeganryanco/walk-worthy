@@ -27,6 +27,9 @@ struct MainTabView: View {
                 JournalView(
                     isPremium: isPremium,
                     onRequirePaywall: onRequirePaywall,
+                    onJourneyCreated: { journeyID in
+                        Task { _ = await onRequestDailyWarmup(journeyID) }
+                    },
                     suppressHorizontalTabSwipe: $suppressHorizontalTabSwipe
                 )
                     .tag(RootTab.journal)

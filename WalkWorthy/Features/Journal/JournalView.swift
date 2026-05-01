@@ -7,6 +7,7 @@ struct JournalView: View {
     
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onJourneyCreated: (UUID) -> Void
     @Binding var suppressHorizontalTabSwipe: Bool
     
     @Query(sort: \PrayerJourney.createdAt, order: .reverse)
@@ -83,7 +84,11 @@ struct JournalView: View {
                 Color.clear.frame(height: 116)
             }
             .sheet(isPresented: $isCreating) {
-                CreateJourneyView(isPremium: isPremium, onRequirePaywall: onRequirePaywall)
+                CreateJourneyView(
+                    isPremium: isPremium,
+                    onRequirePaywall: onRequirePaywall,
+                    onJourneyCreated: onJourneyCreated
+                )
             }
             .navigationDestination(item: $journeyPendingNavigation) { journey in
                 JourneyDetailView(journey: journey)
@@ -350,6 +355,7 @@ struct CreateJourneyView: View {
     
     let isPremium: Bool
     let onRequirePaywall: (PaywallTriggerReason) -> Void
+    let onJourneyCreated: (UUID) -> Void
     
     @Query(filter: #Predicate<PrayerJourney> { !$0.isArchived })
     private var activeJourneys: [PrayerJourney]
@@ -376,6 +382,16 @@ struct CreateJourneyView: View {
     @FocusState private var focusedField: InputField?
 
     private let bootstrapProvider = BackendJourneyBootstrapProvider()
+
+    init(
+        isPremium: Bool,
+        onRequirePaywall: @escaping (PaywallTriggerReason) -> Void,
+        onJourneyCreated: @escaping (UUID) -> Void = { _ in }
+    ) {
+        self.isPremium = isPremium
+        self.onRequirePaywall = onRequirePaywall
+        self.onJourneyCreated = onJourneyCreated
+    }
 
     private enum InputField {
         case prayer
@@ -576,6 +592,7 @@ struct CreateJourneyView: View {
 
                     try? modelContext.save()
                     WidgetSyncService.publishFromModelContext(modelContext)
+                    onJourneyCreated(journey.id)
                     isSubmitting = false
                     dismiss()
                 }

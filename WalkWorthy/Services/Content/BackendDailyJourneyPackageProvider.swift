@@ -2,7 +2,7 @@ import Foundation
 import os
 
 private let aiLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "co.keeganryan.tend", category: "AI")
-private let aiGatewayRequestTimeout: TimeInterval = 75
+private let aiGatewayRequestTimeout: TimeInterval = 130
 
 struct JourneyArcPayload: Codable, Equatable {
     let purpose: String
