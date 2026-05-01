@@ -788,11 +788,11 @@ struct JourneyGrowthPage: View {
                 // Pokémon Style Evolution Overlay
                 if isEvolving {
                     ZStack {
-                        // Dark Vignette
+                        // Keep the ceremony copy readable over both light and dark app surfaces.
                         LinearGradient(
                             colors: [
-                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.66 : 0.52),
-                                WWColor.nearBlack.opacity(colorScheme == .dark ? 0.48 : 0.36)
+                                Color.black.opacity(0.88),
+                                Color.black.opacity(0.84)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -856,10 +856,11 @@ struct JourneyGrowthPage: View {
                                 )
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                                 .padding(.top, 6)
-                                .padding(.horizontal, 28)
+                                .padding(.horizontal, 32)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            } else {
+                                Spacer(minLength: 0)
                             }
-
-                            Spacer(minLength: 0)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2627,38 +2628,42 @@ struct PlantGrowthMilestoneOverlay: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 12) {
-                Text(plantTitle)
-                    .font(WWTypography.heading(28))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    Text(plantTitle)
+                        .font(WWTypography.heading(28))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
 
-                Text(message)
-                    .font(WWTypography.body(17))
-                    .foregroundStyle(.white.opacity(0.78))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .padding(.horizontal, 4)
-            }
+                    Text(message)
+                        .font(WWTypography.body(17))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .padding(.horizontal, 4)
+                }
 
-            HStack(spacing: 10) {
-                plantStatusBadge(systemName: "sun.max.fill", text: streakText)
-                plantStatusBadge(systemName: "drop.fill", text: waterText)
-            }
+                HStack(spacing: 10) {
+                    plantStatusBadge(systemName: "sun.max.fill", text: streakText)
+                    plantStatusBadge(systemName: "drop.fill", text: waterText)
+                }
+                .padding(.top, 18)
 
-            Button(action: onContinue) {
-                Text(L10n.string("Continue", default: "Continue"))
-                    .frame(maxWidth: .infinity)
+                Spacer(minLength: 24)
+
+                Button(action: onContinue) {
+                    Text(L10n.string("Continue", default: "Continue"))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
+                .padding(.bottom, max(120, proxy.safeAreaInsets.bottom + 52))
             }
-            .buttonStyle(WWPrimaryButtonStyle(background: WWColor.growGreen, foreground: WWColor.nearBlack))
-            .padding(.top, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.top, 12)
-        .padding(.bottom, 34)
-        .frame(maxWidth: 380)
     }
 
     private func plantStatusBadge(systemName: String, text: String) -> some View {
