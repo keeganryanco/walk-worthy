@@ -394,6 +394,7 @@ struct JourneyGrowthPage: View {
 
     // New states for streak overlay
     @State private var showStreakOverlay = false
+    @State private var pendingCompletionCelebration: TendCompletionCelebration?
     @State private var showReigniteOverlay = false
     @State private var showReigniteCelebration = false
     @State private var isBottomSheetExpanded = false
@@ -719,24 +720,11 @@ struct JourneyGrowthPage: View {
                 .offset(y: -topVisualBleed)
                 .ignoresSafeArea(edges: .top)
                 .onChange(of: completedCount) { oldCount, newCount in
+                    guard !showTendingSheet, pendingCompletionCelebration == nil else { return }
                     if newCount > oldCount {
                         let oldStage = stage(for: oldCount)
                         let newStage = stage(for: newCount)
-                        
-                        if newStage > oldStage {
-                            // Stage Up! Trigger Evolution
-                            shouldShowStreakAfterEvolution = true
-                            withAnimation(.easeIn(duration: 0.5)) {
-                                isEvolving = true
-                                evolutionStep = 1
-                            }
-                        } else {
-                            // Regular tend
-                            triggerWateringEffect()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation { showStreakOverlay = true }
-                            }
-                        }
+                        presentCompletionCelebration(didIncreasePlantStage: newStage > oldStage)
                     }
                 }
                 
@@ -889,14 +877,22 @@ struct JourneyGrowthPage: View {
                 homeOverlayActive = false
             }
         }
-        .fullScreenCover(isPresented: $showTendingSheet) {
+        .fullScreenCover(
+            isPresented: $showTendingSheet,
+            onDismiss: {
+                presentPendingCompletionCelebrationIfNeeded()
+            }
+        ) {
             if let entry = todaysEntry {
                 TendingFlowView(
                     journey: journey,
                     entry: entry,
                     entries: entries,
                     profile: profile,
-                    package: todaysPackageRecord?.asPackage
+                    package: todaysPackageRecord?.asPackage,
+                    onCompleted: { celebration in
+                        pendingCompletionCelebration = celebration
+                    }
                 )
             }
         }
@@ -1531,6 +1527,33 @@ struct JourneyGrowthPage: View {
         }
     }
 
+    private func presentPendingCompletionCelebrationIfNeeded() {
+        guard let celebration = pendingCompletionCelebration else { return }
+        pendingCompletionCelebration = nil
+        presentCompletionCelebration(didIncreasePlantStage: celebration.didIncreasePlantStage)
+    }
+
+    private func presentCompletionCelebration(didIncreasePlantStage: Bool) {
+        showStreakOverlay = false
+
+        if didIncreasePlantStage {
+            shouldShowStreakAfterEvolution = true
+            withAnimation(reduceMotion ? nil : .easeIn(duration: 0.2)) {
+                isEvolving = true
+                evolutionStep = 1
+            }
+            return
+        }
+
+        triggerWateringEffect()
+        let streakDelay: TimeInterval = reduceMotion ? 0.05 : 0.45
+        DispatchQueue.main.asyncAfter(deadline: .now() + streakDelay) {
+            withAnimation {
+                showStreakOverlay = true
+            }
+        }
+    }
+
     private func triggerWateringEffect() {
         if reduceMotion {
             orbOpacity = 0.0
@@ -1716,6 +1739,10 @@ private enum TendingTestingClock {
 
 private final class PlantAssetBundleLocator {}
 
+struct TendCompletionCelebration {
+    let didIncreasePlantStage: Bool
+}
+
 struct TendingFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -1731,6 +1758,7 @@ struct TendingFlowView: View {
     let entries: [PrayerEntry]
     let profile: OnboardingProfile
     let package: DailyJourneyPackage?
+    let onCompleted: (TendCompletionCelebration) -> Void
     
     @State private var isCompleting = false
     @State private var smallStepInput = ""
@@ -1740,7 +1768,15 @@ struct TendingFlowView: View {
     private let contentService = JourneyContentService()
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
-    private static let tendsPerCycle = 15
+    private static let tendsPerStage = 3
+    private static let stagesPerCycle = 5
+    private static let tendsPerCycle = tendsPerStage * stagesPerCycle
+
+    private static func stage(for count: Int) -> Int {
+        guard count > 0 else { return 1 }
+        let indexInCycle = count % tendsPerCycle
+        return min(stagesPerCycle, max(1, (indexInCycle / tendsPerStage) + 1))
+    }
 
     private var reflectionThought: String {
         let value = package?.reflectionThought.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -2071,127 +2107,133 @@ struct TendingFlowView: View {
     
     private func completeTending() {
         isCompleting = true
-        
-        // Artificial delay so the user feels the weight of the action
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            let completionDate = TendingTestingClock.currentDate
-            let schedulingNow = Date()
-            let trimmedStep = smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines)
-            entry.actionStep = trimmedStep
-            entry.completedAt = completionDate
 
-            let closureTarget = pendingClosureEntry
-            if let closureTarget, let selectedFollowThroughStatus {
-                FollowThroughService.recordFollowThrough(
-                    status: selectedFollowThroughStatus,
-                    for: closureTarget,
-                    on: entry,
-                    at: completionDate
-                )
-                JourneyProgressService.logEvent(
-                    journeyID: journey.id,
-                    type: .followThroughAnswered,
-                    notes: "Follow-through recorded as \(selectedFollowThroughStatus.rawValue) for priorEntryID=\(closureTarget.id.uuidString)",
-                    modelContext: modelContext,
-                    date: completionDate
-                )
-            }
-            JourneyArcService.updateAfterTend(
-                journey: journey,
-                committedStep: trimmedStep,
-                followThroughStatus: closureTarget == nil ? nil : selectedFollowThroughStatus
-            )
+        let completionDate = TendingTestingClock.currentDate
+        let schedulingNow = Date()
+        let completedCountBeforeTend = max(
+            journey.completedTends,
+            entries.filter { $0.completedAt != nil }.count
+        )
+        let trimmedStep = smallStepInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.actionStep = trimmedStep
+        entry.completedAt = completionDate
 
-            let baseGrowthPoints = FollowThroughService.growthPoints(
-                for: selectedFollowThroughStatus,
-                hasPriorCommitmentToEvaluate: closureTarget != nil
-            )
-
-            let inferredLegacyCount = entries.filter { $0.completedAt != nil }.count
-            let growthUpdate = JourneyEngagementService.applyCompletionGrowth(
-                to: journey,
-                inferredLegacyCount: inferredLegacyCount,
-                baseGrowthPoints: baseGrowthPoints,
+        let closureTarget = pendingClosureEntry
+        if let closureTarget, let selectedFollowThroughStatus {
+            FollowThroughService.recordFollowThrough(
+                status: selectedFollowThroughStatus,
+                for: closureTarget,
+                on: entry,
                 at: completionDate
             )
-            journey.cycleCount = growthUpdate.completedTendsAfterUpdate / Self.tendsPerCycle
-            let nextCompletedSessionCount = inferredLegacyCount + 1
-            let projectedEntries = entries.contains(where: { $0.id == entry.id }) ? entries : (entries + [entry])
-            JourneyEngagementService.refreshJourneyState(
-                for: journey,
-                entries: projectedEntries,
-                now: completionDate
-            )
-
-            let settings = settingsRows.first
-            let wasFirstTendCompleted = FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
-            FirstTendMilestoneService.markFirstTendCompleted(settings: settings)
-            let didCompleteFirstTend = !wasFirstTendCompleted && FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
-
-            try? modelContext.save()
-            Task {
-                await notificationService.scheduleReminderSchedules(
-                    reminderRows.filter(\.isEnabled),
-                    modelContext: modelContext,
-                    now: schedulingNow
-                )
-            }
-            
             JourneyProgressService.logEvent(
                 journeyID: journey.id,
-                type: .stepCompleted,
-                notes: "Completed step: \(trimmedStep) | baseGrowthPoints: \(baseGrowthPoints) | appliedGrowth: \(growthUpdate.appliedGrowth)",
+                type: .followThroughAnswered,
+                notes: "Follow-through recorded as \(selectedFollowThroughStatus.rawValue) for priorEntryID=\(closureTarget.id.uuidString)",
+                modelContext: modelContext,
+                date: completionDate
+            )
+        }
+        JourneyArcService.updateAfterTend(
+            journey: journey,
+            committedStep: trimmedStep,
+            followThroughStatus: closureTarget == nil ? nil : selectedFollowThroughStatus
+        )
+
+        let baseGrowthPoints = FollowThroughService.growthPoints(
+            for: selectedFollowThroughStatus,
+            hasPriorCommitmentToEvaluate: closureTarget != nil
+        )
+
+        let inferredLegacyCount = entries.filter { $0.completedAt != nil }.count
+        let growthUpdate = JourneyEngagementService.applyCompletionGrowth(
+            to: journey,
+            inferredLegacyCount: inferredLegacyCount,
+            baseGrowthPoints: baseGrowthPoints,
+            at: completionDate
+        )
+        let completionCelebration = TendCompletionCelebration(
+            didIncreasePlantStage: Self.stage(for: growthUpdate.completedTendsAfterUpdate) > Self.stage(for: completedCountBeforeTend)
+        )
+        journey.cycleCount = growthUpdate.completedTendsAfterUpdate / Self.tendsPerCycle
+        let nextCompletedSessionCount = inferredLegacyCount + 1
+        let projectedEntries = entries.contains(where: { $0.id == entry.id }) ? entries : (entries + [entry])
+        JourneyEngagementService.refreshJourneyState(
+            for: journey,
+            entries: projectedEntries,
+            now: completionDate
+        )
+
+        let settings = settingsRows.first
+        let wasFirstTendCompleted = FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
+        FirstTendMilestoneService.markFirstTendCompleted(settings: settings)
+        let didCompleteFirstTend = !wasFirstTendCompleted && FirstTendMilestoneService.isFirstTendCompleted(settings: settings)
+
+        try? modelContext.save()
+        Task {
+            await notificationService.scheduleReminderSchedules(
+                reminderRows.filter(\.isEnabled),
+                modelContext: modelContext,
+                now: schedulingNow
+            )
+        }
+
+        JourneyProgressService.logEvent(
+            journeyID: journey.id,
+            type: .stepCompleted,
+            notes: "Completed step: \(trimmedStep) | baseGrowthPoints: \(baseGrowthPoints) | appliedGrowth: \(growthUpdate.appliedGrowth)",
+            modelContext: modelContext
+        )
+        analytics.track(
+            .smallStepCompleted,
+            properties: [
+                "source": "home_tending",
+                "journey_id": journey.id.uuidString,
+                "growth_points": String(baseGrowthPoints),
+                "applied_growth": String(format: "%.2f", growthUpdate.appliedGrowth),
+                "hydration_stage_before": String(growthUpdate.hydrationStageBeforeTend),
+                "had_followthrough_prompt": closureTarget == nil ? "false" : "true",
+                "did_complete_first_tend": didCompleteFirstTend ? "true" : "false"
+            ]
+        )
+        if didCompleteFirstTend {
+            JourneyProgressService.logEvent(
+                journeyID: journey.id,
+                type: .firstTendCompleted,
+                notes: "First tend milestone reached.",
                 modelContext: modelContext
             )
-            analytics.track(
-                .smallStepCompleted,
-                properties: [
-                    "source": "home_tending",
-                    "journey_id": journey.id.uuidString,
-                    "growth_points": String(baseGrowthPoints),
-                    "applied_growth": String(format: "%.2f", growthUpdate.appliedGrowth),
-                    "hydration_stage_before": String(growthUpdate.hydrationStageBeforeTend),
-                    "had_followthrough_prompt": closureTarget == nil ? "false" : "true",
-                    "did_complete_first_tend": didCompleteFirstTend ? "true" : "false"
-                ]
-            )
-            if didCompleteFirstTend {
-                JourneyProgressService.logEvent(
-                    journeyID: journey.id,
-                    type: .firstTendCompleted,
-                    notes: "First tend milestone reached.",
-                    modelContext: modelContext
-                )
-            }
-            JourneyMemoryService.refreshSnapshot(
-                for: journey,
-                entries: entries,
-                profile: profile,
-                modelContext: modelContext
-            )
-            WidgetSyncService.publishFromModelContext(modelContext)
+        }
+        JourneyMemoryService.refreshSnapshot(
+            for: journey,
+            entries: entries,
+            profile: profile,
+            modelContext: modelContext
+        )
+        WidgetSyncService.publishFromModelContext(modelContext)
 
-            let shouldShowCompletionPrompt = shouldPromptCompletionSuggestion(
-                completedCount: nextCompletedSessionCount,
-                now: completionDate
-            )
+        let shouldShowCompletionPrompt = shouldPromptCompletionSuggestion(
+            completedCount: nextCompletedSessionCount,
+            now: completionDate
+        )
 
-            if shouldShowCompletionPrompt {
-                isCompleting = false
-                showCompletionPrompt = true
-                return
-            }
+        if shouldShowCompletionPrompt {
+            isCompleting = false
+            showCompletionPrompt = true
+            return
+        }
 
-            if TendingTestingClock.isEnabled {
-                isCompleting = false
-                dismiss()
-                Task { @MainActor in
-                    await advanceTestingDayAndSeedNextEntryIfNeeded()
-                }
-            } else {
-                isCompleting = false
-                dismiss()
+        if TendingTestingClock.isEnabled {
+            isCompleting = false
+            onCompleted(completionCelebration)
+            dismiss()
+            Task { @MainActor in
+                await advanceTestingDayAndSeedNextEntryIfNeeded()
             }
+        } else {
+            isCompleting = false
+            onCompleted(completionCelebration)
+            dismiss()
         }
     }
 
