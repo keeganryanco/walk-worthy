@@ -6,21 +6,17 @@ function envValue(name: string): string | undefined {
 }
 
 export function devotionalModel(): string {
-  return envValue("OPENAI_DEVOTIONAL_MODEL")
-    ?? envValue("OPENAI_ESCALATION_MODEL")
-    ?? envValue("OPENAI_PRIMARY_MODEL")
-    ?? "gpt-5.5";
+  return envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.5";
 }
 
 export function actionModel(): string {
   return envValue("OPENAI_ACTION_MODEL")
     ?? envValue("OPENAI_UTILITY_MODEL")
-    ?? envValue("OPENAI_PRIMARY_MODEL")
     ?? "gpt-5.1";
 }
 
 export function repairModel(): string {
-  return envValue("OPENAI_REPAIR_MODEL") ?? devotionalModel();
+  return envValue("OPENAI_REPAIR_MODEL") ?? envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.5";
 }
 
 export function utilityModel(): string {

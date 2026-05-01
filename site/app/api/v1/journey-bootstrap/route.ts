@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await generateJourneyBootstrap(typedPayload);
     console.info(
-      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1}`
+      `[journey-bootstrap][${rid}] success provider=${result.provider} model=${result.model} escalated=${result.escalated} fallback=${result.fallbackUsed} theme=${result.bootstrap.themeKey} tokens=${result.usage?.totalTokens ?? 0} estCostUSD=${result.usage?.estimatedCostUSD ?? -1} diagnostics=${(result.diagnostics ?? []).join("|") || "none"}`
     );
 
     const distinctID = typedPayload.telemetry?.distinctID?.trim() || `anon_bootstrap_${typedPayload.name || "unknown"}`;
@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
       theme_key: result.bootstrap.themeKey,
       app_platform: typedPayload.telemetry?.platform ?? "ios",
       app_version: typedPayload.telemetry?.appVersion ?? "",
-      app_build_number: typedPayload.telemetry?.buildNumber ?? ""
+      app_build_number: typedPayload.telemetry?.buildNumber ?? "",
+      diagnostics: (result.diagnostics ?? []).join("|")
     });
 
     return NextResponse.json({
@@ -103,7 +104,8 @@ export async function POST(request: NextRequest) {
         escalated: result.escalated,
         fallbackUsed: result.fallbackUsed,
         generatedAt: new Date().toISOString(),
-        usage: result.usage ?? null
+        usage: result.usage ?? null,
+        diagnostics: result.diagnostics ?? []
       }
     });
   } catch (error) {

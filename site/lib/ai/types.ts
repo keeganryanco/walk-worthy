@@ -121,6 +121,19 @@ export interface DevotionalCore {
   updatedJourneyArc: JourneyArc;
 }
 
+export interface DevotionalPlan {
+  centralConcern: string;
+  journeyDirection: string;
+  todayAngle: string;
+  biblicalTheme: string;
+  devotionalPoint: string;
+  scriptureFitReason: string;
+  titleSeed: string;
+  prayerFocus: string;
+  actionDirection: string;
+  candidateScriptureReferences: string[];
+}
+
 export interface ActionLayerOutput {
   smallStepQuestion: string;
   suggestedSteps: string[];
@@ -134,6 +147,7 @@ export interface OrchestratedResult {
   escalated: boolean;
   fallbackUsed: boolean;
   usage?: AIUsageMetrics;
+  diagnostics?: string[];
 }
 
 export interface JourneyBootstrapRequest {
@@ -168,4 +182,5 @@ export interface BootstrapOrchestratedResult {
   escalated: boolean;
   fallbackUsed: boolean;
   usage?: AIUsageMetrics;
+  diagnostics?: string[];
 }

@@ -3,6 +3,7 @@ import {
 } from "./types";
 import type {
   DailyJourneyPackage,
+  DevotionalPlan,
   DevotionalCore,
   ActionLayerOutput,
   JourneyArc,
@@ -1458,7 +1459,7 @@ const scriptureContextReferenceSets: Array<{ pattern: RegExp; references: Set<st
     ])
   },
   {
-    pattern: /(grief|grieve|loss|died|death|mourning|sad|heartbroken|duelo|luto)/i,
+    pattern: /(grief|grieve|loss|died|death|mourning|sad|heartbroken|breakup|break up|broke up|broken up|ended relationship|duelo|luto)/i,
     references: new Set([
       "Psalm 23:1-3",
       "Psalm 34:18",
@@ -1515,6 +1516,16 @@ const scriptureContextReferenceSets: Array<{ pattern: RegExp; references: Set<st
       "Colossians 3:23",
       "1 Corinthians 10:31",
       "James 1:5"
+    ])
+  },
+  {
+    pattern: /(driver'?s test|driving test|license test|road test|exam|test today)/i,
+    references: new Set([
+      "James 1:5",
+      "Philippians 4:6-7",
+      "Proverbs 3:5-6",
+      "2 Timothy 1:7",
+      "Isaiah 26:3"
     ])
   },
   {
@@ -1605,6 +1616,124 @@ function scriptureMatchesJourneyContext(reference: string, input?: JourneyPackag
   }
 
   return matchingReferences.size === 0 || references.some((item) => matchingReferences.has(item));
+}
+
+export function parseAndNormalizeDevotionalPlan(
+  rawText: string,
+  input?: JourneyPackageRequest
+): DevotionalPlan | null {
+  const parsed = extractJSON(rawText);
+  if (!parsed || typeof parsed !== "object") return null;
+  return normalizeDevotionalPlanFromObject(parsed as Record<string, unknown>, input);
+}
+
+export function normalizeDevotionalPlanFromObject(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest
+): DevotionalPlan | null {
+  const centralConcern = cleanText(source.centralConcern, 180);
+  const journeyDirection = cleanText(source.journeyDirection, 180);
+  const todayAngle = cleanText(source.todayAngle, 160);
+  const biblicalTheme = cleanText(source.biblicalTheme, 120);
+  const devotionalPoint = cleanText(source.devotionalPoint, 240);
+  const scriptureFitReason = cleanText(source.scriptureFitReason, 240);
+  const titleSeed = cleanText(source.titleSeed, 80);
+  const prayerFocus = cleanText(source.prayerFocus, 180);
+  const actionDirection = cleanText(source.actionDirection, 180);
+  const rawReferences = Array.isArray(source.candidateScriptureReferences)
+    ? source.candidateScriptureReferences
+    : typeof source.scriptureReference === "string"
+      ? [source.scriptureReference]
+      : [];
+  const candidateScriptureReferences = Array.from(
+    new Set(
+      rawReferences
+        .flatMap((item) => splitReferenceCandidates(cleanText(item, 180)))
+        .filter(isApprovedScriptureReference)
+    )
+  ).slice(0, 3);
+
+  if (
+    !centralConcern ||
+    !journeyDirection ||
+    !todayAngle ||
+    !biblicalTheme ||
+    !devotionalPoint ||
+    !scriptureFitReason ||
+    !titleSeed ||
+    !prayerFocus ||
+    !actionDirection ||
+    candidateScriptureReferences.length === 0 ||
+    isGenericDailyTitle(titleSeed, languageCode(input))
+  ) {
+    return null;
+  }
+
+  const referenceSet = candidateScriptureReferences.join("; ");
+  if (!scriptureMatchesJourneyContext(referenceSet, input)) {
+    return null;
+  }
+
+  return {
+    centralConcern,
+    journeyDirection,
+    todayAngle,
+    biblicalTheme,
+    devotionalPoint,
+    scriptureFitReason,
+    titleSeed,
+    prayerFocus,
+    actionDirection,
+    candidateScriptureReferences
+  };
+}
+
+export function devotionalPlanValidationIssues(
+  source: Record<string, unknown>,
+  input?: JourneyPackageRequest
+): string[] {
+  const issues: string[] = [];
+  const requiredFields = [
+    "centralConcern",
+    "journeyDirection",
+    "todayAngle",
+    "biblicalTheme",
+    "devotionalPoint",
+    "scriptureFitReason",
+    "titleSeed",
+    "prayerFocus",
+    "actionDirection"
+  ];
+  for (const field of requiredFields) {
+    if (!cleanText(source[field], 240)) {
+      issues.push(`missing ${field}`);
+    }
+  }
+
+  const rawReferences = Array.isArray(source.candidateScriptureReferences)
+    ? source.candidateScriptureReferences
+    : typeof source.scriptureReference === "string"
+      ? [source.scriptureReference]
+      : [];
+  const candidateScriptureReferences = Array.from(
+    new Set(
+      rawReferences
+        .flatMap((item) => splitReferenceCandidates(cleanText(item, 180)))
+        .filter(isApprovedScriptureReference)
+    )
+  ).slice(0, 3);
+  if (!candidateScriptureReferences.length) {
+    issues.push("missing approved candidateScriptureReferences");
+  } else if (!scriptureMatchesJourneyContext(candidateScriptureReferences.join("; "), input)) {
+    issues.push("candidate Scripture does not fit journey context");
+  }
+
+  const titleSeed = cleanText(source.titleSeed, 80);
+  if (titleSeed && isGenericDailyTitle(titleSeed, languageCode(input))) {
+    issues.push("generic titleSeed");
+  }
+
+  return issues;
 }
 
 export function parseAndNormalizeDevotionalCore(rawText: string, input?: JourneyPackageRequest): DevotionalCore | null {

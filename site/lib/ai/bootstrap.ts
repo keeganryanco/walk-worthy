@@ -249,8 +249,10 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
     THEME_KEYS.join(", "),
     "Create concise initial memory and a daily package.",
     "Create a flexible journeyArc that gives the journey an ongoing story and practical direction without locking a fixed day-by-day plan.",
+    "Generate internally in this order: user's concern, broad journey direction, first topic/angle/message, Scripture, reflection, dailyTitle, prayer, action question, suggested steps.",
     "Privately decide the one clear devotional point this package is communicating before writing any field.",
     "The title, Scripture choice, reflection, prayer, action question, and suggested steps should all flow from that same point without sounding formulaic.",
+    "The dailyTitle must name the same point the reflection develops. After sentence 2, reflectionThought must deepen that same title and point instead of moving to a neighboring topic.",
     "Use plain, easy-to-follow language in reflectionThought. A thoughtful child should be able to follow the main point, while an adult should still feel respected.",
     "Do not try to sound literary, academic, or impressive. Prefer common words when they communicate the same idea.",
     "One rich word is fine when it matters; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
@@ -272,6 +274,8 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
     "If using multiple references, paraphrase each passage in the same order without blending them into a fake single verse.",
     "Do not turn Scripture into application language. scriptureParaphrase, reflectionThought, and prayer must not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act.",
     "For marriage/spouse journeys, prefer passages about sacrificial love, patient love, humility, service, tenderness, and honoring a spouse, such as Ephesians 5:25, Colossians 3:19, 1 Peter 3:7, John 15:12, 1 Corinthians 13:4-7, Mark 10:45, or Galatians 5:13.",
+    "For a breakup, death, loss, or heartbreak prompt, treat grief/comfort honestly rather than forcing generic relationship advice.",
+    "For an ordinary event such as a driver's test, exam, interview, or appointment, keep the concrete event visible while naming the deeper need for wisdom, peace, courage, or trust.",
     "Prayer must be exactly 3-4 complete sentences and strict first-person voice (I/me/my/we/us/our).",
     "Prayer must name concrete realities from the user's journey and avoid empty Christianese such as reflect your grace more and more, deeper reliance, divine care, higher purpose, align my heart, walk in your truth, or grow closer to you.",
     "dailyTitle must be short, concrete, and story-like.",
@@ -444,6 +448,7 @@ export async function generateJourneyBootstrap(
     escalated: boolean;
     call: () => Promise<ProviderGenerationResult>;
   }> = [];
+  const diagnostics: string[] = [];
 
   if (openAIKey) {
     candidates.push({
@@ -455,6 +460,8 @@ export async function generateJourneyBootstrap(
         return generateWithOpenAIPrompt(system, user, devotionalModel, openAIKey);
       }
     });
+  } else {
+    diagnostics.push("missing_OPENAI_API_KEY");
   }
 
   if (openAIKey) {
@@ -483,13 +490,18 @@ export async function generateJourneyBootstrap(
         return generateWithGeminiPrompt(system, user, primaryModel, geminiKey);
       }
     });
+  } else {
+    diagnostics.push("missing_GEMINI_API_KEY");
   }
 
   for (const candidate of candidates) {
     try {
       const generated = await candidate.call();
       const parsed = parseBootstrap(generated.text, request);
-      if (!parsed) continue;
+      if (!parsed) {
+        diagnostics.push(`${candidate.provider}_${candidate.model}_parse_or_validation_failed`);
+        continue;
+      }
       return {
         bootstrap: parsed,
         provider: candidate.provider,
@@ -501,9 +513,12 @@ export async function generateJourneyBootstrap(
               ...generated.usage,
               estimatedCostUSD: estimateCostUSD(candidate.provider, candidate.model, generated.usage)
             }
-          : undefined
+          : undefined,
+        diagnostics
       };
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      diagnostics.push(`${candidate.provider}_${candidate.model}_exception:${message}`);
       continue;
     }
   }
@@ -519,6 +534,7 @@ export async function generateJourneyBootstrap(
       outputTokens: 0,
       totalTokens: 0,
       estimatedCostUSD: 0
-    }
+    },
+    diagnostics
   };
 }

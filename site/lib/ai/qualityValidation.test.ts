@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   normalizeActionLayerFromObject,
-  normalizeDevotionalCoreFromObject
+  normalizeDevotionalCoreFromObject,
+  normalizeDevotionalPlanFromObject
 } from "./validate.ts";
 import { normalizeReference } from "./scripture.ts";
 import { fallbackPackage } from "./fallback.ts";
@@ -81,6 +82,24 @@ test("model routing defaults use gpt-5.5 core and gpt-5.1 action", () => {
     assert.equal(devotionalModel(), "gpt-5.5");
     assert.equal(actionModel(), "gpt-5.1");
     assert.equal(repairModel(), "gpt-5.5");
+  } finally {
+    process.env = original;
+  }
+});
+
+test("legacy primary model cannot downgrade devotional or repair routing", () => {
+  const original = { ...process.env };
+  delete process.env.OPENAI_DEVOTIONAL_MODEL;
+  delete process.env.OPENAI_ACTION_MODEL;
+  delete process.env.OPENAI_UTILITY_MODEL;
+  delete process.env.OPENAI_REPAIR_MODEL;
+  process.env.OPENAI_PRIMARY_MODEL = "gpt-5.1";
+  process.env.OPENAI_ESCALATION_MODEL = "gpt-5.1";
+
+  try {
+    assert.equal(devotionalModel(), "gpt-5.5");
+    assert.equal(repairModel(), "gpt-5.5");
+    assert.equal(actionModel(), "gpt-5.1");
   } finally {
     process.env = original;
   }
@@ -456,4 +475,133 @@ test("fallback output never pairs a random reference with generic action paraphr
     "Do one focused work block",
     "Encourage one person"
   ]);
+});
+
+test("devotional plan narrows a broad prompt into one coherent title and point", () => {
+  const plan = normalizeDevotionalPlanFromObject(
+    {
+      centralConcern: "anxiety about the future and growing a business",
+      journeyDirection: "learn to pursue business growth without letting ambition become pressure",
+      todayAngle: "holding ambition loosely while trusting God with outcomes",
+      biblicalTheme: "ambition shaped by service and trust",
+      devotionalPoint: "Holding ambition loosely means working with purpose while refusing to make success prove personal worth.",
+      scriptureFitReason: "Matthew 5:16 keeps visible work tied to God's glory rather than self-importance.",
+      titleSeed: "Holding Ambition Loosely",
+      prayerFocus: "ask for humility, wisdom, peace, and a desire to serve through the business",
+      actionDirection: "one practical action that faces business growth without panic",
+      candidateScriptureReferences: ["Matthew 5:16", "James 1:5"]
+    },
+    {
+      ...futureImpactRequest,
+      profile: {
+        prayerFocus: "anxiety about the future and growing my business",
+        growthGoal: "trust God while working hard on my business"
+      }
+    }
+  );
+
+  assert.equal(plan?.todayAngle, "holding ambition loosely while trusting God with outcomes");
+  assert.deepEqual(plan?.candidateScriptureReferences, ["Matthew 5:16", "James 1:5"]);
+});
+
+test("driver test prompt can use wisdom and peace scripture without falling back", () => {
+  const driverRequest: JourneyPackageRequest = {
+    profile: {
+      prayerFocus: "my driver's test today",
+      growthGoal: "receive wisdom and peace before my driver's test"
+    },
+    journey: {
+      id: "journey-driver-test",
+      title: "Driver Test",
+      category: "Wisdom",
+      themeKey: "wisdom"
+    },
+    recentJourneySignals: ["driver's test", "wisdom", "peace"],
+    languageCode: "en",
+    localeIdentifier: "en-US"
+  };
+
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      centralConcern: "nervousness about a driver's test today",
+      biblicalTheme: "asking God for wisdom without being ruled by fear",
+      devotionalPoint: "God gives wisdom generously when a real test feels bigger than the person taking it.",
+      scriptureFitReason: "James 1:5 directly invites asking God for wisdom.",
+      dailyTitle: "Asking For Wisdom",
+      scriptureReference: "James 1:5",
+      scriptureParaphrase: "If anyone lacks wisdom, they should ask God, who gives generously without finding fault.",
+      reflectionThought:
+        "James says God gives wisdom generously to those who ask Him. Wisdom is not only for large life decisions because it also matters in an ordinary test that feels stressful. A driver's test can bring fear to the surface when the outcome feels important. God meets that pressure with steady wisdom, honest dependence, and peace.",
+      prayer:
+        "Lord, I bring You my driver's test and the nerves I feel today. Give me wisdom, calm attention, and peace. Help me remember that this test matters without letting fear rule me.",
+      todayAim: "receive wisdom and peace for today's driver's test",
+      updatedJourneyArc: {
+        purpose: "bring today's driver's test to God",
+        journeyPurpose: "bring today's driver's test to God",
+        currentStage: "asking for wisdom before the test",
+        todayAim: "receive wisdom and peace for today's driver's test",
+        nextMovement: "Continue learning to face pressure with wisdom and peace.",
+        tone: "grounded, specific, biblically anchored",
+        practicalActionDirection: "Use calm, practical actions tied to the test.",
+        recentDayTitles: ["Asking For Wisdom"],
+        specificContextSignals: ["driver's test", "wisdom", "peace"],
+        lastFollowThroughInterpretation: ""
+      }
+    },
+    driverRequest
+  );
+
+  assert.ok(result);
+  assert.equal(result.scriptureReference, "James 1:5");
+});
+
+test("breakup prompt can use grief scripture instead of generic relationship scripture", () => {
+  const breakupRequest: JourneyPackageRequest = {
+    profile: {
+      prayerFocus: "my girlfriend of 5 years broke up with me",
+      growthGoal: "grieve honestly and trust God with heartbreak"
+    },
+    journey: {
+      id: "journey-breakup",
+      title: "Breakup Grief",
+      category: "Healing",
+      themeKey: "healing"
+    },
+    recentJourneySignals: ["girlfriend", "broke up", "grief", "heartbreak"],
+    languageCode: "en",
+    localeIdentifier: "en-US"
+  };
+
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      centralConcern: "grieving a painful breakup after a long relationship",
+      biblicalTheme: "God's nearness to the brokenhearted",
+      devotionalPoint: "God does not rush heartbreak; He draws near to the person whose heart feels crushed.",
+      scriptureFitReason: "Psalm 34:18 directly speaks to the brokenhearted and crushed in spirit.",
+      dailyTitle: "Near In Heartbreak",
+      scriptureReference: "Psalm 34:18",
+      scriptureParaphrase: "The Lord is near to the brokenhearted and saves those crushed in spirit.",
+      reflectionThought:
+        "Psalm 34 says the Lord is near to the brokenhearted. That means grief after a breakup is not something God treats as small or embarrassing. Losing a girlfriend after five years can leave the heart feeling crushed because love had become part of daily life. God's nearness gives heartbreak room to be honest without being hopeless.",
+      prayer:
+        "Lord, I bring You the pain of this breakup and the years I shared with her. Stay near to me while my heart feels crushed. Help me grieve honestly without losing hope.",
+      todayAim: "grieve this breakup honestly with God near",
+      updatedJourneyArc: {
+        purpose: "grieve a painful breakup with God",
+        journeyPurpose: "grieve a painful breakup with God",
+        currentStage: "naming heartbreak honestly",
+        todayAim: "grieve this breakup honestly with God near",
+        nextMovement: "Continue receiving comfort without rushing the grief.",
+        tone: "gentle, honest, biblically anchored",
+        practicalActionDirection: "Use gentle actions tied to grief, support, and honest prayer.",
+        recentDayTitles: ["Near In Heartbreak"],
+        specificContextSignals: ["breakup", "girlfriend", "grief", "heartbreak"],
+        lastFollowThroughInterpretation: ""
+      }
+    },
+    breakupRequest
+  );
+
+  assert.ok(result);
+  assert.equal(result.scriptureReference, "Psalm 34:18");
 });
