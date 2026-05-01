@@ -381,7 +381,6 @@ struct JourneyGrowthPage: View {
     
     @State private var isGenerating = false
     @State private var isPreparingTend = false
-    @State private var preparingDotCount = 1
     @State private var prepareTimeoutTask: Task<Void, Never>?
     @State private var showTendingSheet = false
     @State private var showJournalEntrySheet = false
@@ -549,8 +548,7 @@ struct JourneyGrowthPage: View {
     }
 
     private var preparingTendLabel: String {
-        let base = L10n.string("home.generating.preparing_base", default: "Preparing today's Tend")
-        return base + String(repeating: ".", count: max(1, min(preparingDotCount, 3)))
+        L10n.string("home.generating.preparing_base", default: "Preparing today's Tend")
     }
     
     private var plantImageName: String {
@@ -1148,6 +1146,10 @@ struct JourneyGrowthPage: View {
                     } label: {
                         if isPreparingMissingPackage {
                             HStack(spacing: 10) {
+                                ProgressView()
+                                    .tint(WWColor.nearBlack)
+                                    .controlSize(.small)
+
                                 Text(preparingTendLabel)
                                     .font(WWTypography.heading(20))
                                     .foregroundStyle(WWColor.nearBlack)
@@ -1205,16 +1207,6 @@ struct JourneyGrowthPage: View {
                             default: "Generates today's reflection, prayer, and next step."
                         )
                     )
-                    .task(id: isPreparingMissingPackage) {
-                        guard isPreparingMissingPackage else { return }
-                        while !Task.isCancelled && isPreparingTend && todaysPackageRecord == nil {
-                            try? await Task.sleep(nanoseconds: 450_000_000)
-                            guard !Task.isCancelled else { return }
-                            await MainActor.run {
-                                preparingDotCount = preparingDotCount >= 3 ? 1 : preparingDotCount + 1
-                            }
-                        }
-                    }
                 }
 
                 streakSection
@@ -1860,7 +1852,6 @@ struct JourneyGrowthPage: View {
 
         onRequestDailyWarmup(journey.id)
         isPreparingTend = true
-        preparingDotCount = 1
         prepareTimeoutTask?.cancel()
         prepareTimeoutTask = Task {
             try? await Task.sleep(nanoseconds: 90_000_000_000)
@@ -1876,7 +1867,6 @@ struct JourneyGrowthPage: View {
 
     private func stopPreparingTend() {
         isPreparingTend = false
-        preparingDotCount = 1
         prepareTimeoutTask?.cancel()
         prepareTimeoutTask = nil
     }
