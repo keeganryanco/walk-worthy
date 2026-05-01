@@ -466,7 +466,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
     "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
     "Do not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action inside reflectionThought.",
     "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
-    "reflectionThought must be exactly 4-5 complete sentences.",
+    "reflectionThought must be 4-6 complete sentences.",
     "Keep reflectionThought concrete, Scripture-led, and tied to this journey's concern.",
     "Choose Scripture before writing the reflection. The reflection's main point must clearly arise from what the selected Scripture says, not merely sit beside a broadly related verse.",
     "Use one scripture reference by default. Use 2-3 references only when the combined passages truly deepen the same point; if using multiple references, separate them with semicolons.",

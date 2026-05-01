@@ -102,7 +102,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
       },
       instructions: [
         "Make the reflection concrete, specific to this journey, and connected to the current journeyArc.nextMovement.",
-        "reflectionThought must be exactly 4-5 complete sentences.",
+        "reflectionThought must be 4-6 complete sentences.",
         "reflectionThought should read naturally as one coherent thought with a beginning, middle, and end.",
         "Use simpler wording where possible; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
         "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
@@ -183,7 +183,7 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { syste
     "Prayer is not the action step. Practical action belongs only in the Tend action layer, not in scriptureParaphrase, reflectionThought, or prayer.",
     "Do not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act in scriptureParaphrase, reflectionThought, or prayer.",
     "Rare reflective directives like Notice or Consider are allowed only when they point inward to understanding, not outward to a task.",
-    "Reflection must be exactly 4-5 complete sentences, concrete, biblically anchored, not first-person, and shaped as one coherent thought with a natural close.",
+    "Reflection must be 4-6 complete sentences, concrete, biblically anchored, not first-person, and shaped as one coherent thought with a natural close.",
     "Use simpler wording where possible; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
     "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
     "Prayer must be exactly 3-4 complete sentences, first-person only, plain, concrete Christian language.",

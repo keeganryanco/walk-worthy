@@ -1793,7 +1793,7 @@ export function devotionalCoreValidationIssues(
   if (!scriptureFitReason) issues.push("missing scriptureFitReason");
   if (!todayAim) issues.push("missing todayAim");
   if (!arcSource) issues.push("missing updatedJourneyArc");
-  if (!hasSentenceCount(reflectionThought, 4, 5)) issues.push("generic reflection: reflection must be 4-5 sentences");
+  if (!hasSentenceCount(reflectionThought, 4, 6)) issues.push("generic reflection: reflection must be 4-6 sentences");
   if (reflectionUsesFirstPerson(reflectionThought, language)) issues.push("generic reflection: reflection uses first person");
   if (reflectionAssignsAction(reflectionThought, language) || hasDevotionalCoreActionLanguage(reflectionThought)) {
     issues.push("action language in devotional core reflection");
@@ -1847,7 +1847,7 @@ export function normalizeDevotionalCoreFromObject(
     !scriptureFitReason ||
     !todayAim ||
     !arcSource ||
-    !hasSentenceCount(reflectionThought, 4, 5) ||
+    !hasSentenceCount(reflectionThought, 4, 6) ||
     reflectionUsesFirstPerson(reflectionThought, language) ||
     reflectionAssignsAction(reflectionThought, language) ||
     hasDevotionalCoreActionLanguage(reflectionThought) ||

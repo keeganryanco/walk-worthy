@@ -42,7 +42,7 @@ export function buildDevotionalPlanPrompt(input: JourneyPackageRequest, repairNo
     "Your job is not to write the devotional. Your job is to choose one coherent topic/angle/message for today's devotional.",
     "Think in this order: user's concern, broad journey direction, today's specific angle, biblical theme, one devotional point, Scripture candidates, title seed, prayer focus, action direction.",
     "Do not choose a title first. The titleSeed must come from the devotionalPoint and Scripture fit.",
-    "The todayAngle must be narrow enough that a 4-5 sentence reflection can stay on it without drifting into adjacent topics.",
+    "The todayAngle must be narrow enough that a 4-6 sentence reflection can stay on it without drifting into adjacent topics.",
     "The devotionalPoint must answer what the titleSeed means and why Scripture speaks to it.",
     "For example, if the titleSeed is Holding Ambition Loosely, the devotionalPoint should explain what it means to be ambitious while trusting God, not drift into generic influence or pressure.",
     "For ordinary-life prompts such as a driver's test, breakup, school exam, business anxiety, or family conflict, infer the deeper spiritual concern without losing the concrete situation.",
@@ -84,6 +84,7 @@ export function buildDevotionalCorePrompt(
   const system = [
     "You are writing the devotional core for Tend, a personal Christian devotional journey app.",
     "Respond with strict JSON only, no markdown and no prose outside JSON.",
+    "If repairNotes are present, treat them as private validation diagnostics. Fix the output silently; never mention the error, validation, retry, schema, or repair process in any returned field.",
     "Write like a careful devotional editor, not like generic Christian marketing copy.",
     "The day must feel like one intentional lesson in an ongoing journey, not a disconnected topical thought.",
     plan
@@ -110,7 +111,7 @@ export function buildDevotionalCorePrompt(
     "Do not use broad love, peace, or trust verses when a more specific passage would carry the user's actual situation better.",
     "For marriage/spouse journeys, prefer passages about sacrificial love, patient love, humility, service, tenderness, and honoring a spouse, such as Ephesians 5:25, Colossians 3:19, 1 Peter 3:7, John 15:12, 1 Corinthians 13:4-7, Mark 10:45, or Galatians 5:13.",
     "For unusual prompts, map the request to its biblical theme first: grief, wisdom, stewardship, diligence, ambition, humility, identity, forgiveness, peace, endurance, or love.",
-    "Reflection must be exactly 4-5 complete sentences. It teaches/interprets Scripture in relation to the journey as one coherent thought with a beginning, middle, and end.",
+    "Reflection must be 4-6 complete sentences. It teaches/interprets Scripture in relation to the journey as one coherent thought with a beginning, middle, and end.",
     "Use this reflection shape without making it obvious: sentence 1 anchors in the selected Scripture; sentence 2 explains what the Scripture means in simple terms; sentence 3 connects that truth to the user's journey; sentence 4 or 5 closes the thought with a plain, grounded sentence.",
     "After sentence 2, do not switch to a neighboring topic. Use the remaining sentences to deepen the dailyTitle and devotionalPoint.",
     "The reflection should answer the promise implied by the title. If the title is about holding ambition loosely, the reflection should explain ambition held with trust, humility, and service.",

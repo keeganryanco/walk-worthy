@@ -113,6 +113,32 @@ async function generateOpenAIAction(
   return { action: parseAndNormalizeActionLayer(generated.text, input, core), generated };
 }
 
+function devotionalCoreRepairNotes(issues: string[], mode: "general" | "sentence-count-rescue"): string {
+  const failedReasons = issues.length ? ` Validation failures: ${issues.join("; ")}.` : "";
+  const base = [
+    "Previous devotional core failed validation.",
+    failedReasons,
+    "These are private backend diagnostics; do not mention validation, errors, retries, repair, schema, or requirements in any returned field.",
+    "Return only the same JSON schema as natural devotional content.",
+    "Choose only from the approved Scripture library.",
+    "Remove action language from reflection/prayer/scripture.",
+    "Make the reflection specific, Scripture-led, and coherent.",
+    "Make the prayer concrete."
+  ].join(" ");
+
+  if (mode === "sentence-count-rescue") {
+    return [
+      base,
+      "The most important repair is sentence count: reflectionThought must be 4-6 complete sentences.",
+      "Do not shorten the devotional point into fragments, and do not add filler just to reach the count.",
+      "If the previous reflection was too short, add one plain sentence that deepens the same point.",
+      "If the previous reflection was too long, combine or remove only the weakest adjacent sentence while preserving the same point."
+    ].join(" ");
+  }
+
+  return base;
+}
+
 export async function generateJourneyCore(input: JourneyPackageRequest): Promise<JourneyCoreOrchestratedResult> {
   const openAIKey = process.env.OPENAI_API_KEY?.trim();
   if (!openAIKey) {
@@ -129,20 +155,31 @@ export async function generateJourneyCore(input: JourneyPackageRequest): Promise
   let escalated = false;
 
   if (!core) {
-    const failedReasons = coreAttempt.issues.length ? ` Reasons: ${coreAttempt.issues.join("; ")}.` : "";
     diagnostics.push(`openai_core_failed:${coreAttempt.issues.join("|") || "unknown"}`);
     const repaired = await generateOpenAICore(
       input,
       fallbackRepairModel,
       openAIKey,
       undefined,
-      `Previous devotional core failed validation.${failedReasons} Repair by choosing only from the approved Scripture library, removing action language from reflection/prayer/scripture, making the reflection specific and Scripture-led, making the prayer concrete, and returning the same JSON schema.`
+      devotionalCoreRepairNotes(coreAttempt.issues, "general")
     );
     core = repaired.core;
     coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);
     escalated = true;
     if (!core) {
       diagnostics.push(`openai_core_repair_failed:${repaired.issues.join("|") || "unknown"}`);
+      const sentenceRescue = await generateOpenAICore(
+        input,
+        fallbackRepairModel,
+        openAIKey,
+        undefined,
+        devotionalCoreRepairNotes(repaired.issues, "sentence-count-rescue")
+      );
+      core = sentenceRescue.core;
+      coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, sentenceRescue.generated.usage)]);
+      if (!core) {
+        diagnostics.push(`openai_core_sentence_rescue_failed:${sentenceRescue.issues.join("|") || "unknown"}`);
+      }
     }
   }
 
@@ -232,22 +269,35 @@ async function generateWithOpenAIOrchestration(
   let coreUsage = usageWithCost("openai", coreModel, coreAttempt.generated.usage);
 
   if (!core) {
-    const failedReasons = coreAttempt.issues.length ? ` Reasons: ${coreAttempt.issues.join("; ")}.` : "";
     diagnostics.push(`openai_core_failed:${coreAttempt.issues.join("|") || "unknown"}`);
     const repaired = await generateOpenAICore(
       input,
       fallbackRepairModel,
       apiKey,
       undefined,
-      `Previous devotional core failed validation.${failedReasons} Repair by choosing only from the approved Scripture library, removing action language from reflection/prayer/scripture, making the reflection specific and Scripture-led, making the prayer concrete, and returning the same JSON schema.`
+      devotionalCoreRepairNotes(coreAttempt.issues, "general")
     );
     core = repaired.core;
     coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, repaired.generated.usage)]);
     escalated = true;
+    if (!core) {
+      diagnostics.push(`openai_core_repair_failed:${repaired.issues.join("|") || "unknown"}`);
+      const sentenceRescue = await generateOpenAICore(
+        input,
+        fallbackRepairModel,
+        apiKey,
+        undefined,
+        devotionalCoreRepairNotes(repaired.issues, "sentence-count-rescue")
+      );
+      core = sentenceRescue.core;
+      coreUsage = combineUsage([coreUsage, usageWithCost("openai", fallbackRepairModel, sentenceRescue.generated.usage)]);
+      if (!core) {
+        diagnostics.push(`openai_core_sentence_rescue_failed:${sentenceRescue.issues.join("|") || "unknown"}`);
+      }
+    }
   }
 
   if (!core) {
-    diagnostics.push("openai_core_repair_failed");
     throw new Error(diagnostics.join("; "));
   }
 

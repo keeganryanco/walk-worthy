@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  devotionalCoreValidationIssues,
   normalizeActionLayerFromObject,
   normalizeDevotionalCoreFromObject,
   normalizeDevotionalPlanFromObject
@@ -150,6 +151,30 @@ test("current package quality version invalidates stale cached output", () => {
 
 test("valid spouse-specific devotional core passes", () => {
   assert.ok(normalizeDevotionalCoreFromObject(validCoreSource, husbandRequest));
+});
+
+test("reflection can use six sentences when clarity needs more room", () => {
+  const result = normalizeDevotionalCoreFromObject(
+    {
+      ...validCoreSource,
+      reflectionThought:
+        "Jesus shows that love for God is tied to love for the person close beside you. His command makes love more than a feeling. Love becomes patient, humble, and ready to serve. For a husband, this turns marriage into a daily place where Christlike love becomes real. Sacrificial love grows in ordinary moments of care and listening. Humility gives that love a steady shape."
+    },
+    husbandRequest
+  );
+
+  assert.ok(result);
+});
+
+test("reflection still requires at least four sentences", () => {
+  const source = {
+    ...validCoreSource,
+    reflectionThought:
+      "Jesus shows that love for God is tied to love for the person close beside you. For a husband, marriage becomes a daily place where Christlike love becomes real. Sacrificial love grows in ordinary moments of care and listening."
+  };
+
+  assert.equal(normalizeDevotionalCoreFromObject(source, husbandRequest), null);
+  assert.ok(devotionalCoreValidationIssues(source, husbandRequest).includes("generic reflection: reflection must be 4-6 sentences"));
 });
 
 test("marriage context rejects broad love command scripture by itself", () => {
