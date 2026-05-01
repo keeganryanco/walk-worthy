@@ -1,4 +1,4 @@
-import { DevotionalCore, JourneyPackageRequest } from "./types";
+import type { DevotionalCore, JourneyPackageRequest } from "./types";
 import { APPROVED_SCRIPTURE_REFERENCES } from "./scripture";
 
 function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt" | "de" | "ja" | "ko"; label: string; localeIdentifier: string } {

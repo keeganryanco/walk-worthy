@@ -1,9 +1,27 @@
 import { buildPrompt } from "../prompt";
-import { AITokenUsage, JourneyPackageRequest } from "../types";
+import type { AITokenUsage, JourneyPackageRequest } from "../types";
 
 export interface ProviderGenerationResult {
   text: string;
   usage?: AITokenUsage;
+}
+
+const OPENAI_MAX_OUTPUT_TOKENS = 2600;
+
+function supportsTemperature(model: string): boolean {
+  return !/^gpt-5(?:\.|-|$)/i.test(model.trim());
+}
+
+export function buildOpenAIResponsesRequestBody(system: string, user: string, model: string): Record<string, unknown> {
+  return {
+    model,
+    ...(supportsTemperature(model) ? { temperature: 0.35 } : {}),
+    max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS,
+    input: [
+      { role: "system", content: [{ type: "input_text", text: system }] },
+      { role: "user", content: [{ type: "input_text", text: user }] }
+    ]
+  };
 }
 
 export async function generateWithOpenAI(
@@ -28,15 +46,7 @@ export async function generateWithOpenAIPrompt(
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.35,
-      max_output_tokens: 1400,
-      input: [
-        { role: "system", content: [{ type: "input_text", text: system }] },
-        { role: "user", content: [{ type: "input_text", text: user }] }
-      ]
-    })
+    body: JSON.stringify(buildOpenAIResponsesRequestBody(system, user, model))
   });
 
   if (!response.ok) {

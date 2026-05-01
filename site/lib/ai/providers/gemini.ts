@@ -1,5 +1,5 @@
 import { buildPrompt } from "../prompt";
-import { AITokenUsage, JourneyPackageRequest } from "../types";
+import type { AITokenUsage, JourneyPackageRequest } from "../types";
 import type { ProviderGenerationResult } from "./openai";
 
 export async function generateWithGemini(
@@ -32,7 +32,7 @@ export async function generateWithGeminiPrompt(
       contents: [{ role: "user", parts: [{ text: user }] }],
       generationConfig: {
         temperature: 0.35,
-        maxOutputTokens: 1400,
+        maxOutputTokens: 2600,
         responseMimeType: "application/json"
       }
     })

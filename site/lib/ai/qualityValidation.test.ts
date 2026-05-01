@@ -9,6 +9,7 @@ import {
 import { normalizeReference } from "./scripture.ts";
 import { fallbackPackage } from "./fallback.ts";
 import { actionModel, devotionalModel, repairModel } from "./modelRouting.ts";
+import { buildOpenAIResponsesRequestBody } from "./providers/openai.ts";
 import { DAILY_JOURNEY_PACKAGE_QUALITY_VERSION } from "./types.ts";
 import type { JourneyPackageRequest } from "./types.ts";
 
@@ -103,6 +104,18 @@ test("legacy primary model cannot downgrade devotional or repair routing", () =>
   } finally {
     process.env = original;
   }
+});
+
+test("OpenAI gpt-5.5 request omits unsupported temperature", () => {
+  const body = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5");
+  assert.equal(body.model, "gpt-5.5");
+  assert.equal("temperature" in body, false);
+  assert.equal(body.max_output_tokens, 2600);
+});
+
+test("OpenAI non-gpt-5 request may include temperature", () => {
+  const body = buildOpenAIResponsesRequestBody("system", "user", "gpt-4.1");
+  assert.equal(body.temperature, 0.35);
 });
 
 test("current package quality version invalidates stale cached output", () => {
