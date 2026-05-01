@@ -120,13 +120,6 @@ struct ExperimentalOnboardingFlowView: View {
         actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var prayerPreviewText: String {
-        let trimmed = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return copy("generating_prayer_fallback", fallback: "Your prayer") }
-        if trimmed.count <= 72 { return trimmed }
-        return String(trimmed.prefix(69)) + "..."
-    }
-
     private var supportsWidgetsOnCurrentDevice: Bool {
         UIDevice.current.userInterfaceIdiom != .pad
     }
@@ -526,15 +519,34 @@ struct ExperimentalOnboardingFlowView: View {
     }
     
     private var generatingContent: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 14) {
             Text(
                 generationIsReady
                     ? copy("generating_ready_title", fallback: "Your journey is ready.")
-                    : copy("generating_title", fallback: "Shaping your journey...")
+                    : copy("generating_title", fallback: "Shaping today’s prayer journey")
             )
                 .font(WWTypography.display(30))
                 .foregroundStyle(WWColor.nearBlack)
+                .multilineTextAlignment(.center)
                 .contentTransition(.opacity)
+
+            if !prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("“\(prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines))”")
+                    .font(WWTypography.heading(15))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: 320)
+                    .background(WWColor.surface.opacity(0.96))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(WWColor.nearBlack.opacity(0.06), lineWidth: 1)
+                    )
+                    .contentTransition(.opacity)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -1123,19 +1135,6 @@ struct ExperimentalOnboardingFlowView: View {
             }
             .frame(height: markSize + 26)
 
-            Text("“\(prayerPreviewText)”")
-                .font(WWTypography.heading(15))
-                .foregroundStyle(WWColor.nearBlack)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(WWColor.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .opacity(generationSequencePhase >= 0 ? 1 : 0)
-                .scaleEffect(fragmentVisible ? 0.9 : 1.0)
-                .blur(radius: generationIsReady ? 0.45 : (fragmentVisible ? 0.25 : 0))
-
             HStack(spacing: 16) {
                 generationFragmentLabel(copy("generating_fragment_scripture", fallback: "Scripture"), index: 0)
                 generationFragmentLabel(copy("generating_fragment_prayer", fallback: "Prayer"), index: 1)
@@ -1537,11 +1536,11 @@ struct ExperimentalOnboardingFlowView: View {
     }
 
     private var defaultPreJourneySteps: [Step] {
-        [.prayerIntent, .name, .bannerName, .bannerTruth, .bannerChange, .method, .grounding]
+        [.prayerIntent, .bannerName, .bannerTruth, .bannerChange, .method, .grounding]
     }
 
     private var requiredPreJourneySteps: [Step] {
-        [.prayerIntent, .name]
+        [.prayerIntent]
     }
 
     private var fixedFirstJourneySteps: [Step] {
