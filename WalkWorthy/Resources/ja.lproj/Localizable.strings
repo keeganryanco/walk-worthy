@@ -75,14 +75,16 @@
 "downsell.settings.renew_with_price" = "%@ / 月で再開";
 "downsell.settings.renew_generic" = "導入オファーで再開";
 
-"paywall.label" = "Tend Premium";
+"paywall.label" = "TEND PREMIUM";
 "paywall.default.headline" = "今向き合っていることを、続けて整えましょう。";
-"paywall.default.subheadline" = "聖書、黙想、祈り、そして小さな次の一歩で、あなたに合わせた毎日の祈りの旅を続けましょう。";
+"paywall.default.subheadline" = "聖書、黙想、祈り、そして毎日の小さな一歩で、あなたに合わせた祈りの旅を続けましょう。";
 "paywall.default.cta" = "3日間無料体験を開始";
 "paywall.default.badge" = "最もお得";
 "paywall.default.footnote" = "購入の復元、規約、プライバシーはいつでも下から確認できます。";
 "paywall.preview.label" = "あなたの旅路";
-"paywall.preview.supporting" = "明日のTendは、あなたのタイミングで始められます。";
+"paywall.preview.fixed_title" = "この関係を癒す";
+"paywall.preview.supporting" = "次のTendは明日に準備できます。";
+"paywall.fine_print" = "その後は$49.99/年または$7.99/月。いつでも解約できます。";
 "paywall.preview.fallback_title" = "あなたの祈りの旅路";
 "paywall.preview.fallback_daily_title" = "今日のTend";
 "paywall.preview.reflection_fallback" = "あなたが祈りに持ってきたことに沿った毎日の黙想。";

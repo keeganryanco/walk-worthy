@@ -75,14 +75,16 @@
 "downsell.settings.renew_with_price" = "Renovar por %@ / mes";
 "downsell.settings.renew_generic" = "Renovar con oferta introductoria";
 
-"paywall.label" = "Tend Premium";
+"paywall.label" = "TEND PREMIUM";
 "paywall.default.headline" = "Sigue cuidando lo que estás enfrentando.";
-"paywall.default.subheadline" = "Continúa tu recorrido diario de oración personalizado con Escritura, reflexión, oración y un pequeño siguiente paso.";
+"paywall.default.subheadline" = "Continúa tu recorrido de oración personalizado con Escritura, reflexión, oración y un pequeño paso cada día.";
 "paywall.default.cta" = "Comenzar prueba gratis de 3 días";
 "paywall.default.badge" = "Mejor valor";
 "paywall.default.footnote" = "Restaurar compras, términos y privacidad siempre están disponibles abajo.";
-"paywall.preview.label" = "Tu camino";
-"paywall.preview.supporting" = "El Tend de mañana está listo cuando tú lo estés.";
+"paywall.preview.label" = "TU CAMINO";
+"paywall.preview.fixed_title" = "Sanar Esta Relación";
+"paywall.preview.supporting" = "Tu próximo Tend estará listo mañana.";
+"paywall.fine_print" = "Luego $49.99/año o $7.99/mes. Cancela cuando quieras.";
 "paywall.preview.fallback_title" = "Tu camino de oración";
 "paywall.preview.fallback_daily_title" = "El Tend de hoy";
 "paywall.preview.reflection_fallback" = "Una reflexión diaria formada por lo que llevaste a oración.";

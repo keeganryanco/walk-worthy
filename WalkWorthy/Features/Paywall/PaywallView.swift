@@ -157,30 +157,24 @@ struct PaywallView: View {
             GeometryReader { geometry in
                 let compact = geometry.size.height <= 760
 
-                VStack(spacing: compact ? 10 : 14) {
+                VStack(spacing: compact ? 9 : 12) {
                     header
                     heroCopy(compact: compact)
 
                     PaywallJourneyCard(
                         context: personalizationContext,
-                        label: L10n.string("paywall.preview.label", default: "Your Journey"),
-                        supportingText: L10n.string("paywall.preview.supporting", default: "Tomorrow’s Tend is ready when you are.")
+                        label: L10n.string("paywall.preview.label", default: "YOUR JOURNEY"),
+                        titleOverride: L10n.string("paywall.preview.fixed_title", default: "Healing This Relationship"),
+                        supportingText: L10n.string("paywall.preview.supporting", default: "Your next Tend will be ready tomorrow."),
+                        showThumbnail: true
                     )
 
                     packageSelector(compact: compact)
 
-                    if let specialOfferPricingLine {
-                        Text(specialOfferPricingLine)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.muted)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-
                     primaryButton
 
                     VStack(spacing: 6) {
-                        Text(standardTrustLine)
+                        Text(finePrintLine)
                             .font(WWTypography.caption(12))
                             .foregroundStyle(WWColor.muted)
                             .multilineTextAlignment(.center)
@@ -233,10 +227,9 @@ struct PaywallView: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            Text(L10n.string("paywall.label", default: "Tend Premium"))
+            Text(L10n.string("paywall.label", default: "TEND PREMIUM"))
                 .font(WWTypography.caption(13))
                 .foregroundStyle(WWColor.growGreen)
-                .textCase(.uppercase)
                 .tracking(0.8)
 
             Spacer()
@@ -259,14 +252,14 @@ struct PaywallView: View {
 
     private func heroCopy(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: compact ? 6 : 8) {
-            Text(paywallConfig.headline)
-                .font(WWTypography.display(compact ? 40 : 44))
+            Text(displayHeadline)
+                .font(WWTypography.display(compact ? 34 : 38))
                 .foregroundStyle(WWColor.nearBlack)
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(paywallConfig.subheadline)
+            Text(displaySubheadline)
                 .font(WWTypography.body(compact ? 15 : 16))
                 .foregroundStyle(WWColor.muted)
                 .lineLimit(2)
@@ -277,7 +270,7 @@ struct PaywallView: View {
     }
 
     private func packageSelector(compact: Bool) -> some View {
-        VStack(spacing: compact ? 8 : 10) {
+        VStack(spacing: compact ? 6 : 7) {
             if subscriptionService.isLoadingProducts && selectableProducts.isEmpty {
                 ProgressView(L10n.string("paywall.loading_plans", default: "Loading plans…"))
                     .font(WWTypography.body(15))
@@ -293,7 +286,6 @@ struct PaywallView: View {
 
     private func planRow(for product: SubscriptionDisplayProduct, compact: Bool) -> some View {
         let isSelected = product.id == selectedProductID
-        let isAnnual = isAnnualProduct(product)
 
         return Button {
             let didChange = selectedProductID != product.id
@@ -311,22 +303,11 @@ struct PaywallView: View {
                     .foregroundStyle(isSelected ? WWColor.growGreen : WWColor.muted)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(planTitle(for: product))
-                            .font(WWTypography.heading(compact ? 19 : 21))
-                            .foregroundStyle(WWColor.nearBlack)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-
-                        if isAnnual, let annualBadge = paywallConfig.annualBadgeText, !annualBadge.isEmpty {
-                            Text(annualBadge)
-                                .font(WWTypography.caption(10))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(WWColor.growGreen, in: Capsule())
-                        }
-                    }
+                    Text(planTitle(for: product))
+                        .font(WWTypography.heading(compact ? 19 : 21))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
                     Text(periodSubtitle(for: product))
                         .font(WWTypography.caption(12))
@@ -344,7 +325,7 @@ struct PaywallView: View {
                     .minimumScaleFactor(0.78)
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, compact ? 11 : 13)
+            .padding(.vertical, compact ? 8 : 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
@@ -382,7 +363,7 @@ struct PaywallView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Text(paywallConfig.ctaTitle)
+                    Text(displayCTATitle)
                         .font(WWTypography.heading(20))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -396,7 +377,7 @@ struct PaywallView: View {
         .buttonStyle(.plain)
         .disabled(selectedProductID == nil || isPurchasing || isRestoring || selectableProducts.isEmpty)
         .opacity((selectedProductID == nil || isPurchasing || isRestoring || selectableProducts.isEmpty) ? 0.65 : 1)
-        .accessibilityLabel(paywallConfig.ctaTitle)
+        .accessibilityLabel(displayCTATitle)
         .accessibilityHint(L10n.string("paywall.cta.hint", default: "Starts the selected subscription plan."))
     }
 
@@ -472,14 +453,6 @@ struct PaywallView: View {
     }
 
     private func periodSubtitle(for product: SubscriptionDisplayProduct) -> String {
-        if isDismissOfferPaywall, isAnnualProduct(product), let basePrice = annualBasePriceCaption(for: product) {
-            let format = L10n.string(
-                "paywall.dismiss_offer.renewal_line",
-                default: "Then %@ per year after year one."
-            )
-            return String(format: format, basePrice)
-        }
-
         switch planTitle(for: product) {
         case L10n.string("paywall.plan.annual", default: "Annual"):
             return L10n.string("paywall.plan.annual_subtitle", default: "Best value")
@@ -495,28 +468,14 @@ struct PaywallView: View {
     }
 
     private func priceCaption(for product: SubscriptionDisplayProduct) -> String {
-        if let discounted = annualDiscountedPriceCaption(for: product) {
-            return discounted
-        }
         return product.displayPrice
     }
 
-    private var specialOfferPricingLine: String? {
-        guard isDismissOfferPaywall else { return nil }
-        guard let annualProduct = selectableProducts.first(where: isAnnualProduct) else { return nil }
-        guard let discounted = annualDiscountedPriceCaption(for: annualProduct) else { return nil }
-        let base = annualBasePriceCaption(for: annualProduct) ?? annualProduct.displayPrice
-        let format = L10n.string(
-            "paywall.dismiss_offer.price_line",
-            default: "%@ for your first year, then %@ each year."
+    private var finePrintLine: String {
+        L10n.string(
+            "paywall.fine_print",
+            default: "Then $49.99/year or $7.99/month. Cancel anytime."
         )
-        return String(format: format, discounted, base)
-    }
-
-    private var standardTrustLine: String {
-        let annualPrice = selectableProducts.first(where: isAnnualProduct)?.displayPrice
-        let monthlyPrice = selectableProducts.first(where: isMonthlyProduct)?.displayPrice
-        return PaywallPricingCopy.standardTrustLine(annualPrice: annualPrice, monthlyPrice: monthlyPrice)
     }
 
     private var selectableProducts: [SubscriptionDisplayProduct] {
@@ -539,26 +498,28 @@ struct PaywallView: View {
         }
     }
 
-    private func annualDiscountedPriceCaption(for product: SubscriptionDisplayProduct) -> String? {
-        guard isDismissOfferPaywall, isAnnualProduct(product) else { return nil }
-        let baseAmount = NSDecimalNumber(decimal: product.priceAmount)
-        let halfPrice = baseAmount.multiplying(by: NSDecimalNumber(value: 0.5)).decimalValue
-        return localizedCurrency(amount: halfPrice, currencyCode: product.currencyCode)
-    }
-
-    private func annualBasePriceCaption(for product: SubscriptionDisplayProduct) -> String? {
-        guard isAnnualProduct(product) else { return nil }
-        return product.displayPrice
-    }
-
-    private func localizedCurrency(amount: Decimal, currencyCode: String?) -> String? {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = Locale.current
-        if let currencyCode, !currencyCode.isEmpty {
-            formatter.currencyCode = currencyCode
+    private var displayHeadline: String {
+        if isDismissOfferPaywall {
+            return paywallConfig.headline
         }
-        return formatter.string(from: NSDecimalNumber(decimal: amount))
+        return L10n.string("paywall.default.headline", default: "Keep tending what you’re facing.")
+    }
+
+    private var displaySubheadline: String {
+        if isDismissOfferPaywall {
+            return paywallConfig.subheadline
+        }
+        return L10n.string(
+            "paywall.default.subheadline",
+            default: "Continue your personalized prayer journey with Scripture, reflection, prayer, and one small step each day."
+        )
+    }
+
+    private var displayCTATitle: String {
+        if isDismissOfferPaywall {
+            return paywallConfig.ctaTitle
+        }
+        return L10n.string("paywall.default.cta", default: "Start 3-Day Free Trial")
     }
 
     private func defaultProductIDForCurrentPaywall() -> String? {
@@ -595,41 +556,56 @@ struct PaywallView: View {
 private struct PaywallJourneyCard: View {
     let context: PaywallPersonalizationContext?
     let label: String
+    let titleOverride: String?
     let supportingText: String
+    let showThumbnail: Bool
 
     private var journeyTitle: String {
-        context?.journeyTitle
+        if let titleOverride {
+            return titleOverride
+        }
+        return context?.journeyTitle
             ?? context?.prayerConcern
             ?? L10n.string("paywall.preview.fallback_title", default: "Your prayer journey")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(label)
-                .font(WWTypography.caption(12))
-                .foregroundStyle(WWColor.growGreen)
-                .textCase(.uppercase)
-                .tracking(0.7)
+        HStack(alignment: .top, spacing: 12) {
+            if showThumbnail {
+                Image("paywall_hero")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .accessibilityHidden(true)
+            }
 
-            Text(journeyTitle)
-                .font(WWTypography.heading(24))
-                .foregroundStyle(WWColor.nearBlack)
-                .lineLimit(2)
-                .minimumScaleFactor(0.78)
+            VStack(alignment: .leading, spacing: 7) {
+                Text(label)
+                    .font(WWTypography.caption(12))
+                    .foregroundStyle(WWColor.muted)
+                    .tracking(0.7)
 
-            Text(supportingText)
-                .font(WWTypography.caption(13))
-                .foregroundStyle(WWColor.muted)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
+                Text(journeyTitle)
+                    .font(WWTypography.heading(23))
+                    .foregroundStyle(WWColor.nearBlack)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+
+                Text(supportingText)
+                    .font(WWTypography.caption(13))
+                    .foregroundStyle(WWColor.muted)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 13)
+        .padding(.vertical, 12)
         .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(WWColor.growGreen.opacity(0.16), lineWidth: 1)
+                .stroke(WWColor.muted.opacity(0.18), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
     }
@@ -670,7 +646,9 @@ struct DownsellPaywallView: View {
                     PaywallJourneyCard(
                         context: personalizationContext,
                         label: L10n.string("paywall.preview.label", default: "Your Journey"),
-                        supportingText: L10n.string("downsell.preview.supporting", default: "Don’t lose what you’ve started. Tomorrow’s Tend is ready.")
+                        titleOverride: nil,
+                        supportingText: L10n.string("downsell.preview.supporting", default: "Don’t lose what you’ve started. Tomorrow’s Tend is ready."),
+                        showThumbnail: true
                     )
 
                     downsellOfferCard
@@ -723,10 +701,9 @@ struct DownsellPaywallView: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            Text(L10n.string("paywall.label", default: "Tend Premium"))
+            Text(L10n.string("paywall.label", default: "TEND PREMIUM"))
                 .font(WWTypography.caption(13))
                 .foregroundStyle(WWColor.growGreen)
-                .textCase(.uppercase)
                 .tracking(0.8)
 
             Spacer()

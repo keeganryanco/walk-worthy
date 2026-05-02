@@ -441,12 +441,6 @@ struct ExperimentalOnboardingFlowView: View {
             Text(copy("intro_subtitle", fallback: "Prayer for what you're facing."))
                 .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.growGreen)
-            
-            Text(copy("intro_tagline", fallback: "Daily Scripture, prayer,\nand one small step for real life."))
-                .font(WWTypography.heading(18).italic())
-                .foregroundStyle(WWColor.muted)
-                .multilineTextAlignment(.center)
-                .padding(.top, 16)
         }
     }
     
@@ -636,11 +630,6 @@ struct ExperimentalOnboardingFlowView: View {
             Text(copy("tend_step_title", fallback: "Today I will..."))
                 .font(WWTypography.display(38))
                 .foregroundStyle(WWColor.nearBlack)
-            
-            Text(copy("tend_step_question_fallback", fallback: "What is one thing you can do to partner with this prayer today?"))
-                .font(WWTypography.heading(19))
-                .foregroundStyle(WWColor.muted)
-                .fixedSize(horizontal: false, vertical: true)
             
             VStack(alignment: .leading, spacing: 8) {
                 Text(copy("tend_step_commitment_label", fallback: "Today I will"))

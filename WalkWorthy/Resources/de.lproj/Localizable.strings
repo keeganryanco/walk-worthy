@@ -75,14 +75,16 @@
 "downsell.settings.renew_with_price" = "Verlängern für %@ / Monat";
 "downsell.settings.renew_generic" = "Mit Einstiegsangebot verlängern";
 
-"paywall.label" = "Tend Premium";
+"paywall.label" = "TEND PREMIUM";
 "paywall.default.headline" = "Bleib bei dem, was du gerade durchmachst.";
-"paywall.default.subheadline" = "Setze deine personalisierte tägliche Gebetsreise mit Schrift, Reflexion, Gebet und einem kleinen nächsten Schritt fort.";
+"paywall.default.subheadline" = "Setze deine personalisierte Gebetsreise mit Schrift, Reflexion, Gebet und einem kleinen Schritt jeden Tag fort.";
 "paywall.default.cta" = "3-Tage-Probeabo starten";
 "paywall.default.badge" = "Bestes Angebot";
 "paywall.default.footnote" = "Käufe wiederherstellen, Bedingungen und Datenschutz sind unten immer verfügbar.";
-"paywall.preview.label" = "Deine Reise";
-"paywall.preview.supporting" = "Das Tend für morgen ist bereit, wenn du es bist.";
+"paywall.preview.label" = "DEINE REISE";
+"paywall.preview.fixed_title" = "Diese Beziehung heilen";
+"paywall.preview.supporting" = "Dein nächstes Tend ist morgen bereit.";
+"paywall.fine_print" = "Dann $49.99/Jahr oder $7.99/Monat. Jederzeit kündbar.";
 "paywall.preview.fallback_title" = "Deine Gebets-Journey";
 "paywall.preview.fallback_daily_title" = "Heutiges Tend";
 "paywall.preview.reflection_fallback" = "Eine tägliche Reflexion, geformt von dem, was du ins Gebet gebracht hast.";

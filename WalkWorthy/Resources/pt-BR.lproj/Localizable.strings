@@ -75,14 +75,16 @@
 "downsell.settings.renew_with_price" = "Renovar por %@ / mês";
 "downsell.settings.renew_generic" = "Renovar com oferta promocional";
 
-"paywall.label" = "Tend Premium";
+"paywall.label" = "TEND PREMIUM";
 "paywall.default.headline" = "Continue cuidando do que você está enfrentando.";
-"paywall.default.subheadline" = "Continue sua jornada diária de oração personalizada com Escritura, reflexão, oração e um pequeno próximo passo.";
+"paywall.default.subheadline" = "Continue sua jornada de oração personalizada com Escritura, reflexão, oração e um pequeno passo a cada dia.";
 "paywall.default.cta" = "Iniciar teste grátis de 3 dias";
 "paywall.default.badge" = "Melhor valor";
 "paywall.default.footnote" = "Restaurar compras, termos e privacidade estão sempre disponíveis abaixo.";
-"paywall.preview.label" = "Sua Jornada";
-"paywall.preview.supporting" = "O Tend de amanhã está pronto quando você estiver.";
+"paywall.preview.label" = "SUA JORNADA";
+"paywall.preview.fixed_title" = "Curar Este Relacionamento";
+"paywall.preview.supporting" = "Seu próximo Tend estará pronto amanhã.";
+"paywall.fine_print" = "Depois $49.99/ano ou $7.99/mês. Cancele a qualquer momento.";
 "paywall.preview.fallback_title" = "Sua jornada de oração";
 "paywall.preview.fallback_daily_title" = "Tend de hoje";
 "paywall.preview.reflection_fallback" = "Uma reflexão diária moldada pelo que você levou à oração.";

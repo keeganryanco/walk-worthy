@@ -198,15 +198,6 @@ struct OnboardingFlowView: View {
                 .foregroundStyle(WWColor.growGreen)
                 .minimumScaleFactor(0.75)
 
-            Spacer(minLength: metrics.isVeryCompact ? 10 : 56)
-
-            Text("Daily Scripture, prayer,\nand one small step for real life.")
-                .font(WWTypography.heading(headingSize(26, metrics: metrics)).italic())
-                .foregroundStyle(WWColor.muted)
-                .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.75)
-                .lineLimit(3)
-
             Spacer(minLength: 0)
         }
     }

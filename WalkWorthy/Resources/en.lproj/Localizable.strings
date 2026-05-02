@@ -75,14 +75,16 @@
 "downsell.settings.renew_with_price" = "Renew for %@ / mo";
 "downsell.settings.renew_generic" = "Renew with intro offer";
 
-"paywall.label" = "Tend Premium";
+"paywall.label" = "TEND PREMIUM";
 "paywall.default.headline" = "Keep tending what you’re facing.";
-"paywall.default.subheadline" = "Continue your personalized daily prayer journey with Scripture, reflection, prayer, and one small next step.";
+"paywall.default.subheadline" = "Continue your personalized prayer journey with Scripture, reflection, prayer, and one small step each day.";
 "paywall.default.cta" = "Start 3-Day Free Trial";
 "paywall.default.badge" = "Best Value";
 "paywall.default.footnote" = "Restore purchases, terms, and privacy are always available below.";
-"paywall.preview.label" = "Your Journey";
-"paywall.preview.supporting" = "Tomorrow’s Tend is ready when you are.";
+"paywall.preview.label" = "YOUR JOURNEY";
+"paywall.preview.fixed_title" = "Healing This Relationship";
+"paywall.preview.supporting" = "Your next Tend will be ready tomorrow.";
+"paywall.fine_print" = "Then $49.99/year or $7.99/month. Cancel anytime.";
 "paywall.preview.fallback_title" = "Your prayer journey";
 "paywall.preview.fallback_daily_title" = "Today’s Tend";
 "paywall.preview.reflection_fallback" = "A daily reflection shaped around what you brought to prayer.";
