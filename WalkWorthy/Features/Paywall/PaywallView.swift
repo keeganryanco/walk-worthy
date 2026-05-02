@@ -157,47 +157,30 @@ struct PaywallView: View {
             GeometryReader { geometry in
                 let compact = geometry.size.height <= 760
 
-                VStack(spacing: compact ? 9 : 12) {
+                VStack(spacing: 0) {
                     header
+
+                    Spacer(minLength: compact ? 12 : 18)
+
                     heroCopy(compact: compact)
+
+                    Spacer(minLength: compact ? 18 : 28)
 
                     PaywallJourneyCard(
                         context: personalizationContext,
                         label: L10n.string("paywall.preview.label", default: "YOUR JOURNEY"),
-                        titleOverride: L10n.string("paywall.preview.fixed_title", default: "Healing This Relationship"),
                         supportingText: L10n.string("paywall.preview.supporting", default: "Your next Tend will be ready tomorrow."),
                         showThumbnail: true
                     )
 
-                    packageSelector(compact: compact)
+                    Spacer(minLength: compact ? 18 : 28)
 
-                    primaryButton
-
-                    VStack(spacing: 6) {
-                        Text(finePrintLine)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.muted)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.8)
-
-                        if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
-                            Text(errorMessage)
-                                .font(WWTypography.caption(12))
-                                .foregroundStyle(.red)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(3)
-                                .minimumScaleFactor(0.82)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    footerLinks
+                    primaryActionStack(compact: compact)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 12))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, max(geometry.safeAreaInsets.top, 14))
+                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .task {
@@ -282,6 +265,16 @@ struct PaywallView: View {
                 }
             }
         }
+    }
+
+    private func primaryActionStack(compact: Bool) -> some View {
+        VStack(spacing: compact ? 9 : 10) {
+            packageSelector(compact: compact)
+            primaryButton
+            finePrintStack
+            footerLinks
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func planRow(for product: SubscriptionDisplayProduct, compact: Bool) -> some View {
@@ -370,15 +363,36 @@ struct PaywallView: View {
                 }
                 Spacer()
             }
-            .padding(.vertical, 15)
+            .frame(height: 56)
             .foregroundStyle(.white)
-            .background(WWColor.growGreen, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(WWColor.growGreen, in: Capsule())
         }
         .buttonStyle(.plain)
         .disabled(selectedProductID == nil || isPurchasing || isRestoring || selectableProducts.isEmpty)
         .opacity((selectedProductID == nil || isPurchasing || isRestoring || selectableProducts.isEmpty) ? 0.65 : 1)
         .accessibilityLabel(displayCTATitle)
         .accessibilityHint(L10n.string("paywall.cta.hint", default: "Starts the selected subscription plan."))
+    }
+
+    private var finePrintStack: some View {
+        VStack(spacing: 6) {
+            Text(finePrintLine)
+                .font(WWTypography.caption(12))
+                .foregroundStyle(WWColor.muted)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+
+            if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
+                Text(errorMessage)
+                    .font(WWTypography.caption(12))
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.82)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var footerLinks: some View {
@@ -556,14 +570,10 @@ struct PaywallView: View {
 private struct PaywallJourneyCard: View {
     let context: PaywallPersonalizationContext?
     let label: String
-    let titleOverride: String?
     let supportingText: String
     let showThumbnail: Bool
 
     private var journeyTitle: String {
-        if let titleOverride {
-            return titleOverride
-        }
         return context?.journeyTitle
             ?? context?.prayerConcern
             ?? L10n.string("paywall.preview.fallback_title", default: "Your prayer journey")
@@ -575,19 +585,19 @@ private struct PaywallJourneyCard: View {
                 Image("paywall_hero")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 36, height: 36)
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .frame(width: 34, height: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .accessibilityHidden(true)
             }
 
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(label)
                     .font(WWTypography.caption(12))
                     .foregroundStyle(WWColor.muted)
                     .tracking(0.7)
 
                 Text(journeyTitle)
-                    .font(WWTypography.heading(23))
+                    .font(WWTypography.heading(21))
                     .foregroundStyle(WWColor.nearBlack)
                     .lineLimit(2)
                     .minimumScaleFactor(0.78)
@@ -601,7 +611,7 @@ private struct PaywallJourneyCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 11)
         .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -638,48 +648,30 @@ struct DownsellPaywallView: View {
             GeometryReader { geometry in
                 let compact = geometry.size.height <= 760
 
-                VStack(spacing: compact ? 10 : 14) {
+                VStack(spacing: 0) {
                     header
 
+                    Spacer(minLength: compact ? 12 : 18)
+
                     heroCopy(compact: compact)
+
+                    Spacer(minLength: compact ? 16 : 24)
 
                     PaywallJourneyCard(
                         context: personalizationContext,
                         label: L10n.string("paywall.preview.label", default: "Your Journey"),
-                        titleOverride: nil,
                         supportingText: L10n.string("downsell.preview.supporting", default: "Don’t lose what you’ve started. Tomorrow’s Tend is ready."),
                         showThumbnail: true
                     )
 
-                    downsellOfferCard
+                    Spacer(minLength: compact ? 16 : 24)
 
-                    ctaButton
-
-                    VStack(spacing: 6) {
-                        Text(offerLine)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.muted)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.8)
-
-                        if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
-                            Text(errorMessage)
-                                .font(WWTypography.caption(12))
-                                .foregroundStyle(.red)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(3)
-                                .minimumScaleFactor(0.82)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    footerLinks
+                    downsellActionStack(compact: compact)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 12))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, max(geometry.safeAreaInsets.top, 14))
+                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .task {
@@ -781,14 +773,44 @@ struct DownsellPaywallView: View {
                 }
                 Spacer()
             }
-            .padding(.vertical, 15)
+            .frame(height: 56)
             .foregroundStyle(.white)
-            .background(WWColor.growGreen, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(WWColor.growGreen, in: Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isPurchasing || !subscriptionService.hasEligibleDownsellOffer)
         .opacity((isPurchasing || !subscriptionService.hasEligibleDownsellOffer) ? 0.65 : 1)
         .accessibilityHint(L10n.string("downsell.cta.hint", default: "Purchases the limited-time renewal offer."))
+    }
+
+    private func downsellActionStack(compact: Bool) -> some View {
+        VStack(spacing: compact ? 9 : 10) {
+            downsellOfferCard
+            ctaButton
+            downsellFinePrintStack
+            footerLinks
+        }
+    }
+
+    private var downsellFinePrintStack: some View {
+        VStack(spacing: 6) {
+            Text(offerLine)
+                .font(WWTypography.caption(12))
+                .foregroundStyle(WWColor.muted)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+
+            if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
+                Text(errorMessage)
+                    .font(WWTypography.caption(12))
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.82)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var footerLinks: some View {

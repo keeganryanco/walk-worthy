@@ -245,6 +245,7 @@ struct RootView: View {
     private func handlePaywallShownChanged(_ isShown: Bool) {
         guard isShown else { return }
         let triggerReason = settings?.pendingPaywallReason ?? "unspecified"
+        let personalizationContext = paywallPersonalizationContext(for: triggerReason)
         if subscriptionService.paywallMode == .firstTendReviewThenPaywall {
             FirstTendMilestoneService.markPaywallShownAfterFirstTend(settings: settings)
             try? modelContext.save()
@@ -254,7 +255,7 @@ struct RootView: View {
             properties: [
                 "trigger_reason": triggerReason,
                 "paywall_variant": paywallVariant(for: triggerReason),
-                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false",
+                "has_personalized_preview": personalizationContext.hasPreview ? "true" : "false",
                 "default_package": paywallConfigForCurrentState().defaultPackageToken,
                 "paywall_mode": subscriptionService.paywallMode.rawValue,
                 "has_premium": subscriptionService.isPremium ? "true" : "false",
@@ -265,12 +266,13 @@ struct RootView: View {
 
     private func trackDownsellDismissedIfNeeded() {
         guard !subscriptionService.isPremium else { return }
+        let personalizationContext = paywallPersonalizationContext(for: nil)
         analytics.track(
             .paywallDismissed,
             properties: [
                 "paywall_variant": "downsell_personalized",
                 "trigger_reason": "trial_cancel_downsell",
-                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false"
+                "has_personalized_preview": personalizationContext.hasPreview ? "true" : "false"
             ]
         )
     }
@@ -278,11 +280,12 @@ struct RootView: View {
     @ViewBuilder
     private func paywallCoverContent() -> some View {
         let config = paywallConfigForCurrentState()
+        let triggerReason = settings?.pendingPaywallReason
         PaywallView(
-            triggerReason: settings?.pendingPaywallReason,
+            triggerReason: triggerReason,
             isPremium: subscriptionService.isPremium,
             copyOverride: config,
-            personalizationContext: paywallPersonalizationContext
+            personalizationContext: paywallPersonalizationContext(for: triggerReason)
         )
         .interactiveDismissDisabled(!config.isDismissable)
         .environmentObject(subscriptionService)
@@ -290,7 +293,7 @@ struct RootView: View {
 
     @ViewBuilder
     private func downsellPaywallCoverContent() -> some View {
-        DownsellPaywallView(personalizationContext: paywallPersonalizationContext)
+        DownsellPaywallView(personalizationContext: paywallPersonalizationContext(for: nil))
             .environmentObject(subscriptionService)
     }
 
@@ -666,8 +669,8 @@ struct RootView: View {
         modelContext.insert(reminder)
     }
 
-    private var paywallPersonalizationContext: PaywallPersonalizationContext {
-        let journey = activeJourneys.first ?? allJourneys.first
+    private func paywallPersonalizationContext(for triggerReason: String?) -> PaywallPersonalizationContext {
+        let journey = personalizationJourney(for: triggerReason)
         let todayKey = JourneyContentService.dayKey(for: .now)
         let package = packageRecords.first { record in
             guard let journey else { return false }
@@ -685,6 +688,13 @@ struct RootView: View {
             plantProgressText: plantProgressSummary(for: journey),
             prayerConcern: profile?.prayerFocus ?? journey?.growthFocus
         )
+    }
+
+    private func personalizationJourney(for triggerReason: String?) -> PrayerJourney? {
+        if triggerReason == PaywallTriggerReason.onboardingCompletion.rawValue {
+            return activeJourneys.first ?? allJourneys.first
+        }
+        return allJourneys.first ?? activeJourneys.first
     }
 
     private func plantProgressSummary(for journey: PrayerJourney?) -> String? {
@@ -732,7 +742,7 @@ struct RootView: View {
             properties: [
                 "paywall_variant": "downsell_personalized",
                 "trigger_reason": "trial_cancel_downsell",
-                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false",
+                "has_personalized_preview": paywallPersonalizationContext(for: nil).hasPreview ? "true" : "false",
                 "default_package": "monthly",
                 "paywall_mode": subscriptionService.paywallMode.rawValue,
                 "has_premium": subscriptionService.isPremium ? "true" : "false"

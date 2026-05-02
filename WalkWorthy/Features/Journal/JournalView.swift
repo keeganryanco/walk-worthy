@@ -16,6 +16,7 @@ struct JournalView: View {
     @State private var isCreating = false
     @State private var journeyPendingDeletion: PrayerJourney?
     @State private var journeyPendingNavigation: PrayerJourney?
+    @State private var suppressionResetWorkItem: DispatchWorkItem?
     
     var body: some View {
         NavigationStack {
@@ -90,6 +91,10 @@ struct JournalView: View {
                     onJourneyCreated: onJourneyCreated
                 )
             }
+            .onDisappear {
+                suppressionResetWorkItem?.cancel()
+                suppressHorizontalTabSwipe = false
+            }
             .navigationDestination(item: $journeyPendingNavigation) { journey in
                 JourneyDetailView(journey: journey)
             }
@@ -120,23 +125,37 @@ struct JournalView: View {
         .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
         .listRowSeparator(.hidden)
         .listRowBackground(WWColor.white)
-        .simultaneousGesture(journeySwipeSuppressionGesture)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { isPressing in
+            handleJourneyCardPressStateChange(isPressing)
+        }, perform: {
+            // No-op: use press state changes only.
+        })
     }
 
-    private var journeySwipeSuppressionGesture: some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onChanged { value in
-                let horizontal = abs(value.translation.width)
-                let vertical = abs(value.translation.height)
-                if horizontal > vertical + 8 {
-                    suppressHorizontalTabSwipe = true
-                }
-            }
-            .onEnded { _ in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    suppressHorizontalTabSwipe = false
-                }
-            }
+    private func handleJourneyCardPressStateChange(_ isPressing: Bool) {
+        if isPressing {
+            engageHorizontalSwipeSuppression()
+        } else {
+            releaseHorizontalSwipeSuppression()
+        }
+    }
+
+    private func engageHorizontalSwipeSuppression() {
+        suppressionResetWorkItem?.cancel()
+        suppressionResetWorkItem = nil
+        if !suppressHorizontalTabSwipe {
+            suppressHorizontalTabSwipe = true
+        }
+    }
+
+    private func releaseHorizontalSwipeSuppression(after delay: TimeInterval = 0.18) {
+        suppressionResetWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            suppressHorizontalTabSwipe = false
+            suppressionResetWorkItem = nil
+        }
+        suppressionResetWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
     }
 
     private func deleteConfirmationOverlay(for journey: PrayerJourney) -> some View {

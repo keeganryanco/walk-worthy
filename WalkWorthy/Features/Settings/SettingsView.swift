@@ -4,19 +4,12 @@ import SwiftData
 struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @AppStorage("homeBackgroundTheme") private var backgroundTheme: HomeBackgroundTheme = .none
-#if DEBUG
-    @AppStorage(AppConstants.Debug.bypassPaywallOverrideStorageKey) private var debugBypassPaywallOverride = false
-    @AppStorage(AppConstants.Debug.fastDayTestingOverrideStorageKey) private var debugFastDayTestingOverride = false
-#endif
     @EnvironmentObject private var subscriptionService: SubscriptionService
     @EnvironmentObject private var notificationService: NotificationService
     @Environment(\.modelContext) private var modelContext
     @State private var showDownsellPaywall = false
     @State private var showResubscribePaywall = false
     @State private var showStandardPaywall = false
-#if DEBUG
-    @State private var showOnboardingSimulator = false
-#endif
 
     @Query(sort: \AppSettings.id) private var settingsRows: [AppSettings]
     @Query(sort: \ReminderSchedule.sortOrder) private var reminderRows: [ReminderSchedule]
@@ -205,29 +198,6 @@ struct SettingsView: View {
                 }
                 .listRowBackground(WWColor.surface)
 
-#if DEBUG
-                Section(L10n.string("settings.debug.section", default: "Debug Testing")) {
-                    if AppConstants.Debug.debugTestingEnabled {
-                        Toggle(L10n.string("settings.debug.bypass_paywall", default: "Bypass Paywall (Debug)"), isOn: $debugBypassPaywallOverride)
-                        Toggle(L10n.string("settings.debug.fast_day_tending", default: "Fast-Day Tending (Debug)"), isOn: $debugFastDayTestingOverride)
-
-                        Button(L10n.string("settings.debug.launch_onboarding_simulator", default: "Launch Onboarding Simulator")) {
-                            showOnboardingSimulator = true
-                        }
-                        .foregroundStyle(WWColor.growGreen)
-
-                        Button(L10n.string("settings.debug.reset_fast_day_offset", default: "Reset Fast-Day Offset")) {
-                            AppConstants.Debug.resetFastDayOffset()
-                        }
-                        .foregroundStyle(WWColor.growGreen)
-                    } else {
-                        Text(L10n.string("settings.debug.enable_instructions", default: "Enable with `-TEND_DEBUG_TESTING 1` in your Run scheme arguments/environment."))
-                            .font(WWTypography.caption(14))
-                            .foregroundStyle(WWColor.muted)
-                    }
-                }
-                .listRowBackground(WWColor.surface)
-#endif
             }
             .navigationTitle(L10n.string("settings.title", default: "Settings"))
             .scrollContentBackground(.hidden)
@@ -270,11 +240,6 @@ struct SettingsView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
-#if DEBUG
-            .fullScreenCover(isPresented: $showOnboardingSimulator) {
-                DebugOnboardingSimulatorView()
-            }
-#endif
             .onChange(of: subscriptionService.isPremium) { _, isPremium in
                 if isPremium {
                     showStandardPaywall = false

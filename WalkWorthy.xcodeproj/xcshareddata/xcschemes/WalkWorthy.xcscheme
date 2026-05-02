@@ -15,20 +15,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2DE814EBA55CC1EC74BB26A5"
-               BuildableName = "TendWidgets.appex"
-               BlueprintName = "TendWidgets"
-               ReferencedContainer = "container:WalkWorthy.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "EB4F0D91A7B3CFC6CB4570F5"
                BuildableName = "Tend.app"
                BlueprintName = "WalkWorthy"
@@ -138,13 +124,24 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-TEND_BYPASS_PAYWALL"
-            isEnabled = "YES">
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-TEND_DEBUG_TESTING"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-TEND_FAST_DAYS"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "-TEND_DEBUG_TESTING"
+            value = "1"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

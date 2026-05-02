@@ -69,6 +69,8 @@ struct PaywallRemoteConfig: Equatable {
 
 @MainActor
 final class SubscriptionService: NSObject, ObservableObject {
+    private static let pinnedOfferingIdentifier = "default"
+
     @Published private(set) var products: [SubscriptionDisplayProduct] = []
     @Published private(set) var isPremium: Bool = false
     @Published private(set) var isLoadingProducts = false
@@ -104,13 +106,16 @@ final class SubscriptionService: NSObject, ObservableObject {
 
         do {
             let offerings = try await Purchases.shared.offerings()
-            let currentOffering = offerings.current
-            let currentIdentifier = offerings.current?.identifier ?? "none"
-            currentOfferingIdentifier = offerings.current?.identifier
-            currentOfferingMetadataSummary = metadataSummary(from: currentOffering)
-            paywallMode = resolvePaywallMode(from: currentOffering)
+            let experimentAssignedOffering = offerings.current
+            let selectedOffering = offerings.all[Self.pinnedOfferingIdentifier] ?? experimentAssignedOffering
+            let selectedIdentifier = selectedOffering?.identifier ?? "none"
+            let experimentIdentifier = experimentAssignedOffering?.identifier ?? "none"
+
+            currentOfferingIdentifier = selectedOffering?.identifier
+            currentOfferingMetadataSummary = metadataSummary(from: selectedOffering)
+            paywallMode = resolvePaywallMode(from: selectedOffering)
             let allOfferingIdentifiers = offerings.all.keys.sorted()
-            let sourcePackages = offerings.current?.availablePackages
+            let sourcePackages = selectedOffering?.availablePackages
                 ?? offerings.all.values.flatMap(\.availablePackages)
             let sourceProducts = sourcePackages.map(\.storeProduct)
             let deduped = dedupeStoreProducts(sourceProducts)
@@ -118,7 +123,7 @@ final class SubscriptionService: NSObject, ObservableObject {
             let filtered = filteredByKnownIDs.isEmpty ? deduped : filteredByKnownIDs
 
             storeProductsByID = Dictionary(uniqueKeysWithValues: filtered.map { ($0.productIdentifier, $0) })
-            paywallConfig = await resolvePaywallConfig(from: currentOffering)
+            paywallConfig = await resolvePaywallConfig(from: selectedOffering)
 
             let order = Dictionary(uniqueKeysWithValues: productIDs.enumerated().map { ($1, $0) })
             products = filtered
@@ -143,7 +148,9 @@ final class SubscriptionService: NSObject, ObservableObject {
             diagnostics = [
                 "Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")",
                 "RC App User ID: \(Purchases.shared.appUserID)",
-                "Current offering: \(currentIdentifier)",
+                "App-selected offering: \(selectedIdentifier)",
+                "RevenueCat current offering: \(experimentIdentifier)",
+                "Pinned offering: \(Self.pinnedOfferingIdentifier)",
                 "Paywall mode: \(paywallMode.rawValue)",
                 "Paywall dismissable: \(paywallConfig.isDismissable ? "true" : "false")",
                 "Offering metadata: \(currentOfferingMetadataSummary)",
