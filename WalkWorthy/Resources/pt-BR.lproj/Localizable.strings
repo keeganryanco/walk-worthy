@@ -60,8 +60,12 @@
 "downsell.cta.keep_going" = "Manter minha jornada";
 "downsell.cta.hint" = "Compra a oferta de renovação por tempo limitado.";
 "downsell.subtitle" = "Você cancelou seu teste. Esta oferta mantém sua jornada aberta.";
-"downsell.headline" = "Continue orando pelo que você começou.";
-"downsell.body" = "Seu teste ainda está ativo. Esta oferta mantém Escritura diária, oração, diário, lembretes e crescimento da planta disponíveis depois que ele terminar.";
+"downsell.headline" = "Continue cuidando do que você começou.";
+"downsell.body" = "Seu teste ainda está ativo. Mantenha sua jornada diária de oração personalizada sem perder o ritmo.";
+"downsell.preview.supporting" = "Não perca o que você começou. O Tend de amanhã está pronto.";
+"downsell.plan.title" = "Oferta limitada de renovação";
+"downsell.plan.price_line" = "%@/mês por 3 meses, depois %@/mês";
+"downsell.price.fallback_intro" = "$2.99";
 "downsell.intro_with_price" = "Continue na jornada por %@/mês nos primeiros 3 meses.";
 "downsell.intro_generic" = "Continue na jornada com uma oferta mensal por tempo limitado.";
 "downsell.renewal_with_price" = "Renova por %@ / mês após o período promocional. Cancele a qualquer momento em Ajustes.";
@@ -71,12 +75,14 @@
 "downsell.settings.renew_with_price" = "Renovar por %@ / mês";
 "downsell.settings.renew_generic" = "Renovar com oferta promocional";
 
-"paywall.default.headline" = "Continue orando pelo que você está enfrentando.";
-"paywall.default.subheadline" = "Continue esta jornada diária personalizada com Escritura, reflexão, oração guiada e um pequeno passo.";
+"paywall.label" = "Tend Premium";
+"paywall.default.headline" = "Continue cuidando do que você está enfrentando.";
+"paywall.default.subheadline" = "Continue sua jornada diária de oração personalizada com Escritura, reflexão, oração e um pequeno próximo passo.";
 "paywall.default.cta" = "Iniciar teste grátis de 3 dias";
 "paywall.default.badge" = "Melhor valor";
 "paywall.default.footnote" = "Restaurar compras, termos e privacidade estão sempre disponíveis abaixo.";
-"paywall.preview.label" = "Seu próximo Tend";
+"paywall.preview.label" = "Sua Jornada";
+"paywall.preview.supporting" = "O Tend de amanhã está pronto quando você estiver.";
 "paywall.preview.fallback_title" = "Sua jornada de oração";
 "paywall.preview.fallback_daily_title" = "Tend de hoje";
 "paywall.preview.reflection_fallback" = "Uma reflexão diária moldada pelo que você levou à oração.";
@@ -107,8 +113,8 @@
 "paywall.plan.weekly" = "Semanal";
 "paywall.plan.daily" = "Diário";
 "paywall.plan.subscription" = "Assinatura";
-"paywall.plan.annual_subtitle" = "Melhor valor, cobrado anualmente";
-"paywall.plan.monthly_subtitle" = "Flexível, cobrado mensalmente";
+"paywall.plan.annual_subtitle" = "Melhor valor";
+"paywall.plan.monthly_subtitle" = "Flexível";
 "paywall.plan.billed_yearly" = "Cobrado anualmente";
 "paywall.plan.billed_monthly" = "Cobrado mensalmente";
 "paywall.plan.billed_weekly" = "Cobrado semanalmente";
@@ -163,7 +169,7 @@
 
 "onboarding.intro_title" = "Bem-vindo ao Tend";
 "onboarding.intro_subtitle" = "Oração para o que você está enfrentando.";
-"onboarding.intro_tagline" = "Escritura diária, oração e um pequeno passo para a vida real.";
+"onboarding.intro_tagline" = "";
 "onboarding.intro.logo_accessibility" = "Animação do logo do Tend";
 "onboarding.name_title" = "Como você quer que o Tend chame você?";
 "onboarding.name_placeholder" = "Digite seu nome";
@@ -193,8 +199,8 @@
 "onboarding.tend_prayer_title" = "Ore pelo dia de hoje.";
 "onboarding.tend_prayer_subtitle" = "Leia uma oração pessoal moldada pela sua jornada e pela escritura de hoje.";
 "onboarding.tend_step_title" = "Hoje eu vou...";
-"onboarding.tend_step_question_fallback" = "O que você pode fazer hoje para cooperar com esta oração?";
-"onboarding.tend_step_placeholder" = "escreva uma resposta vivida...";
+"onboarding.tend_step_question_fallback" = "";
+"onboarding.tend_step_placeholder" = "escreva um pequeno passo para hoje...";
 "onboarding.tend_step_commitment_label" = "Hoje eu vou";
 "onboarding.tend_step_suggestions_title" = "Ou comece aqui";
 "onboarding.banner_name_title" = "{{firstName}}, suas orações importam.";

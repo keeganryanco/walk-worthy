@@ -60,8 +60,12 @@
 "downsell.cta.keep_going" = "Meine Journey fortsetzen";
 "downsell.cta.hint" = "Kauft das zeitlich begrenzte Verlängerungsangebot.";
 "downsell.subtitle" = "Du hast dein Probeabo gekündigt. Dieses Angebot hält deine Journey offen.";
-"downsell.headline" = "Bete weiter durch das, was du begonnen hast.";
-"downsell.body" = "Dein Probeabo ist noch aktiv. Dieses Angebot hält tägliche Schrift, Gebet, Journal, Erinnerungen und Pflanzenwachstum auch danach verfügbar.";
+"downsell.headline" = "Bleib bei dem, was du begonnen hast.";
+"downsell.body" = "Dein Probeabo ist noch aktiv. Halte deine personalisierte tägliche Gebetsreise ohne Momentum-Verlust aufrecht.";
+"downsell.preview.supporting" = "Verlier nicht, was du begonnen hast. Das Tend für morgen wartet auf dich.";
+"downsell.plan.title" = "Zeitlich begrenztes Verlängerungsangebot";
+"downsell.plan.price_line" = "%@/Monat für 3 Monate, danach %@/Monat";
+"downsell.price.fallback_intro" = "$2.99";
 "downsell.intro_with_price" = "Bleib für die ersten 3 Monate für %@/Monat auf deinem Weg.";
 "downsell.intro_generic" = "Bleib mit einem zeitlich begrenzten monatlichen Einstiegsangebot auf deinem Weg.";
 "downsell.renewal_with_price" = "Verlängert sich nach dem Einführungszeitraum zu %@ / Monat. Jederzeit in den Einstellungen kündbar.";
@@ -71,12 +75,14 @@
 "downsell.settings.renew_with_price" = "Verlängern für %@ / Monat";
 "downsell.settings.renew_generic" = "Mit Einstiegsangebot verlängern";
 
-"paywall.default.headline" = "Bete weiter durch das, was du gerade trägst.";
-"paywall.default.subheadline" = "Setze diese persönliche tägliche Journey mit Schrift, Reflexion, geführtem Gebet und einem kleinen Schritt fort.";
+"paywall.label" = "Tend Premium";
+"paywall.default.headline" = "Bleib bei dem, was du gerade durchmachst.";
+"paywall.default.subheadline" = "Setze deine personalisierte tägliche Gebetsreise mit Schrift, Reflexion, Gebet und einem kleinen nächsten Schritt fort.";
 "paywall.default.cta" = "3-Tage-Probeabo starten";
 "paywall.default.badge" = "Bestes Angebot";
 "paywall.default.footnote" = "Käufe wiederherstellen, Bedingungen und Datenschutz sind unten immer verfügbar.";
-"paywall.preview.label" = "Dein nächstes Tend";
+"paywall.preview.label" = "Deine Reise";
+"paywall.preview.supporting" = "Das Tend für morgen ist bereit, wenn du es bist.";
 "paywall.preview.fallback_title" = "Deine Gebets-Journey";
 "paywall.preview.fallback_daily_title" = "Heutiges Tend";
 "paywall.preview.reflection_fallback" = "Eine tägliche Reflexion, geformt von dem, was du ins Gebet gebracht hast.";
@@ -107,8 +113,8 @@
 "paywall.plan.weekly" = "Wöchentlich";
 "paywall.plan.daily" = "Täglich";
 "paywall.plan.subscription" = "Abonnement";
-"paywall.plan.annual_subtitle" = "Bestes Angebot, jährlich abgerechnet";
-"paywall.plan.monthly_subtitle" = "Flexibel, monatlich abgerechnet";
+"paywall.plan.annual_subtitle" = "Bestes Angebot";
+"paywall.plan.monthly_subtitle" = "Flexibel";
 "paywall.plan.billed_yearly" = "Jährlich abgerechnet";
 "paywall.plan.billed_monthly" = "Monatlich abgerechnet";
 "paywall.plan.billed_weekly" = "Wöchentlich abgerechnet";
@@ -163,7 +169,7 @@
 
 "onboarding.intro_title" = "Willkommen bei Tend";
 "onboarding.intro_subtitle" = "Gebet für das, was dich gerade bewegt.";
-"onboarding.intro_tagline" = "Tägliche Schrift, Gebet und ein kleiner Schritt fürs echte Leben.";
+"onboarding.intro_tagline" = "";
 "onboarding.intro.logo_accessibility" = "Tend-Logo-Animation";
 "onboarding.name_title" = "Wie soll Tend dich nennen?";
 "onboarding.name_placeholder" = "Gib deinen Namen ein";
@@ -193,8 +199,8 @@
 "onboarding.tend_prayer_title" = "Bete für heute.";
 "onboarding.tend_prayer_subtitle" = "Lies ein persönliches Gebet, das von deiner Journey und der heutigen Schrift geprägt ist.";
 "onboarding.tend_step_title" = "Heute werde ich...";
-"onboarding.tend_step_question_fallback" = "Was kannst du heute tun, um mit diesem Gebet mitzuwirken?";
-"onboarding.tend_step_placeholder" = "schreibe eine gelebte Antwort...";
+"onboarding.tend_step_question_fallback" = "";
+"onboarding.tend_step_placeholder" = "schreibe einen kleinen Schritt für heute...";
 "onboarding.tend_step_commitment_label" = "Heute werde ich";
 "onboarding.tend_step_suggestions_title" = "Oder beginne hier";
 "onboarding.banner_name_title" = "{{firstName}}, deine Gebete zählen.";

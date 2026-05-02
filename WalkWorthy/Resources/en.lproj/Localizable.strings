@@ -60,8 +60,12 @@
 "downsell.cta.keep_going" = "Keep My Journey Going";
 "downsell.cta.hint" = "Purchases the limited-time renewal offer.";
 "downsell.subtitle" = "You canceled your trial. This offer keeps your journey open.";
-"downsell.headline" = "Keep praying through what you started.";
-"downsell.body" = "Your trial is still active. This offer keeps daily Scripture, prayer, journal, reminders, and plant growth available after it ends.";
+"downsell.headline" = "Keep tending what you started.";
+"downsell.body" = "Your trial is still active. Keep your personalized daily prayer journey going without losing momentum.";
+"downsell.preview.supporting" = "Don’t lose what you’ve started. Tomorrow’s Tend is ready.";
+"downsell.plan.title" = "Limited Renewal Offer";
+"downsell.plan.price_line" = "%@/month for 3 months, then %@/month";
+"downsell.price.fallback_intro" = "$2.99";
 "downsell.intro_with_price" = "Stay on the journey for %@/month for your first 3 months.";
 "downsell.intro_generic" = "Stay on the journey with a limited-time monthly intro offer.";
 "downsell.renewal_with_price" = "Renews at %@ / month after intro period. Cancel anytime in Settings.";
@@ -71,12 +75,14 @@
 "downsell.settings.renew_with_price" = "Renew for %@ / mo";
 "downsell.settings.renew_generic" = "Renew with intro offer";
 
-"paywall.default.headline" = "Keep praying through what you’re facing.";
-"paywall.default.subheadline" = "Continue this personalized daily journey with Scripture, reflection, guided prayer, and one small step.";
+"paywall.label" = "Tend Premium";
+"paywall.default.headline" = "Keep tending what you’re facing.";
+"paywall.default.subheadline" = "Continue your personalized daily prayer journey with Scripture, reflection, prayer, and one small next step.";
 "paywall.default.cta" = "Start 3-Day Free Trial";
 "paywall.default.badge" = "Best Value";
 "paywall.default.footnote" = "Restore purchases, terms, and privacy are always available below.";
-"paywall.preview.label" = "Your next Tend";
+"paywall.preview.label" = "Your Journey";
+"paywall.preview.supporting" = "Tomorrow’s Tend is ready when you are.";
 "paywall.preview.fallback_title" = "Your prayer journey";
 "paywall.preview.fallback_daily_title" = "Today’s Tend";
 "paywall.preview.reflection_fallback" = "A daily reflection shaped around what you brought to prayer.";
@@ -107,8 +113,8 @@
 "paywall.plan.weekly" = "Weekly";
 "paywall.plan.daily" = "Daily";
 "paywall.plan.subscription" = "Subscription";
-"paywall.plan.annual_subtitle" = "Best value, billed yearly";
-"paywall.plan.monthly_subtitle" = "Flexible, billed monthly";
+"paywall.plan.annual_subtitle" = "Best value";
+"paywall.plan.monthly_subtitle" = "Flexible";
 "paywall.plan.billed_yearly" = "Billed yearly";
 "paywall.plan.billed_monthly" = "Billed monthly";
 "paywall.plan.billed_weekly" = "Billed weekly";
@@ -163,7 +169,7 @@
 
 "onboarding.intro_title" = "Welcome to Tend";
 "onboarding.intro_subtitle" = "Prayer for what you're facing.";
-"onboarding.intro_tagline" = "Daily Scripture, prayer, and one small step for real life.";
+"onboarding.intro_tagline" = "";
 "onboarding.intro.logo_accessibility" = "Tend logo animation";
 "onboarding.name_title" = "What should Tend call you?";
 "onboarding.name_placeholder" = "Enter your name";
@@ -193,8 +199,8 @@
 "onboarding.tend_prayer_title" = "Pray for today.";
 "onboarding.tend_prayer_subtitle" = "Read a personal prayer shaped by your journey and today's scripture.";
 "onboarding.tend_step_title" = "Today I will...";
-"onboarding.tend_step_question_fallback" = "What is one thing you can do to partner with this prayer today?";
-"onboarding.tend_step_placeholder" = "write one lived response...";
+"onboarding.tend_step_question_fallback" = "";
+"onboarding.tend_step_placeholder" = "write one small step for today...";
 "onboarding.tend_step_commitment_label" = "Today I will";
 "onboarding.tend_step_suggestions_title" = "Or start here";
 "onboarding.banner_name_title" = "{{firstName}}, your prayers matter.";

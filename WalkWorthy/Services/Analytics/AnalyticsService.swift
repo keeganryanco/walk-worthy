@@ -12,6 +12,8 @@ enum AnalyticsEvent: String {
     case journeyCompleted = "journey_completed"
     case paywallShown = "paywall_shown"
     case paywallDismissed = "paywall_dismissed"
+    case paywallPlanSelected = "paywall_plan_selected"
+    case paywallCTATapped = "paywall_cta_tapped"
     case downsellPurchased = "downsell_purchased"
     case freeTrialStarted = "free_trial_started"
     case localizationRequest = "localization_request"

@@ -32,8 +32,8 @@ struct PaywallRemoteConfig: Equatable {
 
     static var `default`: PaywallRemoteConfig {
         PaywallRemoteConfig(
-            headline: SubscriptionLocalization.string("paywall.default.headline", default: "Keep praying through what you're facing."),
-            subheadline: SubscriptionLocalization.string("paywall.default.subheadline", default: "Continue this personalized daily journey with Scripture, reflection, guided prayer, and one small step."),
+            headline: SubscriptionLocalization.string("paywall.default.headline", default: "Keep tending what you're facing."),
+            subheadline: SubscriptionLocalization.string("paywall.default.subheadline", default: "Continue your personalized daily prayer journey with Scripture, reflection, prayer, and one small next step."),
             ctaTitle: SubscriptionLocalization.string("paywall.default.cta", default: "Start 3-Day Free Trial"),
             annualBadgeText: SubscriptionLocalization.string("paywall.default.badge", default: "Best Value"),
             footnote: SubscriptionLocalization.string("paywall.default.footnote", default: "Restore purchases, terms, and privacy are always available below."),
