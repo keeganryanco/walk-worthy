@@ -115,6 +115,103 @@ final class WalkWorthyTests: XCTestCase {
         XCTAssertFalse(MonetizationPolicy.requiresPaywall(hasPremium: false, settings: settings, now: .now))
     }
 
+    func testOnboardingPaywallOverrideIsNeverDismissable() {
+        let remoteConfig = PaywallRemoteConfig(
+            headline: "Remote headline",
+            subheadline: "Remote subheadline",
+            ctaTitle: "Start trial",
+            annualBadgeText: "Best",
+            footnote: "Remote footnote",
+            defaultPackageToken: "monthly",
+            isDismissable: true
+        )
+
+        let hardGate = PaywallRemoteConfig.onboardingHardGate(from: remoteConfig)
+
+        XCTAssertEqual(hardGate.headline, "Remote headline")
+        XCTAssertEqual(hardGate.defaultPackageToken, "monthly")
+        XCTAssertFalse(hardGate.isDismissable)
+    }
+
+    func testPaywallPersonalizationContextTrimsAndBuildsPreview() {
+        let longReflection = String(repeating: "A", count: 180)
+
+        let context = PaywallPersonalizationContext(
+            journeyTitle: "  Future Anxiety  ",
+            dailyTitle: "  Holding Ambition Loosely  ",
+            scriptureReference: "  James 1:5  ",
+            reflectionExcerpt: longReflection,
+            plantProgressText: "  2 day streak  ",
+            prayerConcern: "  anxiety about my future  "
+        )
+
+        XCTAssertTrue(context.hasPreview)
+        XCTAssertEqual(context.journeyTitle, "Future Anxiety")
+        XCTAssertEqual(context.dailyTitle, "Holding Ambition Loosely")
+        XCTAssertEqual(context.scriptureReference, "James 1:5")
+        XCTAssertEqual(context.plantProgressText, "2 day streak")
+        XCTAssertEqual(context.prayerConcern, "anxiety about my future")
+        XCTAssertEqual(context.reflectionExcerpt?.count, 150)
+        XCTAssertTrue(context.reflectionExcerpt?.hasSuffix("...") == true)
+    }
+
+    func testStandardPaywallTrustLineUsesAnnualAndMonthlyPrices() {
+        let trustLine = PaywallPricingCopy.standardTrustLine(
+            annualPrice: "$49.99",
+            monthlyPrice: "$7.99"
+        )
+
+        XCTAssertTrue(trustLine.contains("$49.99"))
+        XCTAssertTrue(trustLine.contains("$7.99"))
+        XCTAssertTrue(trustLine.localizedCaseInsensitiveContains("cancel"))
+    }
+
+    func testDownsellOfferLineUsesPromotionalAndBasePrices() {
+        let offerLine = PaywallPricingCopy.downsellOfferLine(
+            introPrice: "$2.99",
+            basePrice: "$7.99"
+        )
+
+        XCTAssertTrue(offerLine.contains("$2.99"))
+        XCTAssertTrue(offerLine.contains("$7.99"))
+        XCTAssertTrue(offerLine.localizedCaseInsensitiveContains("cancel"))
+    }
+
+    func testAutomaticDownsellRequiresProfileAndDoesNotRepeatInForegroundSession() {
+        XCTAssertFalse(
+            DownsellPresentationPolicy.shouldPresent(
+                profileExists: false,
+                hasEligibleOffer: true,
+                alreadyShownThisForegroundSession: false,
+                isStandardPaywallPresented: false
+            )
+        )
+        XCTAssertFalse(
+            DownsellPresentationPolicy.shouldPresent(
+                profileExists: true,
+                hasEligibleOffer: true,
+                alreadyShownThisForegroundSession: true,
+                isStandardPaywallPresented: false
+            )
+        )
+        XCTAssertFalse(
+            DownsellPresentationPolicy.shouldPresent(
+                profileExists: true,
+                hasEligibleOffer: true,
+                alreadyShownThisForegroundSession: false,
+                isStandardPaywallPresented: true
+            )
+        )
+        XCTAssertTrue(
+            DownsellPresentationPolicy.shouldPresent(
+                profileExists: true,
+                hasEligibleOffer: true,
+                alreadyShownThisForegroundSession: false,
+                isStandardPaywallPresented: false
+            )
+        )
+    }
+
     func testJourneyCreationBlockedWhenOffline() {
         let fourDaysAgo = Calendar.current.date(byAdding: .day, value: -4, to: .now) ?? .now
         let settings = AppSettings(firstLaunchAt: fourDaysAgo, totalSessions: 0)
@@ -327,7 +424,7 @@ final class WalkWorthyTests: XCTestCase {
 
         FirstTendMilestoneService.markFirstTendCompleted(settings: settings, now: Date(timeIntervalSince1970: 10))
         XCTAssertTrue(FirstTendMilestoneService.isFirstTendCompleted(settings: settings))
-        XCTAssertTrue(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+        XCTAssertFalse(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
         XCTAssertEqual(settings.firstTendCompletedAt, Date(timeIntervalSince1970: 10))
 
         FirstTendMilestoneService.markFirstTendCompleted(settings: settings, now: Date(timeIntervalSince1970: 20))
@@ -335,6 +432,78 @@ final class WalkWorthyTests: XCTestCase {
 
         FirstTendMilestoneService.markReviewPromptShownAfterFirstTend(settings: settings, now: Date(timeIntervalSince1970: 30))
         XCTAssertFalse(FirstTendMilestoneService.isReviewEligibleAfterFirstTend(settings: settings))
+    }
+
+    func testFirstTendFlowNoLongerReturnsReviewBeforePaywall() {
+        let settings = AppSettings()
+        settings.markFirstTendCompleted(now: Date(timeIntervalSince1970: 10))
+
+        XCTAssertEqual(
+            FirstTendFlowOrchestrator.nextStep(
+                settings: settings,
+                isPremium: false,
+                paywallMode: .firstTendReviewThenPaywall
+            ),
+            .paywall
+        )
+    }
+
+    func testReviewPromptEligibleAfterSecondCompletedTend() {
+        let settings = AppSettings()
+
+        let prompt = ReviewPromptCoordinator.nextPrompt(
+            settings: settings,
+            completedTendCount: 2,
+            didIncreasePlantStage: false,
+            plantStageAfterCompletion: 1
+        )
+
+        XCTAssertEqual(prompt, .secondDay)
+    }
+
+    func testReviewPromptNotNowAllowsLaterStage2Prompt() {
+        let settings = AppSettings()
+        ReviewPromptCoordinator.markPromptShown(.secondDay, settings: settings, now: Date(timeIntervalSince1970: 10))
+
+        let prompt = ReviewPromptCoordinator.nextPrompt(
+            settings: settings,
+            completedTendCount: 3,
+            didIncreasePlantStage: true,
+            plantStageAfterCompletion: 2
+        )
+
+        XCTAssertEqual(prompt, .plantStage2)
+    }
+
+    func testReviewPromptAcceptedSuppressesFuturePrompts() {
+        let settings = AppSettings()
+        ReviewPromptCoordinator.markNativePromptRequested(settings: settings, now: Date(timeIntervalSince1970: 20))
+
+        let prompt = ReviewPromptCoordinator.nextPrompt(
+            settings: settings,
+            completedTendCount: 3,
+            didIncreasePlantStage: true,
+            plantStageAfterCompletion: 2
+        )
+
+        XCTAssertNil(prompt)
+        XCTAssertEqual(settings.reviewNativePromptRequestedAt, Date(timeIntervalSince1970: 20))
+        XCTAssertEqual(settings.reviewPromptSuppressedAt, Date(timeIntervalSince1970: 20))
+    }
+
+    func testReviewPromptNeverAskAgainSuppressesFuturePrompts() {
+        let settings = AppSettings()
+        ReviewPromptCoordinator.suppressFuturePrompts(settings: settings, now: Date(timeIntervalSince1970: 30))
+
+        let prompt = ReviewPromptCoordinator.nextPrompt(
+            settings: settings,
+            completedTendCount: 2,
+            didIncreasePlantStage: false,
+            plantStageAfterCompletion: 1
+        )
+
+        XCTAssertNil(prompt)
+        XCTAssertEqual(settings.reviewPromptSuppressedAt, Date(timeIntervalSince1970: 30))
     }
 
     func testFollowThroughGrowthPointsMapping() {

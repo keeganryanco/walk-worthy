@@ -2,7 +2,6 @@ import Foundation
 
 enum FirstTendFlowNextStep: Equatable {
     case none
-    case review
     case paywall
 }
 
@@ -29,10 +28,6 @@ enum FirstTendFlowOrchestrator {
         case .firstTendReviewThenPaywall:
             guard settings.isFirstTendCompleted else { return .none }
             _ = now
-
-            if settings.reviewPromptShownAfterFirstTendAt == nil {
-                return .review
-            }
 
             if settings.paywallShownAfterFirstTendAt == nil {
                 return .paywall

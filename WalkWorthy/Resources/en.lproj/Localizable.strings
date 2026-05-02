@@ -57,22 +57,39 @@
 "settings.debug.onboarding_simulator_unavailable" = "Unable to load onboarding simulator.";
 "settings.debug.close" = "Close";
 
-"downsell.cta.keep_going" = "Keep Going";
+"downsell.cta.keep_going" = "Keep My Journey Going";
 "downsell.cta.hint" = "Purchases the limited-time renewal offer.";
-"downsell.subtitle" = "You canceled your trial. Keep your momentum.";
-"downsell.headline" = "Keep the progress you've started";
+"downsell.subtitle" = "You canceled your trial. This offer keeps your journey open.";
+"downsell.headline" = "Keep praying through what you started.";
+"downsell.body" = "Your trial is still active. This offer keeps daily Scripture, prayer, journal, reminders, and plant growth available after it ends.";
 "downsell.intro_with_price" = "Stay on the journey for %@/month for your first 3 months.";
 "downsell.intro_generic" = "Stay on the journey with a limited-time monthly intro offer.";
 "downsell.renewal_with_price" = "Renews at %@ / month after intro period. Cancel anytime in Settings.";
 "downsell.renewal_generic" = "Renews at the standard monthly price after intro period. Cancel anytime in Settings.";
+"downsell.offer_line.with_prices" = "First 3 months at %@/month, then %@/month. Cancel anytime.";
+"downsell.offer_line.generic" = "A limited-time monthly offer is available. Cancel anytime.";
 "downsell.settings.renew_with_price" = "Renew for %@ / mo";
 "downsell.settings.renew_generic" = "Renew with intro offer";
 
-"paywall.default.headline" = "Grow with steady, faith-filled consistency.";
-"paywall.default.subheadline" = "Unlock full access to Tend with a 3-day free trial.";
+"paywall.default.headline" = "Keep praying through what you’re facing.";
+"paywall.default.subheadline" = "Continue this personalized daily journey with Scripture, reflection, guided prayer, and one small step.";
 "paywall.default.cta" = "Start 3-Day Free Trial";
 "paywall.default.badge" = "Best Value";
-"paywall.default.footnote" = "Cancel anytime in Settings.";
+"paywall.default.footnote" = "Restore purchases, terms, and privacy are always available below.";
+"paywall.preview.label" = "Your next Tend";
+"paywall.preview.fallback_title" = "Your prayer journey";
+"paywall.preview.fallback_daily_title" = "Today’s Tend";
+"paywall.preview.reflection_fallback" = "A daily reflection shaped around what you brought to prayer.";
+"paywall.benefit.personalized" = "Personalized daily Tends";
+"paywall.benefit.personalized_detail" = "Scripture, reflection, prayer, and one small step for this journey.";
+"paywall.benefit.rhythm" = "Reminders, widgets, and journal";
+"paywall.benefit.rhythm_detail" = "Keep your prayer rhythm visible without extra friction.";
+"paywall.benefit.growth" = "Plant and streak growth";
+"paywall.benefit.growth_detail" = "See your consistency become visible over time.";
+"paywall.trust_line.with_prices" = "Then continue for %@/year or %@/month. Cancel anytime.";
+"paywall.trust_line.generic" = "Cancel anytime in Settings.";
+"paywall.progress.streak" = "%d day streak";
+"paywall.progress.completed" = "%d Tends completed";
 "paywall.resubscribe.headline" = "Pick up where you left off.";
 "paywall.resubscribe.subheadline" = "Resubscribe to Tend Premium to continue your journey.";
 "paywall.resubscribe.cta" = "Resubscribe";
@@ -90,6 +107,8 @@
 "paywall.plan.weekly" = "Weekly";
 "paywall.plan.daily" = "Daily";
 "paywall.plan.subscription" = "Subscription";
+"paywall.plan.annual_subtitle" = "Best value, billed yearly";
+"paywall.plan.monthly_subtitle" = "Flexible, billed monthly";
 "paywall.plan.billed_yearly" = "Billed yearly";
 "paywall.plan.billed_monthly" = "Billed monthly";
 "paywall.plan.billed_weekly" = "Billed weekly";
@@ -143,8 +162,8 @@
 "content.error.remote_provider_missing" = "Remote AI provider is not configured.";
 
 "onboarding.intro_title" = "Welcome to Tend";
-"onboarding.intro_subtitle" = "pray. act. grow.";
-"onboarding.intro_tagline" = "turn your prayers into small\nsteps of real growth";
+"onboarding.intro_subtitle" = "Prayer for what you're facing.";
+"onboarding.intro_tagline" = "Daily Scripture, prayer, and one small step for real life.";
 "onboarding.intro.logo_accessibility" = "Tend logo animation";
 "onboarding.name_title" = "What should Tend call you?";
 "onboarding.name_placeholder" = "Enter your name";
@@ -168,6 +187,7 @@
 "onboarding.tend_reflection_title" = "Begin with Scripture.";
 "onboarding.tend_scripture_label" = "Scripture";
 "onboarding.tend_ritual_stage_scripture" = "Scripture";
+"onboarding.tend_ritual_stage_reflect" = "Reflect";
 "onboarding.tend_ritual_stage_prayer" = "Prayer";
 "onboarding.tend_ritual_stage_step" = "Step";
 "onboarding.tend_prayer_title" = "Pray for today.";

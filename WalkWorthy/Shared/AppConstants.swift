@@ -2,7 +2,7 @@ import Foundation
 
 enum AppConstants {
     static let appName = "Tend"
-    static let subtitle = "pray. act. grow."
+    static let subtitle = "Prayer for what you're facing."
     static let supportEmail = "tend@keeganryan.co"
     static let termsURL = "https://walk-worthy-kohl.vercel.app/terms"
     static let privacyURL = "https://walk-worthy-kohl.vercel.app/privacy"

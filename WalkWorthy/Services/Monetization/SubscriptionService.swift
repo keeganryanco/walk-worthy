@@ -32,11 +32,11 @@ struct PaywallRemoteConfig: Equatable {
 
     static var `default`: PaywallRemoteConfig {
         PaywallRemoteConfig(
-            headline: SubscriptionLocalization.string("paywall.default.headline", default: "Grow with steady, faith-filled consistency."),
-            subheadline: SubscriptionLocalization.string("paywall.default.subheadline", default: "Unlock full access to Tend with a 3-day free trial."),
+            headline: SubscriptionLocalization.string("paywall.default.headline", default: "Keep praying through what you're facing."),
+            subheadline: SubscriptionLocalization.string("paywall.default.subheadline", default: "Continue this personalized daily journey with Scripture, reflection, guided prayer, and one small step."),
             ctaTitle: SubscriptionLocalization.string("paywall.default.cta", default: "Start 3-Day Free Trial"),
             annualBadgeText: SubscriptionLocalization.string("paywall.default.badge", default: "Best Value"),
-            footnote: SubscriptionLocalization.string("paywall.default.footnote", default: "Cancel anytime in Settings."),
+            footnote: SubscriptionLocalization.string("paywall.default.footnote", default: "Restore purchases, terms, and privacy are always available below."),
             defaultPackageToken: "annual",
             isDismissable: false
         )
@@ -51,6 +51,18 @@ struct PaywallRemoteConfig: Equatable {
             footnote: SubscriptionLocalization.string("paywall.resubscribe.footnote", default: "Auto-renews unless canceled in Settings."),
             defaultPackageToken: "annual",
             isDismissable: true
+        )
+    }
+
+    static func onboardingHardGate(from base: PaywallRemoteConfig) -> PaywallRemoteConfig {
+        PaywallRemoteConfig(
+            headline: base.headline,
+            subheadline: base.subheadline,
+            ctaTitle: base.ctaTitle,
+            annualBadgeText: base.annualBadgeText,
+            footnote: base.footnote,
+            defaultPackageToken: base.defaultPackageToken,
+            isDismissable: false
         )
     }
 }

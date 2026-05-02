@@ -46,6 +46,7 @@ struct HomeView: View {
                             JourneyGrowthPage(
                                 journey: journey,
                                 entries: entries(for: journey.id),
+                                totalCompletedTendCount: totalCompletedTendCount,
                                 profile: profile,
                                 memory: memory(for: journey.id),
                                 contentService: contentService,
@@ -186,6 +187,10 @@ struct HomeView: View {
 
     private var pageIDs: [UUID] {
         activeJourneys.map(\.id)
+    }
+
+    private var totalCompletedTendCount: Int {
+        allEntries.filter { $0.completedAt != nil }.count
     }
 
     private var selectedPageIndex: Int {
@@ -371,11 +376,13 @@ struct JourneyGrowthPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.requestReview) private var requestReview
     @EnvironmentObject private var connectivityService: ConnectivityService
     @AppStorage("homeOverlayActive") private var homeOverlayActive = false
     
     let journey: PrayerJourney
     let entries: [PrayerEntry]
+    let totalCompletedTendCount: Int
     let profile: OnboardingProfile
     let memory: JourneyMemorySnapshot?
     let contentService: JourneyContentService
@@ -383,6 +390,7 @@ struct JourneyGrowthPage: View {
     let onConsumeReignitePrompt: () -> Void
     let onRequestDailyWarmup: (UUID) async -> JourneyPackageWarmupResult
     @Binding var suppressHomePageIndicator: Bool
+    @Query(sort: \AppSettings.firstLaunchAt, order: .forward) private var settingsRows: [AppSettings]
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     
     @State private var isGenerating = false
@@ -408,6 +416,8 @@ struct JourneyGrowthPage: View {
     // New states for streak overlay
     @State private var showStreakOverlay = false
     @State private var pendingCompletionCelebration: TendCompletionCelebration?
+    @State private var queuedReviewPrompt: ReviewPromptMoment?
+    @State private var pendingReviewPrompt: ReviewPromptMoment?
     @State private var showReigniteOverlay = false
     @State private var showReigniteCelebration = false
     @State private var isBottomSheetExpanded = false
@@ -875,7 +885,10 @@ struct JourneyGrowthPage: View {
                 if showStreakOverlay {
                     StreakOverlayView(
                         streakCount: currentStreakCount,
-                        onDismiss: { showStreakOverlay = false }
+                        onDismiss: {
+                            showStreakOverlay = false
+                            presentQueuedReviewPromptIfNeeded()
+                        }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
@@ -983,6 +996,26 @@ struct JourneyGrowthPage: View {
             Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
         } message: {
             Text(alertMessage ?? "")
+        }
+        .alert(reviewPromptTitle, isPresented: Binding(
+            get: { pendingReviewPrompt != nil },
+            set: { if !$0 { pendingReviewPrompt = nil } }
+        )) {
+            Button(L10n.string("review.prompt.primary", default: "Review Tend")) {
+                handleReviewPromptAccepted()
+            }
+            Button(L10n.string("review.prompt.not_now", default: "Not now"), role: .cancel) {
+                pendingReviewPrompt = nil
+            }
+            if pendingReviewPrompt == .plantStage2 {
+                Button(L10n.string("review.prompt.never", default: "Don’t ask again"), role: .destructive) {
+                    ReviewPromptCoordinator.suppressFuturePrompts(settings: settingsRows.first)
+                    try? modelContext.save()
+                    pendingReviewPrompt = nil
+                }
+            }
+        } message: {
+            Text(reviewPromptMessage)
         }
         .ignoresSafeArea()
     }
@@ -1629,7 +1662,62 @@ struct JourneyGrowthPage: View {
     private func presentPendingCompletionCelebrationIfNeeded() {
         guard let celebration = pendingCompletionCelebration else { return }
         pendingCompletionCelebration = nil
+        queueReviewPromptIfNeeded(for: celebration)
         presentCompletionCelebration(didIncreasePlantStage: celebration.didIncreasePlantStage)
+    }
+
+    private var reviewPromptTitle: String {
+        switch pendingReviewPrompt {
+        case .some(.plantStage2):
+            return L10n.string("review.prompt.stage2.title", default: "Your plant is growing. Enjoying Tend?")
+        case .some(.secondDay), .none:
+            return L10n.string("review.prompt.second_day.title", default: "You’ve completed your second day. Enjoying Tend?")
+        }
+    }
+
+    private var reviewPromptMessage: String {
+        L10n.string(
+            "review.prompt.message",
+            default: "A quick App Store review helps more people find a prayer rhythm that lasts."
+        )
+    }
+
+    private func queueReviewPromptIfNeeded(for celebration: TendCompletionCelebration) {
+        let projectedCompletedCount = max(totalCompletedTendCount, celebration.completedTendCountAfterCompletion)
+        queuedReviewPrompt = ReviewPromptCoordinator.nextPrompt(
+            settings: settingsRows.first,
+            completedTendCount: projectedCompletedCount,
+            didIncreasePlantStage: celebration.didIncreasePlantStage,
+            plantStageAfterCompletion: celebration.plantStageAfterCompletion
+        )
+    }
+
+    private func presentQueuedReviewPromptIfNeeded() {
+        guard let prompt = queuedReviewPrompt else { return }
+        queuedReviewPrompt = nil
+        ReviewPromptCoordinator.markPromptShown(prompt, settings: settingsRows.first)
+        try? modelContext.save()
+        analytics.track(
+            .reviewPromptShown,
+            properties: [
+                "source": prompt == .secondDay ? "second_completed_day" : "plant_stage_2"
+            ]
+        )
+        pendingReviewPrompt = prompt
+    }
+
+    private func handleReviewPromptAccepted() {
+        ReviewPromptCoordinator.markNativePromptRequested(settings: settingsRows.first)
+        try? modelContext.save()
+        analytics.track(
+            .reviewPromptShown,
+            properties: [
+                "action": "request_review",
+                "source": pendingReviewPrompt?.rawValue ?? "unknown"
+            ]
+        )
+        pendingReviewPrompt = nil
+        requestReview()
     }
 
     private func presentCompletionCelebration(didIncreasePlantStage: Bool) {
@@ -1913,6 +2001,8 @@ private final class PlantAssetBundleLocator {}
 
 struct TendCompletionCelebration {
     let didIncreasePlantStage: Bool
+    let completedTendCountAfterCompletion: Int
+    let plantStageAfterCompletion: Int
 }
 
 struct TendingFlowView: View {
@@ -2324,11 +2414,14 @@ struct TendingFlowView: View {
             baseGrowthPoints: baseGrowthPoints,
             at: completionDate
         )
+        let plantStageAfterCompletion = Self.stage(for: growthUpdate.completedTendsAfterUpdate)
+        let nextCompletedSessionCount = inferredLegacyCount + 1
         let completionCelebration = TendCompletionCelebration(
-            didIncreasePlantStage: Self.stage(for: growthUpdate.completedTendsAfterUpdate) > Self.stage(for: completedCountBeforeTend)
+            didIncreasePlantStage: plantStageAfterCompletion > Self.stage(for: completedCountBeforeTend),
+            completedTendCountAfterCompletion: nextCompletedSessionCount,
+            plantStageAfterCompletion: plantStageAfterCompletion
         )
         journey.cycleCount = growthUpdate.completedTendsAfterUpdate / Self.tendsPerCycle
-        let nextCompletedSessionCount = inferredLegacyCount + 1
         let projectedEntries = entries.contains(where: { $0.id == entry.id }) ? entries : (entries + [entry])
         JourneyEngagementService.refreshJourneyState(
             for: journey,

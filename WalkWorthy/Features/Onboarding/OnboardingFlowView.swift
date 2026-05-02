@@ -193,14 +193,14 @@ struct OnboardingFlowView: View {
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.72)
 
-            Text("pray. act. grow.")
+            Text("Prayer for what you're facing.")
                 .font(WWTypography.heading(headingSize(28, metrics: metrics)))
                 .foregroundStyle(WWColor.growGreen)
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: metrics.isVeryCompact ? 10 : 56)
 
-            Text("turn your prayers into small\nsteps of real growth")
+            Text("Daily Scripture, prayer,\nand one small step for real life.")
                 .font(WWTypography.heading(headingSize(26, metrics: metrics)).italic())
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)

@@ -1,6 +1,97 @@
 import Foundation
 import SwiftUI
 
+struct PaywallPersonalizationContext: Equatable {
+    let journeyTitle: String?
+    let dailyTitle: String?
+    let scriptureReference: String?
+    let reflectionExcerpt: String?
+    let plantProgressText: String?
+    let prayerConcern: String?
+
+    init(
+        journeyTitle: String? = nil,
+        dailyTitle: String? = nil,
+        scriptureReference: String? = nil,
+        reflectionExcerpt: String? = nil,
+        plantProgressText: String? = nil,
+        prayerConcern: String? = nil
+    ) {
+        self.journeyTitle = Self.clean(journeyTitle)
+        self.dailyTitle = Self.clean(dailyTitle)
+        self.scriptureReference = Self.clean(scriptureReference)
+        self.reflectionExcerpt = Self.excerpt(reflectionExcerpt)
+        self.plantProgressText = Self.clean(plantProgressText)
+        self.prayerConcern = Self.clean(prayerConcern)
+    }
+
+    var hasPreview: Bool {
+        journeyTitle != nil || dailyTitle != nil || scriptureReference != nil || reflectionExcerpt != nil || prayerConcern != nil
+    }
+
+    private static func clean(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private static func excerpt(_ value: String?) -> String? {
+        guard let clean = clean(value) else { return nil }
+        guard clean.count > 150 else { return clean }
+        let index = clean.index(clean.startIndex, offsetBy: 147)
+        return String(clean[..<index]).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+    }
+}
+
+enum PaywallPricingCopy {
+    static func standardTrustLine(annualPrice: String?, monthlyPrice: String?) -> String {
+        let annual = clean(annualPrice)
+        let monthly = clean(monthlyPrice)
+        if let annual, let monthly {
+            let format = L10n.string(
+                "paywall.trust_line.with_prices",
+                default: "Then continue for %@/year or %@/month. Cancel anytime."
+            )
+            return String(format: format, annual, monthly)
+        }
+        return L10n.string(
+            "paywall.trust_line.generic",
+            default: "Cancel anytime in Settings."
+        )
+    }
+
+    static func downsellOfferLine(introPrice: String?, basePrice: String?) -> String {
+        let intro = clean(introPrice)
+        let base = clean(basePrice)
+        if let intro, let base {
+            let format = L10n.string(
+                "downsell.offer_line.with_prices",
+                default: "First 3 months at %@/month, then %@/month. Cancel anytime."
+            )
+            return String(format: format, intro, base)
+        }
+        return L10n.string(
+            "downsell.offer_line.generic",
+            default: "A limited-time monthly offer is available. Cancel anytime."
+        )
+    }
+
+    private static func clean(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+enum DownsellPresentationPolicy {
+    static func shouldPresent(
+        profileExists: Bool,
+        hasEligibleOffer: Bool,
+        alreadyShownThisForegroundSession: Bool,
+        isStandardPaywallPresented: Bool
+    ) -> Bool {
+        profileExists && hasEligibleOffer && !alreadyShownThisForegroundSession && !isStandardPaywallPresented
+    }
+}
+
 struct PaywallView: View {
     @EnvironmentObject private var subscriptionService: SubscriptionService
     @Environment(\.dismiss) private var dismiss
@@ -9,14 +100,21 @@ struct PaywallView: View {
     let triggerReason: String?
     let isPremium: Bool
     let copyOverride: PaywallRemoteConfig?
+    let personalizationContext: PaywallPersonalizationContext?
     @State private var selectedProductID: String?
     @State private var isPurchasing = false
     @State private var isRestoring = false
 
-    init(triggerReason: String?, isPremium: Bool, copyOverride: PaywallRemoteConfig? = nil) {
+    init(
+        triggerReason: String?,
+        isPremium: Bool,
+        copyOverride: PaywallRemoteConfig? = nil,
+        personalizationContext: PaywallPersonalizationContext? = nil
+    ) {
         self.triggerReason = triggerReason
         self.isPremium = isPremium
         self.copyOverride = copyOverride
+        self.personalizationContext = personalizationContext
     }
 
     private var paywallConfig: PaywallRemoteConfig {
@@ -34,8 +132,10 @@ struct PaywallView: View {
             VStack(spacing: 0) {
                 header
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 14) {
-                        offerHero
+                    VStack(spacing: 12) {
+                        heroCopy
+                        PaywallPreviewCard(context: personalizationContext)
+                        benefitsList
                         packageSelector
                         if let specialOfferPricingLine {
                             Text(specialOfferPricingLine)
@@ -44,6 +144,11 @@ struct PaywallView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
                         }
+                        Text(standardTrustLine)
+                            .font(WWTypography.caption(12))
+                            .foregroundStyle(WWColor.muted)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
                         primaryButton
                         footerLinks
                         if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
@@ -61,7 +166,7 @@ struct PaywallView: View {
                             .padding(.bottom, 12)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    .padding(.top, 4)
                     .padding(.bottom, 16)
                 }
             }
@@ -96,9 +201,11 @@ struct PaywallView: View {
                 Text(AppConstants.appName)
                     .font(WWTypography.heading(20))
                     .foregroundStyle(WWColor.nearBlack)
-                Text(paywallConfig.subheadline)
-                    .font(WWTypography.body(16))
-                    .foregroundStyle(WWColor.muted)
+                if let plantProgressText = personalizationContext?.plantProgressText {
+                    Text(plantProgressText)
+                        .font(WWTypography.caption(13))
+                        .foregroundStyle(WWColor.growGreen)
+                }
             }
             Spacer()
 
@@ -122,26 +229,44 @@ struct PaywallView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var offerHero: some View {
-        VStack(spacing: 10) {
+    private var heroCopy: some View {
+        VStack(spacing: 8) {
             Text(paywallConfig.headline)
                 .font(WWTypography.display(34))
                 .foregroundStyle(WWColor.nearBlack)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(3)
                 .minimumScaleFactor(0.72)
 
-            Image("paywall_hero")
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: 170)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .accessibilityHidden(true)
+            Text(paywallConfig.subheadline)
+                .font(WWTypography.body(17))
+                .foregroundStyle(WWColor.muted)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
-        .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(.top, 2)
         .accessibilityElement(children: .combine)
+    }
+
+    private var benefitsList: some View {
+        VStack(spacing: 8) {
+            PaywallBenefitRow(
+                iconName: "sparkles",
+                title: L10n.string("paywall.benefit.personalized", default: "Personalized daily Tends"),
+                detail: L10n.string("paywall.benefit.personalized_detail", default: "Scripture, reflection, prayer, and one small step for this journey.")
+            )
+            PaywallBenefitRow(
+                iconName: "bell.badge",
+                title: L10n.string("paywall.benefit.rhythm", default: "Reminders, widgets, and journal"),
+                detail: L10n.string("paywall.benefit.rhythm_detail", default: "Keep your prayer rhythm visible without extra friction.")
+            )
+            PaywallBenefitRow(
+                iconName: "leaf.fill",
+                title: L10n.string("paywall.benefit.growth", default: "Plant and streak growth"),
+                detail: L10n.string("paywall.benefit.growth_detail", default: "See your consistency become visible over time.")
+            )
+        }
     }
 
     private var packageSelector: some View {
@@ -152,7 +277,7 @@ struct PaywallView: View {
                     .foregroundStyle(WWColor.nearBlack)
                     .padding(.vertical, 22)
             } else {
-                ForEach(subscriptionService.products) { product in
+                ForEach(displayedProducts) { product in
                     planRow(for: product)
                 }
             }
@@ -318,9 +443,9 @@ struct PaywallView: View {
 
         switch planTitle(for: product) {
         case L10n.string("paywall.plan.annual", default: "Annual"):
-            return L10n.string("paywall.plan.billed_yearly", default: "Billed yearly")
+            return L10n.string("paywall.plan.annual_subtitle", default: "Best value, billed yearly")
         case L10n.string("paywall.plan.monthly", default: "Monthly"):
-            return L10n.string("paywall.plan.billed_monthly", default: "Billed monthly")
+            return L10n.string("paywall.plan.monthly_subtitle", default: "Flexible, billed monthly")
         case L10n.string("paywall.plan.weekly", default: "Weekly"):
             return L10n.string("paywall.plan.billed_weekly", default: "Billed weekly")
         case L10n.string("paywall.plan.daily", default: "Daily"):
@@ -376,6 +501,24 @@ struct PaywallView: View {
         return String(format: format, discounted, base)
     }
 
+    private var standardTrustLine: String {
+        let annualPrice = subscriptionService.products.first(where: isAnnualProduct)?.displayPrice
+        let monthlyPrice = subscriptionService.products.first(where: isMonthlyProduct)?.displayPrice
+        return PaywallPricingCopy.standardTrustLine(annualPrice: annualPrice, monthlyPrice: monthlyPrice)
+    }
+
+    private var displayedProducts: [SubscriptionDisplayProduct] {
+        subscriptionService.products.sorted { lhs, rhs in
+            if isAnnualProduct(lhs) != isAnnualProduct(rhs) {
+                return isAnnualProduct(lhs)
+            }
+            if isMonthlyProduct(lhs) != isMonthlyProduct(rhs) {
+                return isMonthlyProduct(lhs) && !isAnnualProduct(rhs)
+            }
+            return lhs.displayPrice < rhs.displayPrice
+        }
+    }
+
     private func annualDiscountedPriceCaption(for product: SubscriptionDisplayProduct) -> String? {
         guard isDismissOfferPaywall, isAnnualProduct(product) else { return nil }
         let baseAmount = NSDecimalNumber(decimal: product.priceAmount)
@@ -414,5 +557,305 @@ struct PaywallView: View {
         let period = product.periodLabel.lowercased()
         let identifier = product.id.lowercased()
         return period.contains("year") || identifier.contains("annual")
+    }
+
+    private func isMonthlyProduct(_ product: SubscriptionDisplayProduct) -> Bool {
+        let period = product.periodLabel.lowercased()
+        let identifier = product.id.lowercased()
+        return period.contains("month") || identifier.contains("monthly")
+    }
+}
+
+private struct PaywallPreviewCard: View {
+    let context: PaywallPersonalizationContext?
+
+    private var journeyTitle: String {
+        context?.journeyTitle
+            ?? context?.prayerConcern
+            ?? L10n.string("paywall.preview.fallback_title", default: "Your prayer journey")
+    }
+
+    private var dailyTitle: String {
+        context?.dailyTitle
+            ?? L10n.string("paywall.preview.fallback_daily_title", default: "Today’s Tend")
+    }
+
+    private var reflectionExcerpt: String {
+        context?.reflectionExcerpt
+            ?? L10n.string("paywall.preview.reflection_fallback", default: "A daily reflection shaped around what you brought to prayer.")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image("paywall_hero")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 62, height: 62)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.string("paywall.preview.label", default: "Your next Tend"))
+                        .font(WWTypography.caption(12))
+                        .foregroundStyle(WWColor.growGreen)
+                        .textCase(.uppercase)
+                    Text(journeyTitle)
+                        .font(WWTypography.heading(21))
+                        .foregroundStyle(WWColor.nearBlack)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(dailyTitle)
+                    .font(WWTypography.heading(18))
+                    .foregroundStyle(WWColor.nearBlack)
+                if let scriptureReference = context?.scriptureReference {
+                    Text(scriptureReference)
+                        .font(WWTypography.caption(13))
+                        .foregroundStyle(WWColor.growGreen)
+                }
+                Text(reflectionExcerpt)
+                    .font(WWTypography.body(15))
+                    .foregroundStyle(WWColor.muted)
+                    .lineLimit(4)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(WWColor.growGreen.opacity(0.16), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct PaywallBenefitRow: View {
+    let iconName: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 11) {
+            Image(systemName: iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(WWColor.growGreen)
+                .frame(width: 28, height: 28)
+                .background(WWColor.growGreen.opacity(0.12), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(WWTypography.heading(16))
+                    .foregroundStyle(WWColor.nearBlack)
+                Text(detail)
+                    .font(WWTypography.caption(13))
+                    .foregroundStyle(WWColor.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(WWColor.surface.opacity(0.62), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct DownsellPaywallView: View {
+    @EnvironmentObject private var subscriptionService: SubscriptionService
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+
+    let personalizationContext: PaywallPersonalizationContext?
+    @State private var isPurchasing = false
+    private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
+
+    init(personalizationContext: PaywallPersonalizationContext? = nil) {
+        self.personalizationContext = personalizationContext
+    }
+
+    var body: some View {
+        ZStack {
+            WWColor.white.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                header
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        heroCopy
+                        PaywallPreviewCard(context: personalizationContext)
+                        downsellBenefits
+                        Text(offerLine)
+                            .font(WWTypography.body(15))
+                            .foregroundStyle(WWColor.nearBlack)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(WWColor.growGreen.opacity(0.11), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                        Button {
+                            Task { await purchase() }
+                        } label: {
+                            HStack {
+                                Spacer()
+                                if isPurchasing {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Text(L10n.string("downsell.cta.keep_going", default: "Keep My Journey Going"))
+                                        .font(WWTypography.heading(20))
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
+                            .foregroundStyle(.white)
+                            .background(WWColor.growGreen, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isPurchasing || !subscriptionService.hasEligibleDownsellOffer)
+                        .opacity((isPurchasing || !subscriptionService.hasEligibleDownsellOffer) ? 0.65 : 1)
+                        .accessibilityHint(L10n.string("downsell.cta.hint", default: "Purchases the limited-time renewal offer."))
+
+                        footerLinks
+
+                        if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
+                            Text(errorMessage)
+                                .font(WWTypography.caption(13))
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+        .task {
+            await subscriptionService.loadProducts()
+            await subscriptionService.refreshEntitlements()
+        }
+        .onChange(of: subscriptionService.isPremium) { _, isPremium in
+            if isPremium {
+                dismiss()
+            }
+        }
+        .onChange(of: subscriptionService.hasEligibleDownsellOffer) { _, isAvailable in
+            if !isAvailable {
+                dismiss()
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(AppConstants.appName)
+                    .font(WWTypography.heading(20))
+                    .foregroundStyle(WWColor.nearBlack)
+                Text(L10n.string("downsell.subtitle", default: "You canceled your trial. This offer keeps your journey open."))
+                    .font(WWTypography.body(16))
+                    .foregroundStyle(WWColor.muted)
+            }
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(WWColor.muted)
+                    .frame(width: 36, height: 36)
+                    .background(WWColor.surface, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.string("common.close", default: "Close"))
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+
+    private var heroCopy: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.string("downsell.headline", default: "Keep praying through what you started."))
+                .font(WWTypography.display(34))
+                .foregroundStyle(WWColor.nearBlack)
+                .lineLimit(3)
+                .minimumScaleFactor(0.72)
+            Text(L10n.string("downsell.body", default: "Your trial is still active. This offer keeps daily Scripture, prayer, journal, reminders, and plant growth available after it ends."))
+                .font(WWTypography.body(17))
+                .foregroundStyle(WWColor.muted)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var downsellBenefits: some View {
+        VStack(spacing: 8) {
+            PaywallBenefitRow(
+                iconName: "book.closed.fill",
+                title: L10n.string("paywall.benefit.personalized", default: "Personalized daily Tends"),
+                detail: L10n.string("paywall.benefit.personalized_detail", default: "Scripture, reflection, prayer, and one small step for this journey.")
+            )
+            PaywallBenefitRow(
+                iconName: "chart.line.uptrend.xyaxis",
+                title: L10n.string("paywall.benefit.growth", default: "Plant and streak growth"),
+                detail: L10n.string("paywall.benefit.growth_detail", default: "See your consistency become visible over time.")
+            )
+        }
+    }
+
+    private var offerLine: String {
+        PaywallPricingCopy.downsellOfferLine(
+            introPrice: subscriptionService.downsellOfferSummary?.introPriceLabel,
+            basePrice: subscriptionService.downsellOfferSummary?.basePriceLabel
+        )
+    }
+
+    private var footerLinks: some View {
+        HStack(spacing: 20) {
+            Button(L10n.string("settings.subscription.restore", default: "Restore Purchases")) {
+                Task { await subscriptionService.restorePurchases() }
+            }
+            .buttonStyle(.plain)
+            .font(WWTypography.caption(14))
+            .frame(minHeight: 44)
+
+            Button(L10n.string("paywall.footer.terms", default: "Terms")) {
+                openURL(URL(string: AppConstants.termsURL)!)
+            }
+            .buttonStyle(.plain)
+            .font(WWTypography.caption(14))
+            .frame(minHeight: 44)
+
+            Button(L10n.string("paywall.footer.privacy", default: "Privacy")) {
+                openURL(URL(string: AppConstants.privacyURL)!)
+            }
+            .buttonStyle(.plain)
+            .font(WWTypography.caption(14))
+            .frame(minHeight: 44)
+        }
+        .foregroundStyle(WWColor.muted)
+    }
+
+    private func purchase() async {
+        guard !isPurchasing else { return }
+        isPurchasing = true
+        defer { isPurchasing = false }
+        await subscriptionService.purchaseDownsellOffer()
+        if subscriptionService.isPremium {
+            analytics.track(
+                .downsellPurchased,
+                properties: [
+                    "paywall_variant": "downsell_personalized",
+                    "trigger_reason": "trial_cancel_downsell",
+                    "has_personalized_preview": personalizationContext?.hasPreview == true ? "true" : "false"
+                ]
+            )
+        }
     }
 }

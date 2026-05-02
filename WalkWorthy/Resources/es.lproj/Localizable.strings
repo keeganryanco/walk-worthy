@@ -57,22 +57,39 @@
 "settings.debug.onboarding_simulator_unavailable" = "No se pudo cargar el simulador de onboarding.";
 "settings.debug.close" = "Cerrar";
 
-"downsell.cta.keep_going" = "Seguir";
+"downsell.cta.keep_going" = "Mantener mi camino";
 "downsell.cta.hint" = "Compra la oferta de renovación por tiempo limitado.";
-"downsell.subtitle" = "Cancelaste tu prueba. Mantén tu impulso.";
-"downsell.headline" = "Mantén el progreso que ya comenzaste";
+"downsell.subtitle" = "Cancelaste tu prueba. Esta oferta mantiene abierto tu camino.";
+"downsell.headline" = "Sigue orando por lo que empezaste.";
+"downsell.body" = "Tu prueba sigue activa. Esta oferta mantiene disponibles la Escritura diaria, la oración, el diario, los recordatorios y el crecimiento de la planta cuando termine.";
 "downsell.intro_with_price" = "Sigue en el camino por %@/mes durante tus primeros 3 meses.";
 "downsell.intro_generic" = "Sigue en el camino con una oferta mensual por tiempo limitado.";
 "downsell.renewal_with_price" = "Se renueva a %@ / mes después del periodo introductorio. Cancela cuando quieras en Ajustes.";
 "downsell.renewal_generic" = "Se renueva al precio mensual estándar después del periodo introductorio. Cancela cuando quieras en Ajustes.";
+"downsell.offer_line.with_prices" = "Primeros 3 meses a %@/mes, luego %@/mes. Cancela cuando quieras.";
+"downsell.offer_line.generic" = "Hay una oferta mensual por tiempo limitado. Cancela cuando quieras.";
 "downsell.settings.renew_with_price" = "Renovar por %@ / mes";
 "downsell.settings.renew_generic" = "Renovar con oferta introductoria";
 
-"paywall.default.headline" = "Crece con constancia fiel cada día.";
-"paywall.default.subheadline" = "Desbloquea acceso completo a Tend con una prueba gratis de 3 días.";
+"paywall.default.headline" = "Sigue orando por lo que estás enfrentando.";
+"paywall.default.subheadline" = "Continúa este camino diario personalizado con Escritura, reflexión, oración guiada y un pequeño paso.";
 "paywall.default.cta" = "Comenzar prueba gratis de 3 días";
 "paywall.default.badge" = "Mejor valor";
-"paywall.default.footnote" = "Cancela cuando quieras en Ajustes.";
+"paywall.default.footnote" = "Restaurar compras, términos y privacidad siempre están disponibles abajo.";
+"paywall.preview.label" = "Tu próximo Tend";
+"paywall.preview.fallback_title" = "Tu camino de oración";
+"paywall.preview.fallback_daily_title" = "El Tend de hoy";
+"paywall.preview.reflection_fallback" = "Una reflexión diaria formada por lo que llevaste a oración.";
+"paywall.benefit.personalized" = "Tends diarios personalizados";
+"paywall.benefit.personalized_detail" = "Escritura, reflexión, oración y un pequeño paso para este camino.";
+"paywall.benefit.rhythm" = "Recordatorios, widgets y diario";
+"paywall.benefit.rhythm_detail" = "Mantén visible tu ritmo de oración sin fricción extra.";
+"paywall.benefit.growth" = "Crecimiento de planta y racha";
+"paywall.benefit.growth_detail" = "Mira cómo tu constancia se vuelve visible con el tiempo.";
+"paywall.trust_line.with_prices" = "Luego continúa por %@/año o %@/mes. Cancela cuando quieras.";
+"paywall.trust_line.generic" = "Cancela cuando quieras en Ajustes.";
+"paywall.progress.streak" = "Racha de %d días";
+"paywall.progress.completed" = "%d Tends completados";
 "paywall.resubscribe.headline" = "Retoma desde donde lo dejaste.";
 "paywall.resubscribe.subheadline" = "Vuelve a Tend Premium para continuar tu camino.";
 "paywall.resubscribe.cta" = "Volver a suscribirme";
@@ -90,6 +107,8 @@
 "paywall.plan.weekly" = "Semanal";
 "paywall.plan.daily" = "Diario";
 "paywall.plan.subscription" = "Suscripción";
+"paywall.plan.annual_subtitle" = "Mejor valor, cobrado anualmente";
+"paywall.plan.monthly_subtitle" = "Flexible, cobrado mensualmente";
 "paywall.plan.billed_yearly" = "Cobrado anualmente";
 "paywall.plan.billed_monthly" = "Cobrado mensualmente";
 "paywall.plan.billed_weekly" = "Cobrado semanalmente";
@@ -143,8 +162,8 @@
 "content.error.remote_provider_missing" = "El proveedor remoto de IA no está configurado.";
 
 "onboarding.intro_title" = "Bienvenido a Tend";
-"onboarding.intro_subtitle" = "ora. actúa. crece.";
-"onboarding.intro_tagline" = "convierte tus oraciones en\npequeños pasos de crecimiento real";
+"onboarding.intro_subtitle" = "Oración para lo que estás enfrentando.";
+"onboarding.intro_tagline" = "Escritura diaria, oración y un paso pequeño para la vida real.";
 "onboarding.intro.logo_accessibility" = "Animación del logo de Tend";
 "onboarding.name_title" = "¿Cómo quieres que Tend te llame?";
 "onboarding.name_placeholder" = "Escribe tu nombre";
@@ -168,6 +187,7 @@
 "onboarding.tend_reflection_title" = "Comienza con la Escritura.";
 "onboarding.tend_scripture_label" = "Escritura";
 "onboarding.tend_ritual_stage_scripture" = "Escritura";
+"onboarding.tend_ritual_stage_reflect" = "Reflexiona";
 "onboarding.tend_ritual_stage_prayer" = "Oración";
 "onboarding.tend_ritual_stage_step" = "Paso";
 "onboarding.tend_prayer_title" = "Ora por hoy.";

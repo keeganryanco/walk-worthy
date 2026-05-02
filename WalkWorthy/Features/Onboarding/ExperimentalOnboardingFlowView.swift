@@ -37,6 +37,7 @@ struct ExperimentalOnboardingFlowView: View {
     let onPrepare: (String, String) async -> PreparedOnboardingJourney?
     let onGenerate: (String, String) async -> OnboardingBootstrapResult?
     let onCommitPrepared: (PreparedOnboardingJourney, String, String) async -> OnboardingBootstrapResult?
+    let isPremium: Bool
     let onComplete: (OnboardingProfile) -> Void
     let onRequirePaywall: (PaywallTriggerReason) -> Void
     let experimentConfig: OnboardingExperimentConfig
@@ -78,6 +79,8 @@ struct ExperimentalOnboardingFlowView: View {
     @State private var preparedJourney: PreparedOnboardingJourney?
     @State private var preparedJourneyKey = ""
     @State private var preparedJourneyTask: Task<PreparedOnboardingJourney?, Never>?
+    @State private var hasPassedOnboardingPaywall = false
+    @State private var isWaitingForOnboardingPaywall = false
 
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
@@ -120,22 +123,12 @@ struct ExperimentalOnboardingFlowView: View {
         actionStepText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var prayerConcernText: String {
-        prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var devotionalSummaryLine: String {
+    private var reflectionHeadingText: String {
         let dailyTitle = generatedPackage?.dailyTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !dailyTitle.isEmpty {
-            return "Today’s Tend begins with: \(dailyTitle)."
+            return dailyTitle
         }
-
-        let focus = inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !focus.isEmpty {
-            return "Today’s Tend is shaped around \(focus)."
-        }
-
-        return "Today’s Tend is shaped around what you brought to prayer."
+        return copy("tend_reflection_title", fallback: "Begin with Scripture.")
     }
 
     private var supportsWidgetsOnCurrentDevice: Bool {
@@ -230,6 +223,10 @@ struct ExperimentalOnboardingFlowView: View {
             guard step == .intro else { return }
             resolvedExperimentConfig = newConfig
             ensureCurrentStepIsValidForSequence()
+        }
+        .onChange(of: isPremium) { _, isPremium in
+            guard isPremium else { return }
+            continueAfterOnboardingPaywallIfNeeded()
         }
     }
     
@@ -441,11 +438,11 @@ struct ExperimentalOnboardingFlowView: View {
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
             
-            Text(copy("intro_subtitle", fallback: "pray. act. grow."))
+            Text(copy("intro_subtitle", fallback: "Prayer for what you're facing."))
                 .font(WWTypography.heading(24))
                 .foregroundStyle(WWColor.growGreen)
             
-            Text(copy("intro_tagline", fallback: "turn your prayers into small\nsteps of real growth"))
+            Text(copy("intro_tagline", fallback: "Daily Scripture, prayer,\nand one small step for real life."))
                 .font(WWTypography.heading(18).italic())
                 .foregroundStyle(WWColor.muted)
                 .multilineTextAlignment(.center)
@@ -571,24 +568,10 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var tendReflectionContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if !prayerConcernText.isEmpty {
-                Text("“\(prayerConcernText)”")
-                    .font(WWTypography.caption(13).weight(.semibold))
-                    .foregroundStyle(WWColor.nearBlack)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(WWColor.surface.opacity(0.96))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(WWColor.nearBlack.opacity(0.06), lineWidth: 1)
-                    )
-            }
+            ritualStageLabel(copy("tend_ritual_stage_reflect", fallback: "Reflect"))
 
-            Text(devotionalSummaryLine)
-                .font(WWTypography.heading(24))
+            Text(reflectionHeadingText)
+                .font(WWTypography.display(36))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1582,14 +1565,14 @@ struct ExperimentalOnboardingFlowView: View {
 
     private var defaultPostJourneySteps: [Step] {
         supportsWidgetsOnCurrentDevice
-            ? [.backgroundSelection, .widget, .reminder, .review]
-            : [.backgroundSelection, .reminder, .review]
+            ? [.backgroundSelection, .reminder, .widget]
+            : [.backgroundSelection, .reminder]
     }
 
     private var requiredPostJourneySteps: [Step] {
         supportsWidgetsOnCurrentDevice
-            ? [.backgroundSelection, .widget, .reminder, .review]
-            : [.backgroundSelection, .reminder, .review]
+            ? [.backgroundSelection, .reminder, .widget]
+            : [.backgroundSelection, .reminder]
     }
 
     private var onboardingFlowSequence: [Step] {
@@ -1605,7 +1588,9 @@ struct ExperimentalOnboardingFlowView: View {
             defaults: defaultPostJourneySteps,
             required: requiredPostJourneySteps
         )
-        return [.intro] + pre + fixedFirstJourneySteps + [.firstTendCelebration] + enforceReviewAsLastPostStep(post)
+        let primarySteps: [Step] = [.intro] + pre + fixedFirstJourneySteps + [.firstTendCelebration]
+        guard hasPassedOnboardingPaywall else { return primarySteps }
+        return primarySteps + post
     }
 
     private func canonicalPreJourneyOrder(_ steps: [Step]) -> [Step] {
@@ -1638,12 +1623,6 @@ struct ExperimentalOnboardingFlowView: View {
         }
 
         return result
-    }
-
-    private func enforceReviewAsLastPostStep(_ steps: [Step]) -> [Step] {
-        var reordered = steps.filter { $0 != .review }
-        reordered.append(.review)
-        return reordered
     }
 
     private func stepFromToken(_ token: String) -> Step? {
@@ -1937,25 +1916,54 @@ struct ExperimentalOnboardingFlowView: View {
             return
         }
 
-        if currentIndex == onboardingFlowSequence.count - 1 {
-            let trimmedInferredGrowthFocus = inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
-            let fallbackGrowthFocus = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let profile = OnboardingProfile(
-                name: firstNameDisplay,
-                ageRange: "",
-                prayerFocus: prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
-                growthGoal: trimmedInferredGrowthFocus.isEmpty ? fallbackGrowthFocus : trimmedInferredGrowthFocus,
-                reminderWindow: "Configured via System",
-                blocker: "",
-                supportCadence: ""
-            )
+        if step == .firstTendCelebration, !hasPassedOnboardingPaywall {
+            isWaitingForOnboardingPaywall = true
             onRequirePaywall(.onboardingCompletion)
-            onComplete(profile)
+            if isPremium || AppConstants.Debug.bypassPaywall {
+                continueAfterOnboardingPaywallIfNeeded()
+            }
+            return
+        }
+
+        if currentIndex == onboardingFlowSequence.count - 1 {
+            completeOnboardingAfterSecondarySetup()
             return
         }
 
         let next = onboardingFlowSequence[currentIndex + 1]
         withAnimation(.default) { step = next }
+    }
+
+    private func continueAfterOnboardingPaywallIfNeeded() {
+        guard isWaitingForOnboardingPaywall || !hasPassedOnboardingPaywall else { return }
+        isWaitingForOnboardingPaywall = false
+        hasPassedOnboardingPaywall = true
+
+        let sequence = onboardingFlowSequence
+        guard let currentIndex = sequence.firstIndex(of: step),
+              sequence.indices.contains(currentIndex + 1) else {
+            completeOnboardingAfterSecondarySetup()
+            return
+        }
+
+        withAnimation(.default) {
+            step = sequence[currentIndex + 1]
+        }
+    }
+
+    private func completeOnboardingAfterSecondarySetup() {
+        let trimmedInferredGrowthFocus = inferredGrowthFocus.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallbackGrowthFocus = prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let profile = OnboardingProfile(
+            name: firstNameDisplay,
+            ageRange: "",
+            prayerFocus: prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines),
+            growthGoal: trimmedInferredGrowthFocus.isEmpty ? fallbackGrowthFocus : trimmedInferredGrowthFocus,
+            reminderWindow: "Configured via System",
+            blocker: "",
+            supportCadence: ""
+        )
+        onComplete(profile)
     }
     
     private func goBack() {

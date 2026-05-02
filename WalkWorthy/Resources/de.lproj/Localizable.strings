@@ -57,22 +57,39 @@
 "settings.debug.onboarding_simulator_unavailable" = "Onboarding-Simulator konnte nicht geladen werden.";
 "settings.debug.close" = "Schließen";
 
-"downsell.cta.keep_going" = "Weitergehen";
+"downsell.cta.keep_going" = "Meine Journey fortsetzen";
 "downsell.cta.hint" = "Kauft das zeitlich begrenzte Verlängerungsangebot.";
-"downsell.subtitle" = "Du hast dein Probeabo gekündigt. Bleib dran.";
-"downsell.headline" = "Behalte deinen Fortschritt";
+"downsell.subtitle" = "Du hast dein Probeabo gekündigt. Dieses Angebot hält deine Journey offen.";
+"downsell.headline" = "Bete weiter durch das, was du begonnen hast.";
+"downsell.body" = "Dein Probeabo ist noch aktiv. Dieses Angebot hält tägliche Schrift, Gebet, Journal, Erinnerungen und Pflanzenwachstum auch danach verfügbar.";
 "downsell.intro_with_price" = "Bleib für die ersten 3 Monate für %@/Monat auf deinem Weg.";
 "downsell.intro_generic" = "Bleib mit einem zeitlich begrenzten monatlichen Einstiegsangebot auf deinem Weg.";
 "downsell.renewal_with_price" = "Verlängert sich nach dem Einführungszeitraum zu %@ / Monat. Jederzeit in den Einstellungen kündbar.";
 "downsell.renewal_generic" = "Verlängert sich nach dem Einführungszeitraum zum regulären Monatspreis. Jederzeit in den Einstellungen kündbar.";
+"downsell.offer_line.with_prices" = "Erste 3 Monate für %@/Monat, danach %@/Monat. Jederzeit kündbar.";
+"downsell.offer_line.generic" = "Ein zeitlich begrenztes Monatsangebot ist verfügbar. Jederzeit kündbar.";
 "downsell.settings.renew_with_price" = "Verlängern für %@ / Monat";
 "downsell.settings.renew_generic" = "Mit Einstiegsangebot verlängern";
 
-"paywall.default.headline" = "Wachse mit beständiger, glaubensvoller Treue.";
-"paywall.default.subheadline" = "Schalte den vollen Zugriff auf Tend mit einem 3-tägigen Probeabo frei.";
+"paywall.default.headline" = "Bete weiter durch das, was du gerade trägst.";
+"paywall.default.subheadline" = "Setze diese persönliche tägliche Journey mit Schrift, Reflexion, geführtem Gebet und einem kleinen Schritt fort.";
 "paywall.default.cta" = "3-Tage-Probeabo starten";
 "paywall.default.badge" = "Bestes Angebot";
-"paywall.default.footnote" = "Jederzeit in den Einstellungen kündbar.";
+"paywall.default.footnote" = "Käufe wiederherstellen, Bedingungen und Datenschutz sind unten immer verfügbar.";
+"paywall.preview.label" = "Dein nächstes Tend";
+"paywall.preview.fallback_title" = "Deine Gebets-Journey";
+"paywall.preview.fallback_daily_title" = "Heutiges Tend";
+"paywall.preview.reflection_fallback" = "Eine tägliche Reflexion, geformt von dem, was du ins Gebet gebracht hast.";
+"paywall.benefit.personalized" = "Persönliche tägliche Tends";
+"paywall.benefit.personalized_detail" = "Schrift, Reflexion, Gebet und ein kleiner Schritt für diese Journey.";
+"paywall.benefit.rhythm" = "Erinnerungen, Widgets und Journal";
+"paywall.benefit.rhythm_detail" = "Halte deinen Gebetsrhythmus sichtbar, ohne zusätzliche Reibung.";
+"paywall.benefit.growth" = "Pflanzen- und Streak-Wachstum";
+"paywall.benefit.growth_detail" = "Sieh, wie deine Beständigkeit mit der Zeit sichtbar wird.";
+"paywall.trust_line.with_prices" = "Danach weiter für %@/Jahr oder %@/Monat. Jederzeit kündbar.";
+"paywall.trust_line.generic" = "Jederzeit in den Einstellungen kündbar.";
+"paywall.progress.streak" = "%d-Tage-Streak";
+"paywall.progress.completed" = "%d Tends abgeschlossen";
 "paywall.resubscribe.headline" = "Mach dort weiter, wo du aufgehört hast.";
 "paywall.resubscribe.subheadline" = "Abonniere Tend Premium erneut, um deine Journey fortzusetzen.";
 "paywall.resubscribe.cta" = "Erneut abonnieren";
@@ -90,6 +107,8 @@
 "paywall.plan.weekly" = "Wöchentlich";
 "paywall.plan.daily" = "Täglich";
 "paywall.plan.subscription" = "Abonnement";
+"paywall.plan.annual_subtitle" = "Bestes Angebot, jährlich abgerechnet";
+"paywall.plan.monthly_subtitle" = "Flexibel, monatlich abgerechnet";
 "paywall.plan.billed_yearly" = "Jährlich abgerechnet";
 "paywall.plan.billed_monthly" = "Monatlich abgerechnet";
 "paywall.plan.billed_weekly" = "Wöchentlich abgerechnet";
@@ -143,8 +162,8 @@
 "content.error.remote_provider_missing" = "Remote-AI-Anbieter ist nicht konfiguriert.";
 
 "onboarding.intro_title" = "Willkommen bei Tend";
-"onboarding.intro_subtitle" = "pray. act. grow.";
-"onboarding.intro_tagline" = "mach aus deinen Gebeten kleine\nSchritte echten Wachstums";
+"onboarding.intro_subtitle" = "Gebet für das, was dich gerade bewegt.";
+"onboarding.intro_tagline" = "Tägliche Schrift, Gebet und ein kleiner Schritt fürs echte Leben.";
 "onboarding.intro.logo_accessibility" = "Tend-Logo-Animation";
 "onboarding.name_title" = "Wie soll Tend dich nennen?";
 "onboarding.name_placeholder" = "Gib deinen Namen ein";
@@ -168,6 +187,7 @@
 "onboarding.tend_reflection_title" = "Beginne mit der Schrift.";
 "onboarding.tend_scripture_label" = "Schrift";
 "onboarding.tend_ritual_stage_scripture" = "Schrift";
+"onboarding.tend_ritual_stage_reflect" = "Reflektiere";
 "onboarding.tend_ritual_stage_prayer" = "Gebet";
 "onboarding.tend_ritual_stage_step" = "Schritt";
 "onboarding.tend_prayer_title" = "Bete für heute.";

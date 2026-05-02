@@ -243,7 +243,7 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: $showDownsellPaywall) {
-                DownsellPaywallView()
+                DownsellPaywallView(personalizationContext: nil)
                     .environmentObject(subscriptionService)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
@@ -252,7 +252,8 @@ struct SettingsView: View {
                 PaywallView(
                     triggerReason: "settings_resubscribe",
                     isPremium: subscriptionService.isPremium,
-                    copyOverride: .resubscribe
+                    copyOverride: .resubscribe,
+                    personalizationContext: nil
                 )
                 .environmentObject(subscriptionService)
                 .presentationDetents([.large])
@@ -262,7 +263,8 @@ struct SettingsView: View {
                 PaywallView(
                     triggerReason: "settings_upgrade",
                     isPremium: subscriptionService.isPremium,
-                    copyOverride: nil
+                    copyOverride: nil,
+                    personalizationContext: nil
                 )
                 .environmentObject(subscriptionService)
                 .presentationDetents([.large])
@@ -357,6 +359,7 @@ private struct DebugOnboardingSimulatorView: View {
                     onCommitPrepared: { prepared, _, _ in
                         await debugCommitPrepared(prepared, container: container)
                     },
+                    isPremium: true,
                     onComplete: { _ in
                         dismiss()
                     },
@@ -366,7 +369,7 @@ private struct DebugOnboardingSimulatorView: View {
                     experimentConfig: OnboardingExperimentConfig(
                         variant: "debug-sim",
                         preJourneyOrder: ["prayerIntent", "name"],
-                        postJourneyOrder: ["backgroundSelection", "review"],
+                        postJourneyOrder: ["backgroundSelection", "reminder"],
                         copyOverrides: ["intro_title": "Onboarding Simulator"]
                     )
                 )
@@ -571,220 +574,3 @@ private struct DebugOnboardingSimulatorView: View {
     }
 }
 #endif
-
-private struct DownsellPaywallView: View {
-    @EnvironmentObject private var subscriptionService: SubscriptionService
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
-
-    @State private var isPurchasing = false
-
-    private var introPriceText: String? {
-        subscriptionService.downsellOfferSummary?.introPriceLabel
-    }
-
-    private var basePriceText: String? {
-        subscriptionService.downsellOfferSummary?.basePriceLabel
-    }
-
-    var body: some View {
-        ZStack {
-            WWColor.white.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                header
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 14) {
-                        offerCard
-
-                        Button {
-                            Task { await purchase() }
-                        } label: {
-                            HStack {
-                                Spacer()
-                                if isPurchasing {
-                                    ProgressView().tint(.white)
-                                } else {
-                                    Text(L10n.string("downsell.cta.keep_going", default: "Keep Going"))
-                                        .font(WWTypography.heading(20))
-                                }
-                                Spacer()
-                            }
-                            .padding(.vertical, 16)
-                            .foregroundStyle(.white)
-                            .background(WWColor.growGreen, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isPurchasing || !subscriptionService.hasEligibleDownsellOffer)
-                        .opacity((isPurchasing || !subscriptionService.hasEligibleDownsellOffer) ? 0.65 : 1)
-                        .accessibilityHint(L10n.string("downsell.cta.hint", default: "Purchases the limited-time renewal offer."))
-
-                        Text(downsellRenewalLine)
-                            .font(WWTypography.caption(12))
-                            .foregroundStyle(WWColor.muted)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-
-                        footerLinks
-
-                        if let errorMessage = subscriptionService.errorMessage, !errorMessage.isEmpty {
-                            Text(errorMessage)
-                                .font(WWTypography.caption(13))
-                                .foregroundStyle(.red)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 20)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
-                }
-            }
-        }
-        .task {
-            await subscriptionService.loadProducts()
-            await subscriptionService.refreshEntitlements()
-        }
-        .onChange(of: subscriptionService.isPremium) { _, isPremium in
-            if isPremium {
-                dismiss()
-            }
-        }
-        .onChange(of: subscriptionService.hasEligibleDownsellOffer) { _, isAvailable in
-            if !isAvailable {
-                dismiss()
-            }
-        }
-    }
-
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(AppConstants.appName)
-                    .font(WWTypography.heading(20))
-                    .foregroundStyle(WWColor.nearBlack)
-                Text(L10n.string("downsell.subtitle", default: "You canceled your trial. Keep your momentum."))
-                    .font(WWTypography.body(16))
-                    .foregroundStyle(WWColor.muted)
-            }
-            Spacer()
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(WWColor.muted)
-                    .frame(width: 36, height: 36)
-                    .background(WWColor.surface, in: Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(L10n.string("common.close", default: "Close"))
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
-    }
-
-    private var offerCard: some View {
-        VStack(spacing: 10) {
-            Text(L10n.string("downsell.headline", default: "Keep the progress you've started"))
-                .font(WWTypography.display(34))
-                .foregroundStyle(WWColor.nearBlack)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.72)
-
-            Text(downsellIntroLine)
-                .font(WWTypography.body(17))
-                .foregroundStyle(WWColor.muted)
-                .multilineTextAlignment(.center)
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                WWColor.growGreen.opacity(0.26),
-                                WWColor.growGreen.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(height: 130)
-
-                Image(systemName: "leaf.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(WWColor.growGreen)
-                    .frame(width: 74, height: 74)
-                    .accessibilityHidden(true)
-            }
-        }
-        .padding(14)
-        .background(WWColor.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .accessibilityElement(children: .combine)
-    }
-
-    private var downsellIntroLine: String {
-        if let introPriceText {
-            let format = L10n.string(
-                "downsell.intro_with_price",
-                default: "Stay on the journey for %@/month for your first 3 months."
-            )
-            return String(format: format, introPriceText)
-        }
-        return L10n.string(
-            "downsell.intro_generic",
-            default: "Stay on the journey with a limited-time monthly intro offer."
-        )
-    }
-
-    private var downsellRenewalLine: String {
-        if let basePriceText {
-            let format = L10n.string(
-                "downsell.renewal_with_price",
-                default: "Renews at %@ / month after intro period. Cancel anytime in Settings."
-            )
-            return String(format: format, basePriceText)
-        }
-        return L10n.string(
-            "downsell.renewal_generic",
-            default: "Renews at the standard monthly price after intro period. Cancel anytime in Settings."
-        )
-    }
-
-    private var footerLinks: some View {
-        HStack(spacing: 20) {
-            Button(L10n.string("settings.subscription.restore", default: "Restore Purchases")) {
-                Task { await subscriptionService.restorePurchases() }
-            }
-            .buttonStyle(.plain)
-            .font(WWTypography.caption(14))
-            .frame(minHeight: 44)
-
-            Button(L10n.string("paywall.footer.terms", default: "Terms")) {
-                openURL(URL(string: AppConstants.termsURL)!)
-            }
-            .buttonStyle(.plain)
-            .font(WWTypography.caption(14))
-            .frame(minHeight: 44)
-
-            Button(L10n.string("paywall.footer.privacy", default: "Privacy")) {
-                openURL(URL(string: AppConstants.privacyURL)!)
-            }
-            .buttonStyle(.plain)
-            .font(WWTypography.caption(14))
-            .frame(minHeight: 44)
-        }
-        .foregroundStyle(WWColor.muted)
-    }
-
-    private func purchase() async {
-        guard !isPurchasing else { return }
-        isPurchasing = true
-        defer { isPurchasing = false }
-        await subscriptionService.purchaseDownsellOffer()
-    }
-}

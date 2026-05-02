@@ -19,9 +19,12 @@ struct RootView: View {
     private var activeJourneys: [PrayerJourney]
     @Query(sort: \PrayerEntry.createdAt, order: .reverse) private var allEntries: [PrayerEntry]
     @Query(sort: \JourneyMemorySnapshot.updatedAt, order: .reverse) private var memorySnapshots: [JourneyMemorySnapshot]
+    @Query(sort: \DailyJourneyPackageRecord.generatedAt, order: .reverse) private var packageRecords: [DailyJourneyPackageRecord]
 
     @State private var selectedTab: RootTab = .home
     @State private var showPaywall = false
+    @State private var showDownsellPaywall = false
+    @State private var hasShownDownsellThisForegroundSession = false
     @State private var trackedOnboardingStart = false
     @State private var onboardingErrorMessage: String?
     @State private var isBootstrappingJourney = false
@@ -44,169 +47,251 @@ struct RootView: View {
     }
 
     var body: some View {
+        presentationLayer
+    }
+
+    private var lifecycleLayer: some View {
+        AnyView(rootContent)
+            .task {
+                await handleInitialTask()
+            }
+            .onChange(of: subscriptionService.isPremium) { _, isPremium in
+                handlePremiumStatusChanged(isPremium)
+            }
+            .onChange(of: subscriptionService.hasEligibleDownsellOffer) { _, _ in
+                maybePresentDownsellOffer()
+            }
+            .onChange(of: subscriptionService.paywallMode) { _, _ in
+                syncPaywallPresentationState()
+            }
+            .onChange(of: connectivityService.isOnline) { _, isOnline in
+                handleConnectivityChanged(isOnline)
+            }
+            .onChange(of: activeJourneys.count) { _, _ in
+                syncWidgetSnapshot()
+                Task { await prefetchDailyPackagesIfPossible() }
+            }
+            .onChange(of: allEntries.count) { _, _ in
+                Task { await prefetchDailyPackagesIfPossible() }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                handleScenePhaseChanged(newPhase)
+            }
+            .onOpenURL(perform: handleDeepLink)
+            .onChange(of: notificationService.pendingDeepLinkURL) { _, value in
+                guard let value else { return }
+                handleDeepLink(value)
+                notificationService.consumePendingDeepLink()
+            }
+            .onAppear {
+                trackOnboardingStartedIfNeeded()
+            }
+            .onChange(of: showPaywall) { _, isShown in
+                handlePaywallShownChanged(isShown)
+            }
+    }
+
+    private var presentationLayer: some View {
+        AnyView(lifecycleLayer)
+            .fullScreenCover(isPresented: $showPaywall, onDismiss: {
+                handlePaywallDismissed()
+            }) {
+                paywallCoverContent()
+            }
+            .fullScreenCover(isPresented: $showDownsellPaywall, onDismiss: {
+                trackDownsellDismissedIfNeeded()
+            }) {
+                downsellPaywallCoverContent()
+            }
+            .alert(
+                L10n.string("journey.error.create_title", default: "Unable to Create Journey"),
+                isPresented: Binding(
+                    get: { onboardingErrorMessage != nil },
+                    set: { if !$0 { onboardingErrorMessage = nil } }
+                )
+            ) {
+                Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
+            } message: {
+                Text(onboardingErrorMessage ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
         ZStack {
             WWColor.white.ignoresSafeArea()
 
             if let profile {
-                MainTabView(
-                    selectedTab: $selectedTab,
-                    profile: profile,
-                    isPremium: subscriptionService.isPremium,
-                    onRequirePaywall: triggerPaywall,
-                    onRequestDailyWarmup: { journeyID in
-                        await warmJourneyIfPossible(journeyID: journeyID)
-                    }
-                )
+                mainTabs(profile: profile)
             } else {
-                ExperimentalOnboardingFlowView(
-                    onPrepare: { name, prayer in
-                        return await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
-                    },
-                    onGenerate: { name, prayer in
-                        if let prepared = await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System") {
-                            return await commitPreparedJourney(prepared, name: name, prayer: prayer)
-                        }
-                        return nil
-                    },
-                    onCommitPrepared: { prepared, name, prayer in
-                        return await commitPreparedJourney(prepared, name: name, prayer: prayer)
-                    },
-                    onComplete: { completedProfile in
-                        Task { await completeOnboarding(with: completedProfile) }
-                    },
-                    onRequirePaywall: triggerPaywall,
-                    experimentConfig: onboardingExperimentConfig
-                )
+                onboardingFlow
             }
         }
-        .task {
-            rootLogger.log(
-                "debug flags resolved bypassPaywall=\(AppConstants.Debug.bypassPaywall, privacy: .public) fastDayTesting=\(AppConstants.Debug.fastDayTesting, privacy: .public)"
+    }
+
+    private func mainTabs(profile: OnboardingProfile) -> some View {
+        MainTabView(
+            selectedTab: $selectedTab,
+            profile: profile,
+            isPremium: subscriptionService.isPremium,
+            onRequirePaywall: triggerPaywall,
+            onRequestDailyWarmup: { journeyID in
+                await warmJourneyIfPossible(journeyID: journeyID)
+            }
+        )
+    }
+
+    private var onboardingFlow: some View {
+        ExperimentalOnboardingFlowView(
+            onPrepare: { name, prayer in
+                await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
+            },
+            onGenerate: { name, prayer in
+                if let prepared = await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System") {
+                    return await commitPreparedJourney(prepared, name: name, prayer: prayer)
+                }
+                return nil
+            },
+            onCommitPrepared: { prepared, name, prayer in
+                await commitPreparedJourney(prepared, name: name, prayer: prayer)
+            },
+            isPremium: subscriptionService.isPremium,
+            onComplete: { completedProfile in
+                Task { await completeOnboarding(with: completedProfile) }
+            },
+            onRequirePaywall: triggerPaywall,
+            experimentConfig: onboardingExperimentConfig
+        )
+    }
+
+    private func handleInitialTask() async {
+        rootLogger.log(
+            "debug flags resolved bypassPaywall=\(AppConstants.Debug.bypassPaywall, privacy: .public) fastDayTesting=\(AppConstants.Debug.fastDayTesting, privacy: .public)"
+        )
+        onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
+        analytics.track(
+            .onboardingExperimentAssigned,
+            properties: [
+                "variant": onboardingExperimentConfig.variant,
+                "pre_count": String(onboardingExperimentConfig.preJourneyOrder.count),
+                "post_count": String(onboardingExperimentConfig.postJourneyOrder.count),
+                "pre_steps": onboardingExperimentConfig.preJourneyOrder.joined(separator: ","),
+                "post_steps": onboardingExperimentConfig.postJourneyOrder.joined(separator: ",")
+            ]
+        )
+        await subscriptionService.initialize()
+        await notificationService.refreshAuthorizationStatus()
+        notificationService.recordAppOpen(modelContext: modelContext)
+        bootstrapSettingsIfNeeded()
+        registerSessionIfNeeded()
+        syncPaywallPresentationState()
+        await bootstrapFirstJourneyIfNeeded()
+        await prefetchDailyPackagesIfPossible()
+        maybePresentDownsellOffer()
+        DailyPackageBackgroundRefreshService.schedule(earliestBeginDate: nextLikelyRefreshDate())
+        syncWidgetSnapshot()
+        if notificationService.authorizationStatus == .authorized {
+            let reminders = fetchReminderSchedules()
+            await notificationService.scheduleReminderSchedules(
+                reminders.filter(\.isEnabled),
+                modelContext: modelContext
             )
-            onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
-            analytics.track(
-                .onboardingExperimentAssigned,
-                properties: [
-                    "variant": onboardingExperimentConfig.variant,
-                    "pre_count": String(onboardingExperimentConfig.preJourneyOrder.count),
-                    "post_count": String(onboardingExperimentConfig.postJourneyOrder.count),
-                    "pre_steps": onboardingExperimentConfig.preJourneyOrder.joined(separator: ","),
-                    "post_steps": onboardingExperimentConfig.postJourneyOrder.joined(separator: ",")
-                ]
-            )
-            await subscriptionService.initialize()
-            await notificationService.refreshAuthorizationStatus()
-            notificationService.recordAppOpen(modelContext: modelContext)
-            bootstrapSettingsIfNeeded()
-            registerSessionIfNeeded()
+        }
+    }
+
+    private func handlePremiumStatusChanged(_ isPremium: Bool) {
+        if isPremium {
+            settings?.pendingPaywallReason = nil
+            settings?.clearPaywallDismissed()
+            try? modelContext.save()
+            showPaywall = false
+            showDownsellPaywall = false
+        } else {
             syncPaywallPresentationState()
+            maybePresentDownsellOffer()
+        }
+    }
+
+    private func handleConnectivityChanged(_ isOnline: Bool) {
+        guard isOnline else { return }
+        Task {
             await bootstrapFirstJourneyIfNeeded()
             await prefetchDailyPackagesIfPossible()
+            syncWidgetSnapshot()
+        }
+    }
+
+    private func handleScenePhaseChanged(_ newPhase: ScenePhase) {
+        if newPhase == .background {
+            hasShownDownsellThisForegroundSession = false
             DailyPackageBackgroundRefreshService.schedule(earliestBeginDate: nextLikelyRefreshDate())
-            syncWidgetSnapshot()
-            if notificationService.authorizationStatus == .authorized {
-                let reminders = fetchReminderSchedules()
-                await notificationService.scheduleReminderSchedules(
-                    reminders.filter(\.isEnabled),
-                    modelContext: modelContext
-                )
-            }
+            return
         }
-        .onChange(of: subscriptionService.isPremium) { _, isPremium in
-            if isPremium {
-                settings?.pendingPaywallReason = nil
-                settings?.clearPaywallDismissed()
-                try? modelContext.save()
-                showPaywall = false
-            } else {
-                syncPaywallPresentationState()
-            }
-        }
-        .onChange(of: subscriptionService.paywallMode) { _, _ in
-            syncPaywallPresentationState()
-        }
-        .onChange(of: connectivityService.isOnline) { _, isOnline in
-            guard isOnline else { return }
-            Task {
-                await bootstrapFirstJourneyIfNeeded()
-                await prefetchDailyPackagesIfPossible()
-                syncWidgetSnapshot()
-            }
-        }
-        .onChange(of: activeJourneys.count) { _, _ in
-            syncWidgetSnapshot()
-            Task { await prefetchDailyPackagesIfPossible() }
-        }
-        .onChange(of: allEntries.count) { _, _ in
-            Task { await prefetchDailyPackagesIfPossible() }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background {
-                DailyPackageBackgroundRefreshService.schedule(earliestBeginDate: nextLikelyRefreshDate())
-                return
-            }
-            guard newPhase == .active else { return }
-            syncPaywallPresentationState()
-            Task {
-                await notificationService.refreshAuthorizationStatus()
-                notificationService.recordAppOpen(modelContext: modelContext)
-                await prefetchDailyPackagesIfPossible()
-                guard notificationService.authorizationStatus == .authorized else { return }
-                await notificationService.scheduleReminderSchedules(
-                    fetchReminderSchedules().filter(\.isEnabled),
-                    modelContext: modelContext
-                )
-            }
-        }
-        .onOpenURL(perform: handleDeepLink)
-        .onChange(of: notificationService.pendingDeepLinkURL) { _, value in
-            guard let value else { return }
-            handleDeepLink(value)
-            notificationService.consumePendingDeepLink()
-        }
-        .onAppear {
-            trackOnboardingStartedIfNeeded()
-        }
-        .onChange(of: showPaywall) { _, isShown in
-            guard isShown else { return }
-            let triggerReason = settings?.pendingPaywallReason ?? "unspecified"
-            if subscriptionService.paywallMode == .firstTendReviewThenPaywall {
-                FirstTendMilestoneService.markPaywallShownAfterFirstTend(settings: settings)
-                try? modelContext.save()
-            }
-            analytics.track(
-                .paywallShown,
-                properties: [
-                    "trigger_reason": triggerReason,
-                    "paywall_mode": subscriptionService.paywallMode.rawValue,
-                    "has_premium": subscriptionService.isPremium ? "true" : "false",
-                    "is_dismiss_offer": triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue ? "true" : "false"
-                ]
+        guard newPhase == .active else { return }
+        syncPaywallPresentationState()
+        maybePresentDownsellOffer()
+        Task {
+            await notificationService.refreshAuthorizationStatus()
+            notificationService.recordAppOpen(modelContext: modelContext)
+            await prefetchDailyPackagesIfPossible()
+            guard notificationService.authorizationStatus == .authorized else { return }
+            await notificationService.scheduleReminderSchedules(
+                fetchReminderSchedules().filter(\.isEnabled),
+                modelContext: modelContext
             )
         }
-        .fullScreenCover(isPresented: $showPaywall, onDismiss: {
-            handlePaywallDismissed()
-        }) {
-            let config = paywallConfigForCurrentState()
-            PaywallView(
-                triggerReason: settings?.pendingPaywallReason,
-                isPremium: subscriptionService.isPremium,
-                copyOverride: config
-            )
-            .interactiveDismissDisabled(!config.isDismissable)
+    }
+
+    private func handlePaywallShownChanged(_ isShown: Bool) {
+        guard isShown else { return }
+        let triggerReason = settings?.pendingPaywallReason ?? "unspecified"
+        if subscriptionService.paywallMode == .firstTendReviewThenPaywall {
+            FirstTendMilestoneService.markPaywallShownAfterFirstTend(settings: settings)
+            try? modelContext.save()
+        }
+        analytics.track(
+            .paywallShown,
+            properties: [
+                "trigger_reason": triggerReason,
+                "paywall_variant": paywallVariant(for: triggerReason),
+                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false",
+                "default_package": paywallConfigForCurrentState().defaultPackageToken,
+                "paywall_mode": subscriptionService.paywallMode.rawValue,
+                "has_premium": subscriptionService.isPremium ? "true" : "false",
+                "is_dismiss_offer": triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue ? "true" : "false"
+            ]
+        )
+    }
+
+    private func trackDownsellDismissedIfNeeded() {
+        guard !subscriptionService.isPremium else { return }
+        analytics.track(
+            .paywallDismissed,
+            properties: [
+                "paywall_variant": "downsell_personalized",
+                "trigger_reason": "trial_cancel_downsell",
+                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false"
+            ]
+        )
+    }
+
+    @ViewBuilder
+    private func paywallCoverContent() -> some View {
+        let config = paywallConfigForCurrentState()
+        PaywallView(
+            triggerReason: settings?.pendingPaywallReason,
+            isPremium: subscriptionService.isPremium,
+            copyOverride: config,
+            personalizationContext: paywallPersonalizationContext
+        )
+        .interactiveDismissDisabled(!config.isDismissable)
+        .environmentObject(subscriptionService)
+    }
+
+    @ViewBuilder
+    private func downsellPaywallCoverContent() -> some View {
+        DownsellPaywallView(personalizationContext: paywallPersonalizationContext)
             .environmentObject(subscriptionService)
-        }
-        .alert(
-            L10n.string("journey.error.create_title", default: "Unable to Create Journey"),
-            isPresented: Binding(
-                get: { onboardingErrorMessage != nil },
-                set: { if !$0 { onboardingErrorMessage = nil } }
-            )
-        ) {
-            Button(L10n.string("common.ok", default: "OK"), role: .cancel) {}
-        } message: {
-            Text(onboardingErrorMessage ?? "")
-        }
     }
 
     private func bootstrapSettingsIfNeeded() {
@@ -581,6 +666,80 @@ struct RootView: View {
         modelContext.insert(reminder)
     }
 
+    private var paywallPersonalizationContext: PaywallPersonalizationContext {
+        let journey = activeJourneys.first ?? allJourneys.first
+        let todayKey = JourneyContentService.dayKey(for: .now)
+        let package = packageRecords.first { record in
+            guard let journey else { return false }
+            return record.journeyID == journey.id && record.dayKey == todayKey
+        } ?? packageRecords.first { record in
+            guard let journey else { return false }
+            return record.journeyID == journey.id
+        }
+
+        return PaywallPersonalizationContext(
+            journeyTitle: journey?.title,
+            dailyTitle: package?.dailyTitle,
+            scriptureReference: package?.scriptureReference,
+            reflectionExcerpt: package?.reflectionThought,
+            plantProgressText: plantProgressSummary(for: journey),
+            prayerConcern: profile?.prayerFocus ?? journey?.growthFocus
+        )
+    }
+
+    private func plantProgressSummary(for journey: PrayerJourney?) -> String? {
+        guard let journey else { return nil }
+        let entries = allEntries.filter { $0.journey?.id == journey.id }
+        let streakCount = JourneyEngagementService.effectiveStreakCount(
+            for: journey,
+            entries: entries,
+            now: .now
+        )
+        let completedCount = max(journey.completedTends, entries.filter { $0.completedAt != nil }.count)
+
+        if streakCount > 0 {
+            let format = L10n.string("paywall.progress.streak", default: "%d day streak")
+            return String(format: format, streakCount)
+        }
+        if completedCount > 0 {
+            let format = L10n.string("paywall.progress.completed", default: "%d Tends completed")
+            return String(format: format, completedCount)
+        }
+        return nil
+    }
+
+    private func paywallVariant(for triggerReason: String) -> String {
+        if triggerReason == PaywallTriggerReason.onboardingCompletion.rawValue {
+            return "onboarding_hard"
+        }
+        return "standard_personalized"
+    }
+
+    private func maybePresentDownsellOffer() {
+        guard DownsellPresentationPolicy.shouldPresent(
+            profileExists: profile != nil,
+            hasEligibleOffer: subscriptionService.hasEligibleDownsellOffer,
+            alreadyShownThisForegroundSession: hasShownDownsellThisForegroundSession,
+            isStandardPaywallPresented: showPaywall
+        ) else {
+            return
+        }
+
+        hasShownDownsellThisForegroundSession = true
+        showDownsellPaywall = true
+        analytics.track(
+            .paywallShown,
+            properties: [
+                "paywall_variant": "downsell_personalized",
+                "trigger_reason": "trial_cancel_downsell",
+                "has_personalized_preview": paywallPersonalizationContext.hasPreview ? "true" : "false",
+                "default_package": "monthly",
+                "paywall_mode": subscriptionService.paywallMode.rawValue,
+                "has_premium": subscriptionService.isPremium ? "true" : "false"
+            ]
+        )
+    }
+
     private func syncPaywallPresentationState(now: Date = .now) {
         if AppConstants.Debug.bypassPaywall {
             settings?.pendingPaywallReason = nil
@@ -614,6 +773,10 @@ struct RootView: View {
     private func paywallConfigForCurrentState(now: Date = .now) -> PaywallRemoteConfig {
         let base = subscriptionService.paywallConfig
         let triggerReason = settings?.pendingPaywallReason
+
+        if triggerReason == PaywallTriggerReason.onboardingCompletion.rawValue {
+            return PaywallRemoteConfig.onboardingHardGate(from: base)
+        }
 
         if triggerReason == PaywallTriggerReason.paywallDismissOffer.rawValue {
             return PaywallRemoteConfig(
@@ -673,7 +836,12 @@ struct RootView: View {
     private func handlePaywallDismissed(now: Date = .now) {
         guard !subscriptionService.isPremium else { return }
         let config = paywallConfigForCurrentState(now: now)
-        guard config.isDismissable else { return }
+        guard config.isDismissable else {
+            DispatchQueue.main.async {
+                self.showPaywall = true
+            }
+            return
+        }
         guard let settings else { return }
         let dismissedReason = settings.pendingPaywallReason
 

@@ -57,22 +57,39 @@
 "settings.debug.onboarding_simulator_unavailable" = "オンボーディングシミュレーターを読み込めません。";
 "settings.debug.close" = "閉じる";
 
-"downsell.cta.keep_going" = "続ける";
+"downsell.cta.keep_going" = "この旅路を続ける";
 "downsell.cta.hint" = "期間限定の再開オファーを購入します。";
-"downsell.subtitle" = "無料体験を解約しました。勢いを保ちましょう。";
-"downsell.headline" = "始めた歩みを止めないで";
+"downsell.subtitle" = "無料体験を解約しました。このオファーで旅路を続けられます。";
+"downsell.headline" = "始めた祈りを続けましょう。";
+"downsell.body" = "無料体験はまだ有効です。このオファーなら、終了後も毎日の聖書、祈り、ジャーナル、リマインダー、植物の成長を使い続けられます。";
 "downsell.intro_with_price" = "最初の3か月は月額%@でこの旅路を続けられます。";
 "downsell.intro_generic" = "期間限定の月額導入オファーで旅路を続けましょう。";
 "downsell.renewal_with_price" = "導入期間後は月額%@で自動更新されます。設定からいつでも解約できます。";
 "downsell.renewal_generic" = "導入期間後は通常の月額料金で自動更新されます。設定からいつでも解約できます。";
+"downsell.offer_line.with_prices" = "最初の3か月は月額%@、その後は月額%@。いつでも解約できます。";
+"downsell.offer_line.generic" = "期間限定の月額オファーがあります。いつでも解約できます。";
 "downsell.settings.renew_with_price" = "%@ / 月で再開";
 "downsell.settings.renew_generic" = "導入オファーで再開";
 
-"paywall.default.headline" = "信仰に根ざした継続で、着実に成長しましょう。";
-"paywall.default.subheadline" = "3日間の無料体験でTendの全機能を解放。";
+"paywall.default.headline" = "今向き合っていることを祈り続けましょう。";
+"paywall.default.subheadline" = "聖書、黙想、導かれた祈り、ひとつの小さな一歩で、この個別の毎日の旅路を続けられます。";
 "paywall.default.cta" = "3日間無料体験を開始";
 "paywall.default.badge" = "最もお得";
-"paywall.default.footnote" = "設定からいつでも解約できます。";
+"paywall.default.footnote" = "購入の復元、規約、プライバシーはいつでも下から確認できます。";
+"paywall.preview.label" = "次のTend";
+"paywall.preview.fallback_title" = "あなたの祈りの旅路";
+"paywall.preview.fallback_daily_title" = "今日のTend";
+"paywall.preview.reflection_fallback" = "あなたが祈りに持ってきたことに沿った毎日の黙想。";
+"paywall.benefit.personalized" = "個別化された毎日のTend";
+"paywall.benefit.personalized_detail" = "この旅路のための聖書、黙想、祈り、ひとつの小さな一歩。";
+"paywall.benefit.rhythm" = "リマインダー、ウィジェット、ジャーナル";
+"paywall.benefit.rhythm_detail" = "余計な手間なく祈りのリズムを見えるようにします。";
+"paywall.benefit.growth" = "植物と連続記録の成長";
+"paywall.benefit.growth_detail" = "続けていることが時間とともに見える形になります。";
+"paywall.trust_line.with_prices" = "その後は年額%@または月額%@で継続。いつでも解約できます。";
+"paywall.trust_line.generic" = "設定からいつでも解約できます。";
+"paywall.progress.streak" = "%d日連続";
+"paywall.progress.completed" = "%d件のTend完了";
 "paywall.resubscribe.headline" = "続きから再スタートしましょう。";
 "paywall.resubscribe.subheadline" = "旅路を続けるためにTend Premiumを再登録。";
 "paywall.resubscribe.cta" = "再登録する";
@@ -90,6 +107,8 @@
 "paywall.plan.weekly" = "週額";
 "paywall.plan.daily" = "日額";
 "paywall.plan.subscription" = "サブスクリプション";
+"paywall.plan.annual_subtitle" = "最もお得、年ごとに請求";
+"paywall.plan.monthly_subtitle" = "柔軟、月ごとに請求";
 "paywall.plan.billed_yearly" = "年ごとに請求";
 "paywall.plan.billed_monthly" = "月ごとに請求";
 "paywall.plan.billed_weekly" = "週ごとに請求";
@@ -143,10 +162,8 @@
 "content.error.remote_provider_missing" = "リモートAIプロバイダーが設定されていません。";
 
 "onboarding.intro_title" = "Tendへようこそ";
-"onboarding.intro_subtitle" = "祈る。行動する。育つ。";
-"onboarding.intro_tagline" = "あなたの祈りを
-現実の成長につながる
-小さな一歩に変えよう";
+"onboarding.intro_subtitle" = "今向き合っていることのための祈り。";
+"onboarding.intro_tagline" = "毎日の聖書と祈り、そして現実を生きる小さな一歩。";
 "onboarding.intro.logo_accessibility" = "Tendロゴのアニメーション";
 "onboarding.name_title" = "Tendでは何と呼びますか？";
 "onboarding.name_placeholder" = "名前を入力";
@@ -170,6 +187,7 @@
 "onboarding.tend_reflection_title" = "聖書から始めましょう。";
 "onboarding.tend_scripture_label" = "聖書";
 "onboarding.tend_ritual_stage_scripture" = "聖書";
+"onboarding.tend_ritual_stage_reflect" = "振り返り";
 "onboarding.tend_ritual_stage_prayer" = "祈り";
 "onboarding.tend_ritual_stage_step" = "一歩";
 "onboarding.tend_prayer_title" = "今日のために祈りましょう。";

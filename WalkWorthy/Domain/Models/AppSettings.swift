@@ -16,6 +16,10 @@ final class AppSettings {
     var reviewPromptShownAfterFirstTendAt: Date?
     var paywallShownAfterFirstTendAt: Date?
     var paywallDismissedAt: Date?
+    var reviewSecondDayPromptedAt: Date?
+    var reviewStage2PromptedAt: Date?
+    var reviewNativePromptRequestedAt: Date?
+    var reviewPromptSuppressedAt: Date?
     var appOpenHourHistogramRaw: String?
     var lastAppOpenAt: Date?
 
@@ -33,6 +37,10 @@ final class AppSettings {
         reviewPromptShownAfterFirstTendAt: Date? = nil,
         paywallShownAfterFirstTendAt: Date? = nil,
         paywallDismissedAt: Date? = nil,
+        reviewSecondDayPromptedAt: Date? = nil,
+        reviewStage2PromptedAt: Date? = nil,
+        reviewNativePromptRequestedAt: Date? = nil,
+        reviewPromptSuppressedAt: Date? = nil,
         appOpenHourHistogramRaw: String? = nil,
         lastAppOpenAt: Date? = nil
     ) {
@@ -49,6 +57,10 @@ final class AppSettings {
         self.reviewPromptShownAfterFirstTendAt = reviewPromptShownAfterFirstTendAt
         self.paywallShownAfterFirstTendAt = paywallShownAfterFirstTendAt
         self.paywallDismissedAt = paywallDismissedAt
+        self.reviewSecondDayPromptedAt = reviewSecondDayPromptedAt
+        self.reviewStage2PromptedAt = reviewStage2PromptedAt
+        self.reviewNativePromptRequestedAt = reviewNativePromptRequestedAt
+        self.reviewPromptSuppressedAt = reviewPromptSuppressedAt
         self.appOpenHourHistogramRaw = appOpenHourHistogramRaw
         self.lastAppOpenAt = lastAppOpenAt
     }
@@ -68,12 +80,11 @@ final class AppSettings {
     }
 
     var isReviewEligibleAfterFirstTend: Bool {
-        isFirstTendCompleted && reviewPromptShownAfterFirstTendAt == nil
+        false
     }
 
     var isPaywallEligibleAfterFirstTend: Bool {
         isFirstTendCompleted &&
-        reviewPromptShownAfterFirstTendAt != nil &&
         paywallShownAfterFirstTendAt == nil
     }
 
@@ -84,6 +95,27 @@ final class AppSettings {
 
     func markReviewPromptShownAfterFirstTend(now: Date = .now) {
         reviewPromptShownAfterFirstTendAt = now
+    }
+
+    func markReviewSecondDayPrompted(now: Date = .now) {
+        guard reviewSecondDayPromptedAt == nil else { return }
+        reviewSecondDayPromptedAt = now
+    }
+
+    func markReviewStage2Prompted(now: Date = .now) {
+        guard reviewStage2PromptedAt == nil else { return }
+        reviewStage2PromptedAt = now
+    }
+
+    func markReviewNativePromptRequested(now: Date = .now) {
+        guard reviewNativePromptRequestedAt == nil else { return }
+        reviewNativePromptRequestedAt = now
+        markReviewPromptSuppressed(now: now)
+    }
+
+    func markReviewPromptSuppressed(now: Date = .now) {
+        guard reviewPromptSuppressedAt == nil else { return }
+        reviewPromptSuppressedAt = now
     }
 
     func markPaywallShownAfterFirstTend(now: Date = .now) {
