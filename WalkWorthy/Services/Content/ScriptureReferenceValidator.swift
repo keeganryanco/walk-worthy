@@ -382,7 +382,11 @@ struct ScriptureReferenceValidator {
 
         // Anchor keywords are English-only; avoid forcing English fidelity checks on non-English output.
         guard normalizedLanguageCode == "en" else {
-            return normalizedParaphrase.isEmpty ? fallback : normalizedParaphrase
+            guard !normalizedParaphrase.isEmpty else { return fallback }
+            if shouldForceLocalizedFallback(for: normalizedParaphrase, languageCode: normalizedLanguageCode) {
+                return fallback
+            }
+            return normalizedParaphrase
         }
 
         guard let anchors else {
@@ -452,5 +456,46 @@ struct ScriptureReferenceValidator {
     private static func paraphraseFallback(for reference: String, languageCode: String) -> String? {
         guard let localized = paraphraseFallbacks[reference] else { return nil }
         return localized[languageCode] ?? localized["en"]
+    }
+
+    private static func shouldForceLocalizedFallback(for paraphrase: String, languageCode: String) -> Bool {
+        let trimmed = paraphrase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard containsLatinLetters(trimmed) else { return false }
+        switch languageCode {
+        case "ko":
+            return !containsHangul(trimmed)
+        case "ja":
+            return !containsJapaneseScript(trimmed)
+        default:
+            return false
+        }
+    }
+
+    private static func containsLatinLetters(_ text: String) -> Bool {
+        text.unicodeScalars.contains { scalar in
+            (0x41...0x5A).contains(scalar.value) || (0x61...0x7A).contains(scalar.value)
+        }
+    }
+
+    private static func containsHangul(_ text: String) -> Bool {
+        text.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x1100...0x11FF, 0x3130...0x318F, 0xA960...0xA97F, 0xAC00...0xD7AF:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    private static func containsJapaneseScript(_ text: String) -> Bool {
+        text.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x3040...0x309F, 0x30A0...0x30FF, 0x31F0...0x31FF, 0x4E00...0x9FFF:
+                return true
+            default:
+                return false
+            }
+        }
     }
 }
