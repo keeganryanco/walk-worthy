@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <section className="panel legal">
         <article>
           <h1>Privacy Policy</h1>
-          <p className="meta">Last updated: March 23, 2026</p>
+          <p className="meta">Last updated: May 4, 2026</p>
 
           <p>
             This Privacy Policy explains how Tend ("Tend," "we," "us," or "our") collects, uses, discloses, and
@@ -64,6 +64,11 @@ export default function PrivacyPage() {
             <li>
               We configure analytics to avoid sending free-form prayer/reflection text as analytics properties.
             </li>
+            <li>
+              If ad attribution is enabled, we may send pseudonymous conversion events (for example onboarding, trial
+              start, and subscription conversion) to advertising measurement providers such as TikTok (for example
+              through TikTok business events APIs).
+            </li>
           </ul>
 
           <h3>2.4 Notification data</h3>
@@ -101,6 +106,7 @@ export default function PrivacyPage() {
               Local app content is primarily stored on your device via SwiftData/local app storage.
             </li>
             <li>Analytics events are processed by PostHog cloud services.</li>
+            <li>Ad attribution events (if enabled) are processed by TikTok business event infrastructure.</li>
             <li>Subscription metadata is processed by Apple and RevenueCat.</li>
             <li>AI generation requests are processed through our Vercel-hosted API gateway and model providers.</li>
           </ul>
@@ -112,6 +118,7 @@ export default function PrivacyPage() {
             <li>Apple (StoreKit/App Store subscriptions and billing).</li>
             <li>RevenueCat (subscription entitlement and purchase infrastructure).</li>
             <li>PostHog (analytics and product telemetry).</li>
+            <li>TikTok (ad attribution and conversion measurement, if enabled).</li>
             <li>Vercel (hosting and API infrastructure).</li>
             <li>OpenAI and/or Google Gemini APIs (AI generation requests).</li>
           </ul>
@@ -151,6 +158,7 @@ export default function PrivacyPage() {
           <ul>
             <li>You can delete app content from within the app and/or by uninstalling the app.</li>
             <li>You can disable notifications in iOS Settings at any time.</li>
+            <li>You can adjust ad tracking and attribution permissions in iOS privacy settings.</li>
             <li>You can manage or cancel subscriptions in your Apple ID subscription settings.</li>
             <li>You may contact us regarding privacy requests using the email below.</li>
           </ul>

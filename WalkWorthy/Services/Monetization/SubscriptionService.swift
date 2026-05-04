@@ -89,9 +89,13 @@ final class SubscriptionService: NSObject, ObservableObject {
         AppConstants.Subscription.monthlyProductID,
         AppConstants.Subscription.annualProductID
     ]
+    private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
     private var storeProductsByID: [String: StoreProduct] = [:]
     private var downsellPromotionalOffer: PromotionalOffer?
     private var isResolvingDownsellOffer = false
+    private var hasObservedEntitlementSnapshot = false
+    private var previousPremiumActive = false
+    private var previousTrialActive = false
 
     func initialize() async {
         _ = configureRevenueCatIfNeeded()
@@ -242,7 +246,7 @@ final class SubscriptionService: NSObject, ObservableObject {
             if purchaseResult.userCancelled {
                 return
             }
-            isPremium = hasPremiumEntitlement(customerInfo: purchaseResult.customerInfo)
+            apply(customerInfo: purchaseResult.customerInfo)
         } catch {
             errorMessage = "Purchase failed: \(error.localizedDescription)"
         }
@@ -276,7 +280,7 @@ final class SubscriptionService: NSObject, ObservableObject {
         guard configureRevenueCatIfNeeded() else { return }
         do {
             let customerInfo = try await Purchases.shared.restorePurchases()
-            isPremium = hasPremiumEntitlement(customerInfo: customerInfo)
+            apply(customerInfo: customerInfo)
         } catch {
             errorMessage = "Restore failed: \(error.localizedDescription)"
         }
@@ -296,6 +300,8 @@ final class SubscriptionService: NSObject, ObservableObject {
         isPremium = hasPremiumEntitlement(customerInfo: customerInfo)
 
         let entitlement = premiumEntitlement(from: customerInfo)
+        let isPremiumActive = entitlement?.isActive == true
+        let isTrialActive = isPremiumActive && entitlement?.periodType == .trial
         let isTrialNonRenewing = entitlement?.isActive == true
             && entitlement?.periodType == .trial
             && entitlement?.willRenew == false
@@ -306,6 +312,38 @@ final class SubscriptionService: NSObject, ObservableObject {
         isTrialActiveNonRenewing = isTrialNonRenewing
         isLapsedSubscriber = isLapsed
         trialExpirationDate = entitlement?.expirationDate
+
+        if hasObservedEntitlementSnapshot {
+            if !previousTrialActive && isTrialActive {
+                analytics.track(
+                    .freeTrialStarted,
+                    properties: [
+                        "source": "entitlement_transition",
+                        "product_id": entitlement?.productIdentifier ?? ""
+                    ]
+                )
+            } else if previousTrialActive && isPremiumActive && !isTrialActive {
+                analytics.track(
+                    .trialConvertedPaid,
+                    properties: [
+                        "source": "entitlement_transition",
+                        "product_id": entitlement?.productIdentifier ?? ""
+                    ]
+                )
+            } else if !previousPremiumActive && isPremiumActive && !isTrialActive {
+                analytics.track(
+                    .subscriptionStartedPaid,
+                    properties: [
+                        "source": "entitlement_transition",
+                        "product_id": entitlement?.productIdentifier ?? ""
+                    ]
+                )
+            }
+        }
+
+        previousPremiumActive = isPremiumActive
+        previousTrialActive = isTrialActive
+        hasObservedEntitlementSnapshot = true
 
         if isTrialNonRenewing {
             Task { await refreshDownsellOfferIfNeeded() }

@@ -6,7 +6,7 @@ function envValue(name: string): string | undefined {
 }
 
 export function devotionalModel(): string {
-  return envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.5";
+  return envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.4";
 }
 
 export function actionModel(): string {
@@ -16,7 +16,7 @@ export function actionModel(): string {
 }
 
 export function repairModel(): string {
-  return envValue("OPENAI_REPAIR_MODEL") ?? envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.5";
+  return envValue("OPENAI_REPAIR_MODEL") ?? envValue("OPENAI_DEVOTIONAL_MODEL") ?? "gpt-5.4";
 }
 
 export function utilityModel(): string {

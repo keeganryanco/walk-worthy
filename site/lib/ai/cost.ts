@@ -16,10 +16,10 @@ function numberFromEnv(value: string | undefined): number | undefined {
 }
 
 const DEFAULT_RATE_PER_1M: Record<string, { input: number; output: number }> = {
-  "openai:gpt-5.1": { input: 1.25, output: 1.25 },
-  "openai:gpt-5.2": { input: 1.75, output: 1.75 },
-  "openai:gpt-5.4": { input: 2.5, output: 2.5 },
-  "openai:gpt-5.5": { input: 5, output: 5 }
+  "openai:gpt-5.1": { input: 1.25, output: 10 },
+  "openai:gpt-5.2": { input: 1.75, output: 14 },
+  "openai:gpt-5.4": { input: 2.5, output: 15 },
+  "openai:gpt-5.5": { input: 5, output: 30 }
 };
 
 function resolveRatePer1M(provider: AIProvider, model: string, kind: "INPUT" | "OUTPUT"): number | undefined {

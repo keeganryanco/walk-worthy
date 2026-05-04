@@ -16,6 +16,8 @@ enum AnalyticsEvent: String {
     case paywallCTATapped = "paywall_cta_tapped"
     case downsellPurchased = "downsell_purchased"
     case freeTrialStarted = "free_trial_started"
+    case trialConvertedPaid = "trial_converted_paid"
+    case subscriptionStartedPaid = "subscription_started_paid"
     case localizationRequest = "localization_request"
 }
 
@@ -44,12 +46,85 @@ private struct PostHogPayload: Encodable {
     let properties: [String: String]
 }
 
+private struct BackendAttributionPayload: Encodable {
+    struct Telemetry: Encodable {
+        let distinctID: String
+        let appVersion: String
+        let buildNumber: String
+        let platform: String
+    }
+
+    let event: String
+    let eventID: String
+    let timestamp: String
+    let properties: [String: String]
+    let telemetry: Telemetry
+}
+
+private final class BackendAttributionRelay {
+    private let endpoint: URL
+    private let appKey: String
+
+    init?() {
+        let baseURLString = AppConstants.AI.gatewayBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !baseURLString.isEmpty, let baseURL = URL(string: baseURLString) else {
+            return nil
+        }
+        endpoint = baseURL.appendingPathComponent("/api/v1/attribution")
+        appKey = AppConstants.AI.gatewayAppKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func relay(
+        event: AnalyticsEvent,
+        properties: [String: String],
+        distinctID: String,
+        appVersion: String,
+        buildNumber: String
+    ) {
+        guard shouldRelay(event) else { return }
+
+        let payload = BackendAttributionPayload(
+            event: event.rawValue,
+            eventID: UUID().uuidString.lowercased(),
+            timestamp: ISO8601DateFormatter().string(from: .now),
+            properties: properties,
+            telemetry: BackendAttributionPayload.Telemetry(
+                distinctID: distinctID,
+                appVersion: appVersion,
+                buildNumber: buildNumber,
+                platform: "ios"
+            )
+        )
+
+        guard let body = try? JSONEncoder().encode(payload) else { return }
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if !appKey.isEmpty {
+            request.setValue(appKey, forHTTPHeaderField: "x-tend-app-key")
+        }
+        request.httpBody = body
+
+        URLSession.shared.dataTask(with: request).resume()
+    }
+
+    private func shouldRelay(_ event: AnalyticsEvent) -> Bool {
+        switch event {
+        case .onboardingStarted, .onboardingCompleted, .freeTrialStarted, .trialConvertedPaid, .subscriptionStartedPaid:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 private final class PostHogAnalyticsService: AnalyticsTracking {
     private let projectKey: String
     private let captureURL: URL
     private let distinctID: String
     private let appVersion: String
     private let buildNumber: String
+    private let attributionRelay: BackendAttributionRelay?
     private let queue = DispatchQueue(label: "co.keeganryan.tend.analytics", qos: .utility)
 
     init?(projectKey: String, host: String) {
@@ -59,11 +134,12 @@ private final class PostHogAnalyticsService: AnalyticsTracking {
         self.distinctID = PostHogAnalyticsService.loadDistinctID()
         self.appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         self.buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        self.attributionRelay = BackendAttributionRelay()
     }
 
     func track(_ event: AnalyticsEvent, properties: [String: String] = [:]) {
         let safeProperties = sanitize(properties)
-        queue.async { [projectKey, captureURL, distinctID, appVersion, buildNumber] in
+        queue.async { [projectKey, captureURL, distinctID, appVersion, buildNumber, attributionRelay] in
             var payloadProperties: [String: String] = [
                 "distinct_id": distinctID,
                 "platform": "ios",
@@ -86,6 +162,14 @@ private final class PostHogAnalyticsService: AnalyticsTracking {
             request.httpBody = body
 
             URLSession.shared.dataTask(with: request).resume()
+
+            attributionRelay?.relay(
+                event: event,
+                properties: safeProperties,
+                distinctID: distinctID,
+                appVersion: appVersion,
+                buildNumber: buildNumber
+            )
         }
     }
 

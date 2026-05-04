@@ -11,7 +11,7 @@ export default function TermsPage() {
       <section className="panel legal">
         <article>
           <h1>Terms of Use</h1>
-          <p className="meta">Effective date: March 23, 2026</p>
+          <p className="meta">Effective date: May 4, 2026</p>
 
           <p>
             These Terms of Use ("Terms") govern your access to and use of the Tend app, website, and related
@@ -46,7 +46,25 @@ export default function TermsPage() {
             reflection content, and subscription-based premium features.
           </p>
 
-          <h2>4. AI-Generated Content Disclaimer</h2>
+          <h2>4. Analytics and Ad Attribution</h2>
+          <ul>
+            <li>
+              Tend uses analytics and attribution telemetry to measure app usage and conversion milestones such as
+              onboarding completion, trial start, and subscription conversion.
+            </li>
+            <li>
+              Where enabled, attribution events may be shared with ad measurement providers (including TikTok) using
+              pseudonymous identifiers and technical metadata.
+            </li>
+            <li>
+              We do not intentionally send free-form prayer/reflection text to ad attribution providers.
+            </li>
+            <li>
+              Additional data-handling details are described in the Privacy Policy.
+            </li>
+          </ul>
+
+          <h2>5. AI-Generated Content Disclaimer</h2>
           <ul>
             <li>
               Tend may generate reflections, scripture paraphrases/references, prayer text, and suggested steps using
@@ -63,7 +81,7 @@ export default function TermsPage() {
             </li>
           </ul>
 
-          <h2>5. User Content</h2>
+          <h2>6. User Content</h2>
           <ul>
             <li>
               You retain ownership of content you enter in Tend (for example name, prayer goals, reflections, and
@@ -78,7 +96,7 @@ export default function TermsPage() {
             </li>
           </ul>
 
-          <h2>6. Subscription Terms</h2>
+          <h2>7. Subscription Terms</h2>
           <p>
             Tend offers auto-renewing subscriptions through Apple In-App Purchase, including weekly and annual plans.
           </p>
@@ -90,7 +108,7 @@ export default function TermsPage() {
             <li>Refunds are handled by Apple according to Apple policies.</li>
           </ul>
 
-          <h2>7. Acceptable Use</h2>
+          <h2>8. Acceptable Use</h2>
           <p>You agree not to:</p>
           <ul>
             <li>Use Tend in violation of law or regulation.</li>
@@ -99,56 +117,56 @@ export default function TermsPage() {
             <li>Use Tend to transmit harmful code, abusive content, or spam.</li>
           </ul>
 
-          <h2>8. Availability and Changes</h2>
+          <h2>9. Availability and Changes</h2>
           <ul>
             <li>We may update, modify, suspend, or discontinue features at any time.</li>
             <li>We may release fixes, enhancements, and changes to models/providers as needed.</li>
             <li>We do not guarantee uninterrupted availability in all regions or on all devices.</li>
           </ul>
 
-          <h2>9. Intellectual Property</h2>
+          <h2>10. Intellectual Property</h2>
           <ul>
             <li>All Tend branding, software, design, and non-user content are owned by Tend or its licensors.</li>
             <li>These Terms do not transfer any ownership rights to you.</li>
           </ul>
 
-          <h2>10. Termination</h2>
+          <h2>11. Termination</h2>
           <p>
             You may stop using Tend at any time. We may suspend or terminate access if you violate these Terms or if
             needed to protect users, legal compliance, or service integrity.
           </p>
 
-          <h2>11. Warranty Disclaimer</h2>
+          <h2>12. Warranty Disclaimer</h2>
           <p>
             Tend is provided on an "as is" and "as available" basis to the maximum extent permitted by law. We do not
             guarantee that the Service will be error-free, uninterrupted, or suitable for every purpose.
           </p>
 
-          <h2>12. Limitation of Liability</h2>
+          <h2>13. Limitation of Liability</h2>
           <p>
             To the maximum extent permitted by law, Tend and its operator will not be liable for indirect, incidental,
             special, consequential, or punitive damages, or loss of data, revenue, or profits arising from use of the Service.
           </p>
 
-          <h2>13. Indemnification</h2>
+          <h2>14. Indemnification</h2>
           <p>
             You agree to indemnify and hold Tend harmless from claims, liabilities, damages, and expenses arising from
             your misuse of the Service, violation of these Terms, or violation of applicable law.
           </p>
 
-          <h2>14. Governing Law</h2>
+          <h2>15. Governing Law</h2>
           <p>
             These Terms are governed by applicable laws of the United States and the state laws that apply to Tend&apos;s
             operations, without regard to conflict-of-law principles, except where local law requires otherwise.
           </p>
 
-          <h2>15. Changes to These Terms</h2>
+          <h2>16. Changes to These Terms</h2>
           <p>
             We may revise these Terms from time to time. Continued use after changes become effective means you accept
             the updated Terms.
           </p>
 
-          <h2>16. Contact</h2>
+          <h2>17. Contact</h2>
           <p>
             Legal and terms inquiries: <a className="inline-link" href="mailto:tend@keeganryan.co">tend@keeganryan.co</a>
           </p>

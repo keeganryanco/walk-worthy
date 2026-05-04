@@ -76,7 +76,7 @@ const validCoreSource = {
   updatedJourneyArc: validArc
 };
 
-test("model routing defaults use gpt-5.5 core and gpt-5.1 action", () => {
+test("model routing defaults use gpt-5.4 core and gpt-5.1 action", () => {
   const original = { ...process.env };
   delete process.env.OPENAI_DEVOTIONAL_MODEL;
   delete process.env.OPENAI_ESCALATION_MODEL;
@@ -86,9 +86,9 @@ test("model routing defaults use gpt-5.5 core and gpt-5.1 action", () => {
   delete process.env.OPENAI_REPAIR_MODEL;
 
   try {
-    assert.equal(devotionalModel(), "gpt-5.5");
+    assert.equal(devotionalModel(), "gpt-5.4");
     assert.equal(actionModel(), "gpt-5.1");
-    assert.equal(repairModel(), "gpt-5.5");
+    assert.equal(repairModel(), "gpt-5.4");
   } finally {
     process.env = original;
   }
@@ -104,24 +104,24 @@ test("legacy primary model cannot downgrade devotional or repair routing", () =>
   process.env.OPENAI_ESCALATION_MODEL = "gpt-5.1";
 
   try {
-    assert.equal(devotionalModel(), "gpt-5.5");
-    assert.equal(repairModel(), "gpt-5.5");
+    assert.equal(devotionalModel(), "gpt-5.4");
+    assert.equal(repairModel(), "gpt-5.4");
     assert.equal(actionModel(), "gpt-5.1");
   } finally {
     process.env = original;
   }
 });
 
-test("OpenAI gpt-5.5 request omits unsupported temperature", () => {
-  const body = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5");
-  assert.equal(body.model, "gpt-5.5");
+test("OpenAI gpt-5.4 request omits unsupported temperature", () => {
+  const body = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.4");
+  assert.equal(body.model, "gpt-5.4");
   assert.equal("temperature" in body, false);
   assert.equal(body.max_output_tokens, 2600);
 });
 
 test("OpenAI staged requests can use smaller max output windows", () => {
-  const seedBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5", 1200);
-  const coreBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.5", 1800);
+  const seedBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.4", 1200);
+  const coreBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.4", 1800);
   const actionBody = buildOpenAIResponsesRequestBody("system", "user", "gpt-5.1", 900);
 
   assert.equal(seedBody.max_output_tokens, 1200);

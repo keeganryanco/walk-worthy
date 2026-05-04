@@ -858,17 +858,6 @@ struct RootView: View {
         if dismissedReason != PaywallTriggerReason.paywallDismissOffer.rawValue || settings.paywallDismissedAt == nil {
             settings.markPaywallDismissed(now: now)
         }
-        if dismissedReason != PaywallTriggerReason.paywallDismissOffer.rawValue {
-            analytics.track(
-                .freeTrialStarted,
-                properties: [
-                    "source": "paywall_dismissed",
-                    "trigger_reason": dismissedReason ?? "unspecified",
-                    "paywall_mode": subscriptionService.paywallMode.rawValue
-                ]
-            )
-        }
-
         let shouldShowDismissOffer = shouldPresentDismissOffer(after: dismissedReason, config: config)
         settings.pendingPaywallReason = shouldShowDismissOffer ? PaywallTriggerReason.paywallDismissOffer.rawValue : nil
         try? modelContext.save()
