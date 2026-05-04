@@ -90,6 +90,9 @@ enum AppConstants {
         static let bypassPaywallOverrideStorageKey = "TEND_DEBUG_BYPASS_PAYWALL_OVERRIDE"
         static let fastDayTestingOverrideStorageKey = "TEND_DEBUG_FAST_DAY_OVERRIDE"
         static let fastDayOffsetStorageKey = "TEND_DEBUG_FAST_DAY_OFFSET"
+        private static let testEnableFlag = "TEND_DEBUG_TESTING"
+        private static let bypassFlag = "TEND_BYPASS_PAYWALL"
+        private static let fastDaysFlag = "TEND_FAST_DAYS"
 
         private static func normalized(_ value: String) -> String {
             value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -105,63 +108,69 @@ enum AppConstants {
             }
         }
 
-        private static func hasTruthyArgument(_ argument: String) -> Bool {
+        private static func canonicalFlagName(_ rawValue: String) -> String {
+            let normalizedDashes = rawValue
+                .replacingOccurrences(of: "—", with: "-")
+                .replacingOccurrences(of: "–", with: "-")
+                .replacingOccurrences(of: "−", with: "-")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            var trimmed = normalizedDashes
+            while let first = trimmed.first, first == "-" || first == "_" {
+                trimmed.removeFirst()
+            }
+
+            return trimmed
+                .replacingOccurrences(of: "-", with: "_")
+                .uppercased()
+        }
+
+        private static func hasTruthyArgument(_ flagName: String) -> Bool {
             let processInfo = ProcessInfo.processInfo
             let rawArgs = processInfo.arguments
-            let candidates = [
-                argument,
-                argument.replacingOccurrences(of: "-", with: ""),
-                argument.replacingOccurrences(of: "-", with: "_"),
-                argument.replacingOccurrences(of: "-", with: "_").trimmingCharacters(in: CharacterSet(charactersIn: "_"))
-            ]
-                .map { $0.lowercased() }
+            let expected = canonicalFlagName(flagName)
 
-            for rawArg in rawArgs {
+            for (index, rawArg) in rawArgs.enumerated() {
                 let arg = rawArg.trimmingCharacters(in: .whitespacesAndNewlines)
-                let lowered = arg.lowercased()
-                if candidates.contains(lowered) {
-                    return true
-                }
-                if let equalsIndex = lowered.firstIndex(of: "=") {
-                    let key = String(lowered[..<equalsIndex])
-                    let value = String(lowered[lowered.index(after: equalsIndex)...])
-                    if candidates.contains(key), truthy(value) {
+                if let equalsIndex = arg.firstIndex(of: "=") {
+                    let key = String(arg[..<equalsIndex])
+                    let value = String(arg[arg.index(after: equalsIndex)...])
+                    if canonicalFlagName(key) == expected, truthy(value) {
                         return true
                     }
+                    continue
+                }
+
+                let canonical = canonicalFlagName(arg)
+                if canonical == expected {
+                    // Support both bare flags (`-FLAG`) and value flags (`-FLAG 1`).
+                    if index + 1 < rawArgs.count {
+                        let next = rawArgs[index + 1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        let nextIsFlagLike = next.hasPrefix("-")
+                        if !nextIsFlagLike {
+                            return truthy(next)
+                        }
+                    }
+                    return true
                 }
             }
 
             return false
         }
 
-        private static func hasTruthyEnvironmentValue(_ keys: [String]) -> Bool {
+        private static func hasTruthyEnvironmentValue(_ flagName: String) -> Bool {
+            let expected = canonicalFlagName(flagName)
             let env = ProcessInfo.processInfo.environment
-            for key in keys {
-                if truthy(env[key]) {
+            for (key, value) in env {
+                if canonicalFlagName(key) == expected, truthy(value) {
                     return true
                 }
             }
             return false
         }
 
-        private static func isEnabled(
-            argument: String,
-            environmentKey: String
-        ) -> Bool {
-            if hasTruthyArgument(argument) {
-                return true
-            }
-
-            if hasTruthyEnvironmentValue([
-                environmentKey,
-                argument,
-                environmentKey.replacingOccurrences(of: "_", with: "-"),
-                "-\(environmentKey)"
-            ]) {
-                return true
-            }
-
-            return false
+        private static func isFlagEnabled(_ flagName: String) -> Bool {
+            hasTruthyArgument(flagName) || hasTruthyEnvironmentValue(flagName)
         }
 
         static var bypassPaywall: Bool {
@@ -170,7 +179,7 @@ enum AppConstants {
             if UserDefaults.standard.bool(forKey: bypassPaywallOverrideStorageKey) {
                 return true
             }
-            return isEnabled(argument: "-TEND_BYPASS_PAYWALL", environmentKey: "TEND_BYPASS_PAYWALL")
+            return isFlagEnabled(bypassFlag)
 #else
             return false
 #endif
@@ -182,7 +191,7 @@ enum AppConstants {
             if UserDefaults.standard.bool(forKey: fastDayTestingOverrideStorageKey) {
                 return true
             }
-            return isEnabled(argument: "-TEND_FAST_DAYS", environmentKey: "TEND_FAST_DAYS")
+            return isFlagEnabled(fastDaysFlag)
 #else
             return false
 #endif
@@ -190,7 +199,8 @@ enum AppConstants {
 
         static var debugTestingEnabled: Bool {
 #if DEBUG
-            return isEnabled(argument: "-TEND_DEBUG_TESTING", environmentKey: "TEND_DEBUG_TESTING")
+            // If a debug-only feature flag is explicitly enabled, treat debug testing as enabled.
+            return isFlagEnabled(testEnableFlag) || isFlagEnabled(bypassFlag) || isFlagEnabled(fastDaysFlag)
 #else
             return false
 #endif

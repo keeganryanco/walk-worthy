@@ -85,11 +85,11 @@ struct ExperimentalOnboardingFlowView: View {
     private let analytics: AnalyticsTracking = AnalyticsServiceFactory.makeDefault()
 
     private let reminderOptions = ["Morning", "Afternoon", "Evening"]
-    private let prayerIntentSuggestions = [
-        "Trusting God with my anxiety",
-        "Growing consistency in prayer",
-        "Healing in a relationship",
-        "Wisdom for a hard decision"
+    private let prayerIntentSuggestionKeys = [
+        "prayer_intent_suggestion_1",
+        "prayer_intent_suggestion_2",
+        "prayer_intent_suggestion_3",
+        "prayer_intent_suggestion_4"
     ]
 
     private var firstStepSuggestions: [String] {
@@ -498,11 +498,12 @@ struct ExperimentalOnboardingFlowView: View {
                     .foregroundStyle(WWColor.muted)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(prayerIntentSuggestions, id: \.self) { suggestion in
+                    ForEach(prayerIntentSuggestionKeys, id: \.self) { suggestionKey in
+                        let suggestionText = copy(suggestionKey, fallback: fallbackSuggestion(for: suggestionKey))
                         Button {
-                            prayerIntentText = copy(suggestionKey(for: suggestion), fallback: suggestion)
+                            prayerIntentText = suggestionText
                         } label: {
-                            Text(copy(suggestionKey(for: suggestion), fallback: suggestion))
+                            Text(suggestionText)
                                 .font(WWTypography.heading(18))
                                 .foregroundStyle(WWColor.nearBlack)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -513,7 +514,7 @@ struct ExperimentalOnboardingFlowView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .stroke(
-                                            prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines) == copy(suggestionKey(for: suggestion), fallback: suggestion)
+                                            prayerIntentText.trimmingCharacters(in: .whitespacesAndNewlines) == suggestionText
                                                 ? WWColor.growGreen.opacity(0.8)
                                                 : WWColor.nearBlack.opacity(0.08),
                                             lineWidth: 1
@@ -1510,18 +1511,18 @@ struct ExperimentalOnboardingFlowView: View {
         .buttonStyle(.plain)
     }
 
-    private func suggestionKey(for suggestion: String) -> String {
-        switch suggestion {
-        case "Trusting God with my anxiety":
-            return "prayer_intent_suggestion_1"
-        case "Growing consistency in prayer":
-            return "prayer_intent_suggestion_2"
-        case "Healing in a relationship":
-            return "prayer_intent_suggestion_3"
-        case "Wisdom for a hard decision":
-            return "prayer_intent_suggestion_4"
+    private func fallbackSuggestion(for key: String) -> String {
+        switch key {
+        case "prayer_intent_suggestion_1":
+            return "Trusting God with my anxiety"
+        case "prayer_intent_suggestion_2":
+            return "Growing consistency in prayer"
+        case "prayer_intent_suggestion_3":
+            return "Healing in a relationship"
+        case "prayer_intent_suggestion_4":
+            return "Wisdom for a hard decision"
         default:
-            return "prayer_intent_suggestion_custom"
+            return "Trusting God with my anxiety"
         }
     }
 

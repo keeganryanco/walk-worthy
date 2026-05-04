@@ -377,6 +377,7 @@ final class JourneyContentService {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        let languageCode = AppLanguage.aiLanguageCode()
+        return "\(formatter.string(from: date))|\(languageCode)"
     }
 }

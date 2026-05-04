@@ -69,30 +69,7 @@
 
 ### App Review Notes (paste into App Store Connect)
 ```
-Tend does not require account creation or login. All core screens are accessible without credentials.
 
-First-launch flow:
-1) Complete onboarding and first journey setup.
-2) User then sees post-journey setup steps (background, widget preview, reminders, review prompt).
-3) Paywall appears after onboarding completion and offers a 3-day free trial with monthly/annual plans.
-4) Restore Purchases is available in the paywall and in Settings > Subscription.
-
-Subscription behavior:
-- Entitlement is managed via RevenueCat + StoreKit 2.
-- Premium status updates automatically after purchase/restore.
-- Current review build can run paywall in dismissable mode via RevenueCat metadata for reviewer convenience.
-
-Connectivity/offline behavior:
-- Existing journeys remain usable offline from locally stored data/cached daily package records.
-- Creating a brand-new journey requires internet (AI bootstrap endpoint).
-- If offline during new journey creation, the app shows a clear offline message and allows continuing existing journeys.
-
-Premium flow testing path:
-- Launch app, complete onboarding, and use the paywall shown at onboarding completion.
-- Use StoreKit sandbox test account for purchases.
-- Use Restore Purchases in paywall footer or Settings > Subscription.
-
-No demo account is required.
 ```
 
 ## Final pre-submit

@@ -24,6 +24,10 @@ function targetLanguage(input: JourneyPackageRequest): { code: "en" | "es" | "pt
 
 export function buildPrompt(input: JourneyPackageRequest): { system: string; user: string } {
   const language = targetLanguage(input);
+  const reflectionVoiceInstruction =
+    language.code === "ja" || language.code === "ko"
+      ? "Prefer second-person reflection voice, but first-person reflection is allowed when natural in this language."
+      : "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.";
   const followThroughContext =
     (input as JourneyPackageRequest & { followThroughContext?: Record<string, unknown> }).followThroughContext ?? {};
 
@@ -109,7 +113,7 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
         "Practical action language belongs only in smallStepQuestion and suggestedSteps, not in scriptureParaphrase, reflectionThought, or prayer.",
         "You may use phrasing like 'Reflect on ...' when it fits, but do not force a fixed opening phrase.",
         "Do not always begin reflectionThought with 'Take a moment to reflect on'.",
-        "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
+        reflectionVoiceInstruction,
         "Avoid abstract filler like higher purpose, profound sense, deeper reliance, inner stability, or divine care unless the user context specifically asks for it.",
         "Scripture paraphrase should be near-quote style: very close to the selected verse’s wording, with only small wording changes that connect to today's devotional focus.",
         "Keep scriptureParaphrase to 1-3 concise sentences and stay faithful to the cited verse or verses.",
@@ -156,6 +160,10 @@ export function buildPrompt(input: JourneyPackageRequest): { system: string; use
 
 export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { system: string; user: string } {
   const language = targetLanguage(input);
+  const reflectionVoiceInstruction =
+    language.code === "ja" || language.code === "ko"
+      ? "Reflection should preferably use second-person teaching voice; first-person reflection is allowed when natural in this language."
+      : "Reflection must be 4-6 complete sentences, concrete, biblically anchored, not first-person, and shaped as one coherent thought with a natural close.";
   const recent = (input.recentEntries ?? [])
     .slice(0, 8)
     .map((entry) => ({
@@ -183,7 +191,7 @@ export function buildDevotionalCorePrompt(input: JourneyPackageRequest): { syste
     "Prayer is not the action step. Practical action belongs only in the Tend action layer, not in scriptureParaphrase, reflectionThought, or prayer.",
     "Do not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act in scriptureParaphrase, reflectionThought, or prayer.",
     "Rare reflective directives like Notice or Consider are allowed only when they point inward to understanding, not outward to a task.",
-    "Reflection must be 4-6 complete sentences, concrete, biblically anchored, not first-person, and shaped as one coherent thought with a natural close.",
+    reflectionVoiceInstruction,
     "Use simpler wording where possible; do not stack abstract words like sentiment, passivity, defensiveness, posture, implication, or attentiveness.",
     "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
     "Prayer must be exactly 3-4 complete sentences, first-person only, plain, concrete Christian language.",

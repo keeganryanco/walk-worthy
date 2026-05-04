@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   devotionalCoreValidationIssues,
   normalizeActionLayerFromObject,
+  parseAndNormalizeDevotionalCoreBestEffort,
   normalizeDevotionalCoreFromObject,
   normalizeDevotionalPlanFromObject
 } from "./validate.ts";
@@ -175,6 +176,54 @@ test("reflection still requires at least four sentences", () => {
 
   assert.equal(normalizeDevotionalCoreFromObject(source, husbandRequest), null);
   assert.ok(devotionalCoreValidationIssues(source, husbandRequest).includes("generic reflection: reflection must be 4-6 sentences"));
+});
+
+test("retry mode can relax reflection minimum sentence count to three", () => {
+  const source = {
+    ...validCoreSource,
+    reflectionThought:
+      "Jesus shows that love for God is tied to love for the person close beside you. For a husband, marriage becomes a daily place where Christlike love becomes real. Sacrificial love grows in ordinary moments of care and listening."
+  };
+
+  assert.ok(
+    normalizeDevotionalCoreFromObject(source, husbandRequest, {
+      minReflectionSentences: 3
+    })
+  );
+});
+
+test("korean reflection does not fail first-person rule", () => {
+  const koreanRequest: JourneyPackageRequest = {
+    ...husbandRequest,
+    languageCode: "ko",
+    localeIdentifier: "ko-KR"
+  };
+  const source = {
+    ...validCoreSource,
+    reflectionThought:
+      "예수님의 사랑은 결혼 안에서 먼저 가까운 사람에게 드러납니다. 나는 사랑이 감정만이 아니라 인내와 섬김으로 자라야 함을 다시 배웁니다. 남편으로서 오늘의 작은 태도와 말이 그 사랑을 구체적으로 보여 줍니다. 주님의 방식으로 사랑할 때 집 안의 분위기도 천천히 새로워집니다."
+  };
+
+  const issues = devotionalCoreValidationIssues(source, koreanRequest);
+  assert.equal(issues.includes("generic reflection: reflection uses first person"), false);
+});
+
+test("best-effort core normalization can salvage first attempt output", () => {
+  const salvaged = parseAndNormalizeDevotionalCoreBestEffort(
+    JSON.stringify({
+      dailyTitle: "Growing in Faith",
+      scriptureReference: "Philippians 4:6-7",
+      scriptureParaphrase: "Bring every worry to God and receive His peace.",
+      reflectionThought: "I keep returning to God with what is heavy today.",
+      prayer: "Lord, help me trust You today.",
+      todayAim: "stay close to God"
+    }),
+    husbandRequest
+  );
+
+  assert.ok(salvaged);
+  assert.equal(salvaged?.scriptureReference, "Philippians 4:6-7");
+  assert.ok((salvaged?.prayer ?? "").length > 0);
 });
 
 test("marriage context rejects broad love command scripture by itself", () => {

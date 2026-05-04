@@ -183,11 +183,40 @@ private final class PostHogOnboardingExperimentService: OnboardingExperimentConf
         guard !overrides.isEmpty else { return overrides }
         guard languageCode != "en" else { return overrides }
 
-        return await RemoteLocalizationClient.translate(
+        let localized = await RemoteLocalizationClient.translate(
             overrides,
             domain: .posthogOnboarding,
             languageCode: languageCode
         )
+
+        guard languageCode == "ko" || languageCode == "ja" else { return localized }
+
+        var filtered: [String: String] = [:]
+        for (key, value) in localized {
+            let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalized.isEmpty else { continue }
+
+            if hasExpectedScript(normalized, languageCode: languageCode) || !containsLatinLetters(normalized) {
+                filtered[key] = normalized
+            }
+        }
+
+        return filtered
+    }
+
+    private func hasExpectedScript(_ value: String, languageCode: String) -> Bool {
+        switch languageCode {
+        case "ko":
+            return value.range(of: "[가-힣]", options: .regularExpression) != nil
+        case "ja":
+            return value.range(of: "[ぁ-ゖァ-ヺ一-龯]", options: .regularExpression) != nil
+        default:
+            return true
+        }
+    }
+
+    private func containsLatinLetters(_ value: String) -> Bool {
+        value.range(of: "[A-Za-z]", options: .regularExpression) != nil
     }
 
     private func parsePayload(_ value: Any?) -> [String: Any]? {

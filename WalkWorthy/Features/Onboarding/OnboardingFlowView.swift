@@ -187,13 +187,13 @@ struct OnboardingFlowView: View {
             OnboardingIntroLoopView(size: metrics.introMediaSize)
                 .frame(maxWidth: .infinity)
 
-            Text("Welcome to Tend")
+            Text(L10n.string("onboarding.intro_title", default: "Welcome to Tend"))
                 .font(WWTypography.display(displaySize(40, metrics: metrics)))
                 .foregroundStyle(WWColor.nearBlack)
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.72)
 
-            Text("Prayer for what you're facing.")
+            Text(L10n.string("onboarding.intro_subtitle", default: "Prayer for what you're facing."))
                 .font(WWTypography.heading(headingSize(28, metrics: metrics)))
                 .foregroundStyle(WWColor.growGreen)
                 .minimumScaleFactor(0.75)

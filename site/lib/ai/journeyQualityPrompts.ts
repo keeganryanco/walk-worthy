@@ -81,6 +81,10 @@ export function buildDevotionalCorePrompt(
   repairNotes?: string
 ): { system: string; user: string } {
   const language = targetLanguage(input);
+  const reflectionVoiceRule =
+    language.code === "ja" || language.code === "ko"
+      ? "For reflectionThought, second-person teaching voice is preferred, but first-person voice is allowed when natural in this language."
+      : "Reflection must not use first-person pronouns (I/me/my/we/us/our).";
   const system = [
     "You are writing the devotional core for Tend, a personal Christian devotional journey app.",
     "Respond with strict JSON only, no markdown and no prose outside JSON.",
@@ -120,7 +124,7 @@ export function buildDevotionalCorePrompt(
     "Do not use faithful step, concrete step, small step, next step, move from prayer into action, what can you do, guide my action, or as I act in scriptureParaphrase, reflectionThought, or prayer.",
     "Do not tell the user to send, buy, schedule, text, call, ask, apologize, plan, do, take, write, choose, or finish anything in reflection.",
     "Rare reflective language is allowed only when internal and interpretive, such as 'Notice how...' or 'Consider how...'; do not use 'Notice one area...' or 'Let that awareness lead...'.",
-    "Reflection must not use first-person pronouns (I/me/my/we/us/our).",
+    reflectionVoiceRule,
     "Prayer must be exactly 3-4 complete sentences, strictly first-person, plain, concrete, and Christian.",
     "Ban empty Christianese filler such as 'reflect your grace more and more', 'deeper reliance', 'divine care', 'higher purpose', 'profound sense', 'inner stability', or similar phrases unless immediately made concrete.",
     "Daily title must be short, concrete, story-like, and sequential, for example: Learning Sacrificial Love, Choosing Peace Today, Practicing Prayer When Distracted.",

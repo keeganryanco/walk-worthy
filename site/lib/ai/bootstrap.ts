@@ -445,6 +445,10 @@ export async function generateJourneySeed(
 
 function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: string): { system: string; user: string } {
   const language = targetLanguage(request);
+  const reflectionVoiceInstruction =
+    language.code === "ja" || language.code === "ko"
+      ? "Prefer second-person reflection voice, but allow first-person reflection wording when it is more natural in this language."
+      : "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.";
   const system = [
     "You are generating initial journey setup for Tend, a personal Christian devotional journey app.",
     "Return strict JSON only.",
@@ -465,7 +469,7 @@ function buildBootstrapPrompt(request: JourneyBootstrapRequest, repairNotes?: st
     "reflectionThought must read as one coherent thought with a beginning, middle, and end: anchor in Scripture, explain what Scripture means in simple terms, connect to the user's journey, then close with a plain, grounded sentence.",
     "Do not use meta-devotional framing such as 'Today's lesson', 'the lesson is', 'the takeaway', 'this devotional', 'this reflection', or 'in conclusion'.",
     "Do not tell the user to send, buy, schedule, text, call, write, ask, apologize, plan, do, take, clean, cook, bring, serve, finish, or start a practical action inside reflectionThought.",
-    "Do not use first-person pronouns (I/me/my/we/us/our) in reflectionThought.",
+    reflectionVoiceInstruction,
     "reflectionThought must be 4-6 complete sentences.",
     "Keep reflectionThought concrete, Scripture-led, and tied to this journey's concern.",
     "Choose Scripture before writing the reflection. The reflection's main point must clearly arise from what the selected Scripture says, not merely sit beside a broadly related verse.",

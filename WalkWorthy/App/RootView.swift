@@ -29,6 +29,7 @@ struct RootView: View {
     @State private var onboardingErrorMessage: String?
     @State private var isBootstrappingJourney = false
     @State private var onboardingExperimentConfig: OnboardingExperimentConfig = .default
+    @AppStorage(AppLanguage.storageKey) private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @AppStorage(AppConstants.DeepLink.pendingJourneyStorageKey) private var pendingJourneyIDRaw = ""
     @AppStorage(AppConstants.DeepLink.pendingActionStorageKey) private var pendingHomeActionRaw = ""
 
@@ -85,6 +86,11 @@ struct RootView: View {
             }
             .onAppear {
                 trackOnboardingStartedIfNeeded()
+            }
+            .onChange(of: appLanguageRawValue) { _, _ in
+                Task {
+                    onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
+                }
             }
             .onChange(of: showPaywall) { _, isShown in
                 handlePaywallShownChanged(isShown)
@@ -144,10 +150,20 @@ struct RootView: View {
     private var onboardingFlow: some View {
         ExperimentalOnboardingFlowView(
             onPrepare: { name, prayer in
-                await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System")
+                await prepareJourneyInline(
+                    name: name,
+                    prayer: prayer,
+                    reminderWindow: "System",
+                    shouldSurfaceErrors: false
+                )
             },
             onGenerate: { name, prayer in
-                if let prepared = await prepareJourneyInline(name: name, prayer: prayer, reminderWindow: "System") {
+                if let prepared = await prepareJourneyInline(
+                    name: name,
+                    prayer: prayer,
+                    reminderWindow: "System",
+                    shouldSurfaceErrors: true
+                ) {
                     return await commitPreparedJourney(prepared, name: name, prayer: prayer)
                 }
                 return nil
@@ -166,7 +182,7 @@ struct RootView: View {
 
     private func handleInitialTask() async {
         rootLogger.log(
-            "debug flags resolved bypassPaywall=\(AppConstants.Debug.bypassPaywall, privacy: .public) fastDayTesting=\(AppConstants.Debug.fastDayTesting, privacy: .public)"
+            "debug flags resolved testing=\(AppConstants.Debug.debugTestingEnabled, privacy: .public) bypassPaywall=\(AppConstants.Debug.bypassPaywall, privacy: .public) fastDayTesting=\(AppConstants.Debug.fastDayTesting, privacy: .public)"
         )
         onboardingExperimentConfig = await onboardingExperimentProvider.fetchConfig()
         analytics.track(
@@ -375,7 +391,8 @@ struct RootView: View {
     private func prepareJourneyInline(
         name: String,
         prayer: String,
-        reminderWindow: String
+        reminderWindow: String,
+        shouldSurfaceErrors: Bool = true
     ) async -> PreparedOnboardingJourney? {
         guard connectivityService.isOnline else {
             rootLogger.log("inline prepare skipped: offline")
@@ -429,13 +446,16 @@ struct RootView: View {
                 memory: temporaryMemory
             )
             rootLogger.log("inline prepare succeeded journeyTitle=\(seed.journeyTitle, privacy: .public)")
+            onboardingErrorMessage = nil
             return PreparedOnboardingJourney(seed: seed, package: package)
         } catch {
             let details = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             rootLogger.error("inline prepare failed error=\(details, privacy: .public)")
-            onboardingErrorMessage = details.isEmpty
-                ? "We couldn't create your first journey right now. Connect to the internet and try again."
-                : "We couldn't create your first journey: \(details)"
+            if shouldSurfaceErrors {
+                onboardingErrorMessage = details.isEmpty
+                    ? "We couldn't create your first journey right now. Connect to the internet and try again."
+                    : "We couldn't create your first journey: \(details)"
+            }
             return nil
         }
     }

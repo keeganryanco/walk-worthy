@@ -881,12 +881,28 @@ struct HistoricalTendDetailView: View {
     let entry: PrayerEntry
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(AppLanguage.storageKey) private var appLanguageRawValue: String = AppLanguage.system.rawValue
     @Query private var packages: [DailyJourneyPackageRecord]
     
     init(entry: PrayerEntry) {
         self.entry = entry
         let entryID = entry.id
         self._packages = Query(filter: #Predicate<DailyJourneyPackageRecord> { $0.linkedEntryID == entryID })
+    }
+
+    private var selectedLocale: Locale {
+        let selectedLanguage = AppLanguage.parseStoredLanguage(appLanguageRawValue)
+        return AppLanguage.resolvedLocale(for: selectedLanguage)
+    }
+
+    private var entryDateTitle: String {
+        entry.createdAt.formatted(
+            Date.FormatStyle.dateTime
+                .month(.wide)
+                .day()
+                .year()
+                .locale(selectedLocale)
+        )
     }
     
     var body: some View {
@@ -987,7 +1003,7 @@ struct HistoricalTendDetailView: View {
                 }
             }
         }
-        .navigationTitle(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
+        .navigationTitle(entryDateTitle)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Color.clear.frame(height: 116)
