@@ -74,7 +74,15 @@ final class JourneyContentService {
             .previousFollowThroughStatus
 
         if let cached = cachedRecord(journeyID: journey.id, dayKey: dayKey, in: modelContext) {
-            return JourneyPackageResult(package: cached.asPackage, source: .cache)
+            let localizedCached = DailyJourneyPackageValidation.validated(
+                cached.asPackage,
+                followThroughStatus: recentFollowThroughStatus
+            )
+            if localizedCached.scriptureParaphrase != cached.scriptureParaphrase {
+                cached.scriptureParaphrase = localizedCached.scriptureParaphrase
+                try? modelContext.save()
+            }
+            return JourneyPackageResult(package: localizedCached, source: .cache)
         }
 
         var remoteFailureMessage: String?

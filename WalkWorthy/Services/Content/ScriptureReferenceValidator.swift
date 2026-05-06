@@ -367,7 +367,8 @@ struct ScriptureReferenceValidator {
         let references = splitReferenceSet(normalizedReference)
         if references.count > 1 {
             let snippets = references.compactMap {
-                paraphraseFallback(for: $0, languageCode: normalizedLanguageCode)
+                strictLocalizedParaphraseFallback(for: $0, languageCode: normalizedLanguageCode)
+                    ?? paraphraseFallback(for: $0, languageCode: normalizedLanguageCode)
             }
             if snippets.count == references.count {
                 return snippets.joined(separator: " ")
@@ -382,6 +383,12 @@ struct ScriptureReferenceValidator {
 
         // Anchor keywords are English-only; avoid forcing English fidelity checks on non-English output.
         guard normalizedLanguageCode == "en" else {
+            if let strictLocalized = strictLocalizedParaphraseFallback(
+                for: normalizedReference,
+                languageCode: normalizedLanguageCode
+            ) {
+                return strictLocalized
+            }
             guard !normalizedParaphrase.isEmpty else { return fallback }
             if shouldForceLocalizedFallback(for: normalizedParaphrase, languageCode: normalizedLanguageCode) {
                 return fallback
@@ -423,11 +430,27 @@ struct ScriptureReferenceValidator {
         )
     }
 
-    static func deterministicApprovedReference(seed: String, excluding: Set<String> = []) -> String {
+    static func deterministicApprovedReference(
+        seed: String,
+        excluding: Set<String> = [],
+        languageCode: String = AppLanguage.aiLanguageCode()
+    ) -> String {
         let fallbackReferences = Set(paraphraseFallbacks.keys)
         let approvedWithKnownParaphrases = approvedReferencesSorted.filter { fallbackReferences.contains($0) }
-        let pool = approvedWithKnownParaphrases.filter { !excluding.contains($0) }
-        let candidates = pool.isEmpty ? approvedWithKnownParaphrases : pool
+        let normalizedLanguageCode = normalizedLanguage(languageCode)
+        let approvedWithLocalizedParaphrases: [String]
+        if normalizedLanguageCode == "en" {
+            approvedWithLocalizedParaphrases = approvedWithKnownParaphrases
+        } else {
+            approvedWithLocalizedParaphrases = approvedWithKnownParaphrases.filter {
+                strictLocalizedParaphraseFallback(for: $0, languageCode: normalizedLanguageCode) != nil
+            }
+        }
+        let localizedCandidates = approvedWithLocalizedParaphrases.isEmpty
+            ? approvedWithKnownParaphrases
+            : approvedWithLocalizedParaphrases
+        let pool = localizedCandidates.filter { !excluding.contains($0) }
+        let candidates = pool.isEmpty ? localizedCandidates : pool
         guard !candidates.isEmpty else {
             return "Philippians 4:6-7"
         }
@@ -456,6 +479,12 @@ struct ScriptureReferenceValidator {
     private static func paraphraseFallback(for reference: String, languageCode: String) -> String? {
         guard let localized = paraphraseFallbacks[reference] else { return nil }
         return localized[languageCode] ?? localized["en"]
+    }
+
+    private static func strictLocalizedParaphraseFallback(for reference: String, languageCode: String) -> String? {
+        guard languageCode != "en" else { return nil }
+        guard let localized = paraphraseFallbacks[reference] else { return nil }
+        return localized[languageCode]
     }
 
     private static func shouldForceLocalizedFallback(for paraphrase: String, languageCode: String) -> Bool {

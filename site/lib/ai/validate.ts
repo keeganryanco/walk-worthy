@@ -1144,18 +1144,37 @@ const referenceOffTargetSignals: Record<string, string[]> = {
 };
 
 function fallbackParaphrase(reference: string, language: SupportedLanguageCode): string | undefined {
+  const fallback = referenceParaphraseFallbacks[reference];
+  if (language !== "en" && fallback?.[language]) return fallback[language];
   const approved = approvedScriptureParaphraseForReferenceSet(reference);
   if (approved) return approved;
-  const fallback = referenceParaphraseFallbacks[reference];
-  if (!fallback) return undefined;
-  return fallback[language] ?? fallback.en;
+  return fallback?.[language] ?? fallback?.en;
+}
+
+function strictLocalizedFallbackParaphrase(reference: string, language: SupportedLanguageCode): string | undefined {
+  if (language === "en") return undefined;
+  return referenceParaphraseFallbacks[reference]?.[language];
 }
 
 function enforceParaphraseFidelity(reference: string, paraphrase: string, language: SupportedLanguageCode): string {
+  const references = splitNormalizedReferences(reference);
+  if (language !== "en") {
+    if (references.length > 1) {
+      const snippets = references.map((item) => strictLocalizedFallbackParaphrase(item, language));
+      if (snippets.every((item): item is string => Boolean(item))) {
+        return snippets.join(" ");
+      }
+      return paraphrase.trim().length > 0 ? paraphrase : snippets.filter((item): item is string => Boolean(item)).join(" ");
+    }
+
+    const localizedFallback = strictLocalizedFallbackParaphrase(reference, language);
+    if (localizedFallback) return localizedFallback;
+    return paraphrase.trim().length > 0 ? paraphrase : (fallbackParaphrase(reference, language) ?? "");
+  }
+
   const approved = approvedScriptureParaphraseForReferenceSet(reference);
   if (approved) return approved;
 
-  const references = splitNormalizedReferences(reference);
   if (references.length > 1) {
     if (paraphrase.trim()) {
       return paraphrase;
@@ -1170,12 +1189,6 @@ function enforceParaphraseFidelity(reference: string, paraphrase: string, langua
   const anchors = referenceAnchorRules[reference];
   if (!fallback) {
     return paraphrase;
-  }
-
-  // English anchors are intentionally strict only for English output.
-  // For non-English locales, keep model paraphrase unless empty.
-  if (language !== "en") {
-    return paraphrase.trim().length === 0 ? fallback : paraphrase;
   }
 
   if (!anchors) {
@@ -1219,7 +1232,24 @@ function nonRepeatingReference(candidate: string, input?: JourneyPackageRequest)
   }
 
   const seed = `${input?.journey?.id ?? "journey"}-${input?.dateISO ?? "today"}`;
+  const language = languageCode(input);
+  if (language !== "en") {
+    const excluded = new Set(used);
+    const localizedReferences = Object.keys(referenceParaphraseFallbacks).filter((reference) => !excluded.has(reference));
+    const pool = localizedReferences.length > 0 ? localizedReferences : Object.keys(referenceParaphraseFallbacks);
+    const index = Math.abs(hashCode(seed)) % pool.length;
+    return pool[index] ?? "Philippians 4:6-7";
+  }
   return deterministicReference(seed, used);
+}
+
+function hashCode(value: string): number {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash << 5) - hash + char.charCodeAt(0);
+    hash |= 0;
+  }
+  return hash;
 }
 
 function extractJSON(raw: string): unknown {

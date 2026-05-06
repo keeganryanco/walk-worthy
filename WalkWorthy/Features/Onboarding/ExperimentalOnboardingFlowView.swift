@@ -1612,6 +1612,12 @@ struct ExperimentalOnboardingFlowView: View {
             result.append(requiredStep)
         }
 
+        // Never allow experiments to drop canonical onboarding steps.
+        // Configured order can reorder defaults, but missing defaults are appended.
+        for defaultStep in defaults where !result.contains(defaultStep) {
+            result.append(defaultStep)
+        }
+
         return result
     }
 

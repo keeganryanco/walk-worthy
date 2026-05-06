@@ -5,6 +5,7 @@ import {
   devotionalCoreValidationIssues,
   normalizeActionLayerFromObject,
   parseAndNormalizeDevotionalCoreBestEffort,
+  normalizeDevotionalCoreBestEffortFromObject,
   normalizeDevotionalCoreFromObject,
   normalizeDevotionalPlanFromObject
 } from "./validate.ts";
@@ -139,6 +140,47 @@ test("live routes reject template fallback as a successful online result", () =>
   assert.equal(LIVE_TEMPLATE_FALLBACK_STATUS, 502);
   assert.equal(liveTemplateFallbackDetails([], "template fallback disabled"), "template fallback disabled");
   assert.equal(liveTemplateFallbackDetails(["openai_timeout", "gemini_timeout"]), "openai_timeout|gemini_timeout");
+});
+
+test("Portuguese scripture uses localized fallback instead of approved English paraphrase", () => {
+  const result = normalizeDevotionalCoreBestEffortFromObject(
+    {
+      ...validCoreSource,
+      scriptureReference: "Philippians 4:6-7",
+      scriptureParaphrase: "Bring every worry and request to God with thanksgiving, and His peace will guard your heart and mind in Christ."
+    },
+    {
+      ...husbandRequest,
+      languageCode: "pt",
+      localeIdentifier: "pt-BR",
+      recentEntries: []
+    }
+  );
+
+  assert.equal(result.scriptureReference, "Philippians 4:6-7");
+  assert.match(result.scriptureParaphrase, /Apresente a Deus cada preocupação/i);
+  assert.doesNotMatch(result.scriptureParaphrase, /Bring every worry/i);
+});
+
+test("Portuguese scripture preserves localized model paraphrase when reference has no localized fallback", () => {
+  const result = normalizeDevotionalCoreBestEffortFromObject(
+    {
+      ...validCoreSource,
+      scriptureReference: "Matthew 5:16",
+      scriptureParaphrase:
+        "Deixe sua luz brilhar diante das pessoas, para que vejam suas boas obras e deem glória ao Pai."
+    },
+    {
+      ...husbandRequest,
+      languageCode: "pt",
+      localeIdentifier: "pt-BR",
+      recentEntries: []
+    }
+  );
+
+  assert.equal(result.scriptureReference, "Matthew 5:16");
+  assert.match(result.scriptureParaphrase, /Deixe sua luz brilhar/i);
+  assert.doesNotMatch(result.scriptureParaphrase, /Let your light shine/i);
 });
 
 test("OpenAI non-gpt-5 request may include temperature", () => {
