@@ -111,6 +111,10 @@ struct ExperimentalOnboardingFlowView: View {
         return journey.themeKey.rawValue
     }
 
+    private var shouldBypassOnboardingPaywall: Bool {
+        isPremium || AppConstants.Debug.bypassPaywall
+    }
+
     private var firstStagePlantImageName: String {
         "growth_stage_1_seed_\(firstJourneyThemeSuffix)"
     }
@@ -217,6 +221,10 @@ struct ExperimentalOnboardingFlowView: View {
         }
         .onAppear {
             resolvedExperimentConfig = experimentConfig
+            if AppConstants.Debug.bypassPaywall {
+                hasPassedOnboardingPaywall = true
+                isWaitingForOnboardingPaywall = false
+            }
             ensureCurrentStepIsValidForSequence()
         }
         .onChange(of: experimentConfig) { _, newConfig in
@@ -1612,12 +1620,6 @@ struct ExperimentalOnboardingFlowView: View {
             result.append(requiredStep)
         }
 
-        // Never allow experiments to drop canonical onboarding steps.
-        // Configured order can reorder defaults, but missing defaults are appended.
-        for defaultStep in defaults where !result.contains(defaultStep) {
-            result.append(defaultStep)
-        }
-
         return result
     }
 
@@ -1913,11 +1915,12 @@ struct ExperimentalOnboardingFlowView: View {
         }
 
         if step == .firstTendCelebration, !hasPassedOnboardingPaywall {
+            if shouldBypassOnboardingPaywall {
+                continueAfterOnboardingPaywallIfNeeded()
+                return
+            }
             isWaitingForOnboardingPaywall = true
             onRequirePaywall(.onboardingCompletion)
-            if isPremium || AppConstants.Debug.bypassPaywall {
-                continueAfterOnboardingPaywallIfNeeded()
-            }
             return
         }
 

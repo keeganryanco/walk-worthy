@@ -125,9 +125,19 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "-TEND_DEBUG_TESTING"
+            key = "TEND_BYPASS_PAYWALL"
             value = "1"
-            isEnabled = "NO">
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "TEND_DEBUG_TESTING"
+            value = "1"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "TEND_FAST_DAYS"
+            value = "1"
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>

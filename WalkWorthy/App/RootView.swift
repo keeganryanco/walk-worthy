@@ -336,7 +336,13 @@ struct RootView: View {
     }
 
     private func triggerPaywall(_ reason: PaywallTriggerReason) {
-        guard !AppConstants.Debug.bypassPaywall else { return }
+        guard !AppConstants.Debug.bypassPaywall else {
+            settings?.pendingPaywallReason = nil
+            try? modelContext.save()
+            showPaywall = false
+            showDownsellPaywall = false
+            return
+        }
         // Paywall should only be presented during onboarding flow.
         guard profile == nil else { return }
         settings?.pendingPaywallReason = reason.rawValue
@@ -746,6 +752,10 @@ struct RootView: View {
     }
 
     private func maybePresentDownsellOffer() {
+        guard !AppConstants.Debug.bypassPaywall else {
+            showDownsellPaywall = false
+            return
+        }
         guard DownsellPresentationPolicy.shouldPresent(
             profileExists: profile != nil,
             hasEligibleOffer: subscriptionService.hasEligibleDownsellOffer,
@@ -774,6 +784,7 @@ struct RootView: View {
         if AppConstants.Debug.bypassPaywall {
             settings?.pendingPaywallReason = nil
             showPaywall = false
+            showDownsellPaywall = false
             return
         }
 
@@ -864,6 +875,13 @@ struct RootView: View {
     }
 
     private func handlePaywallDismissed(now: Date = .now) {
+        guard !AppConstants.Debug.bypassPaywall else {
+            settings?.pendingPaywallReason = nil
+            try? modelContext.save()
+            showPaywall = false
+            showDownsellPaywall = false
+            return
+        }
         guard !subscriptionService.isPremium else { return }
         let config = paywallConfigForCurrentState(now: now)
         guard config.isDismissable else {
